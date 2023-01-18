@@ -32,8 +32,8 @@ from cpg_utils.hail_batch import (
 from saige_onek1k import *
 
 # Docker images
-HAIL_DOCKER_IMAGE = 'gcr.io/ukbb-exome-pharma/hail_utils:6.5'
-SAIGE_DOCKER_IMAGE = 'gcr.io/ukbb-exome-pharma/saige:0.3'
+HAIL_DOCKER_IMAGE = ''  # would be good to use a fixed one (that doesn't always update, for reproducibility)
+SAIGE_DOCKER_IMAGE = 'wzhou88/saige:1.1.6.3'  # from https://saigegit.github.io/SAIGE-doc/docs/Installation_docker.html
 
 config = get_config()
 
