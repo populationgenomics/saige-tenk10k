@@ -17,6 +17,20 @@ import logging
 import hail as hl
 import hailtop.batch as hb
 
+# from cpg_utils import to_path
+from cpg_utils.hail_batch import (
+#     copy_common_env,
+#     dataset_path,
+    get_config,
+#     init_batch,
+#     output_path,
+#     remote_tmpdir,
+)
+
+
+# import self scripts
+from saige_onek1k import *
+
 # Docker images
 HAIL_DOCKER_IMAGE = 'gcr.io/ukbb-exome-pharma/hail_utils:6.5'
 SAIGE_DOCKER_IMAGE = 'gcr.io/ukbb-exome-pharma/saige:0.3'
