@@ -203,7 +203,11 @@ def get_promoter_variants(
 
 # region PREPARE_INPUT_FILES
 
-
+# this will need to change:
+# pheno and cov may be the same
+# geno can be plink directly
+# kinship is not necessary, can be computed using step0 of saige (?)
+# a group file will be needed (for gene-set tests)
 def prepare_input_files(
     gene_name: str,
     cell_type: str,
@@ -358,14 +362,60 @@ def prepare_input_files(
 # endregion PREPARE_INPUT_FILES
 
 
+
 # region GET_SAIGE_PVALUES
+
+# create sparse GRM
+saige_command_step0 = 'Rscript createSparseGRM.R       \
+     --plinkFile=./input/nfam_100_nindep_0_step1_includeMoreRareVariants_poly \
+     --nThreads=4  \
+     --outputPrefix=./output/sparseGRM       \
+     --numRandomMarkerforSparseKin=2000      \
+     --relatednessCutoff=0.125'
+
+# fitting the null (linear mixed) model
+saige_command_step1 = 'Rscript step1_fitNULLGLMM.R     \
+    --sparseGRMFile=output/sparseGRM_relatednessCutoff_0.125_1000_randomMarkersUsed.sparseGRM.mtx   \
+    --sparseGRMSampleIDFile=output/sparseGRM_relatednessCutoff_0.125_1000_randomMarkersUsed.sparseGRM.mtx.sampleIDs.txt     \
+    --plinkFile=./input/nfam_100_nindep_0_step1_includeMoreRareVariants_poly_22chr.forCate_vr \
+    --useSparseGRMtoFitNULL=TRUE    \
+    --phenoFile=./input/pheno_1000samples.txt_withdosages_withBothTraitTypes.txt \
+    --phenoCol=y_binary \
+    --covarColList=x1,x2 \
+    --qCovarColList=x2  \
+    --sampleIDColinphenoFile=IID \
+    --traitType=binary        \
+    --isCateVarianceRatio=TRUE	\
+    --outputPrefix=./output/example_binary_sparseGRM	\
+    --IsOverwriteVarianceRatioFile=TRUE	'
+
+# performing the gene-based association tests
+saige_command_step2 = 'Rscript step2_SPAtests.R        \
+     --bgenFile=./input/genotype_100markers.bgen    \
+     --bgenFileIndex=./input/genotype_100markers.bgen.bgi \
+     --SAIGEOutputFile=./output/genotype_100markers_bgen_groupTest_out.txt \
+     --chrom=1 \
+     --AlleleOrder=ref-first \
+     --minMAF=0 \
+     --minMAC=0.5 \
+     --sampleFile=./input/samplelist.txt \
+     --GMMATmodelFile=./output/example_binary_sparseGRM.rda \
+     --varianceRatioFile=./output/example_binary_sparseGRM.varianceRatio.txt      \
+     --sparseGRMFile=output/sparseGRM_relatednessCutoff_0.125_1000_randomMarkersUsed.sparseGRM.mtx   \
+     --sparseGRMSampleIDFile=output/sparseGRM_relatednessCutoff_0.125_1000_randomMarkersUsed.sparseGRM.mtx.sampleIDs.txt  \
+     --groupFile=./input/group_new_chrposa1a2.txt    \
+     --annotation_in_groupTest="lof,missense:lof,missense:lof:synonymous"        \
+     --maxMAF_in_groupTest=0.0001,0.001,0.01 \
+     --is_output_markerList_in_groupTest=TRUE \
+     --LOCO=FALSE \
+     --is_fastTest=TRUE'
 
 
 def get_saige_pvs(pheno, covs, genotypes, contexts=None):
     """
     change
     """
-    
+
 
     return np.array([pv_norm, pv0, pv1, pv2, pv3, pv4, pv5, pv6])
 
@@ -408,7 +458,7 @@ def run_gene_association(
     # contexts (no context-specific analysis now, just identity)
     contexts = eye(genotypes.shape[0])
 
-   
+
 
     # create p-values data frame
     pvalues = get_crm_pvs(pheno, covs, genotypes, contexts)
@@ -838,6 +888,6 @@ def saige_pipeline(
     # set jobs running
     batch.run(wait=False)
 
-  
+
 if __name__ == '__main__':
     saige_pipeline()
