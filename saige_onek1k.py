@@ -72,6 +72,7 @@ def filter_variants(
     mt_path: str,  # 'mt/v7.mt'
     samples: list[str],
     output_mt_path: str,  # 'tob_wgs_rv/densified_rv_only.mt'
+    grm_plink_file: str,
 ):
     """Subset hail matrix table
 
@@ -82,6 +83,9 @@ def filter_variants(
     Output:
     subset hail matrix table, containing only variants that:
     1) are not ref-only, 2) biallelic, 3) meet QC filters, 4) are rare (MAF<5%)
+    
+    also, plink file containing variants that satisfy 1),2),3)
+    but that are common (MAF>1%) to build sparse GRM
     """
     # read hail matrix table object (WGS data)
     init_batch()
@@ -100,9 +104,19 @@ def filter_variants(
         & (mt.n_unsplit_alleles == 2)  # biallelic
         & (hl.is_snp(mt.alleles[0], mt.alleles[1]))  # SNPs
     )
+    
+    mt = hl.variant_qc(mt)
+    # filter common (enough) variants to build sparse GRM
+    grm_mat = mt.filter_rows(
+        (mt.variant_qc.AF[1] > 0.01) & (mt.variant_qc.AF[1] < 1)
+        | (mt.variant_qc.AF[1] < 0.99) & (mt.variant_qc.AF[1] > 0)
+    )
+    
+    # export to plink
+    from hail.methods import export_plink
+    export_plink(grm_mt, grm_plink_file, ind_id=grm_mt.s)
 
     # filter rare variants only (MAF < 5%)
-    mt = hl.variant_qc(mt)
     mt = mt.filter_rows(
         (mt.variant_qc.AF[1] < 0.05) & (mt.variant_qc.AF[1] > 0)
         | (mt.variant_qc.AF[1] > 0.95) & (mt.variant_qc.AF[1] < 1)
@@ -113,9 +127,36 @@ def filter_variants(
 
 # endregion SUBSET_VARIANTS
 
+# region CREATE_SPARSE_GRM
+
+def build_sparse_grm_command(
+    plink_path: str  # ./input/nfam_100_nindep_0_step1_includeMoreRareVariants_poly
+    output_prefix: str,  # should end in sparseGRM
+    n_threads=4: int,
+    n_random=2000: int,
+    relatedness_cutoff=0.125: float,
+    
+):
+    """Build SAIGE command for SPARSE GRM
+    
+    Input:
+    plink_path: path to (GRM) plink file 
+    various flags
+    
+    Output:
+    Rscript command (str) ready to run
+    """
+    saige_command_step0 = 'Rscript createSparseGRM.R'
+    saige_command_step0 += f' --plinkFile={plink_path}'
+    saige_command_step0 += f' --nThreads={n_threads}'
+    saige_command_step0 += f' --outputPrefix={output_prefix}'
+    saige_command_step0 += f' --numRandomMarkerforSparseKin={n_random}'
+    saige_command_step0 += f' --relatednessCutoff={relatedness_cutoff}'
+    return saige_command_step0
+
+# endregion CREATE_SPARSE_GRM
 
 # region GET_GENE_SPECIFIC_VARIANTS
-
 
 def get_promoter_variants(
     mt_path: str,  # ouput path from function above
@@ -365,13 +406,7 @@ def prepare_input_files(
 
 # region GET_SAIGE_PVALUES
 
-# create sparse GRM
-saige_command_step0 = 'Rscript createSparseGRM.R       \
-     --plinkFile=./input/nfam_100_nindep_0_step1_includeMoreRareVariants_poly \
-     --nThreads=4  \
-     --outputPrefix=./output/sparseGRM       \
-     --numRandomMarkerforSparseKin=2000      \
-     --relatednessCutoff=0.125'
+
 
 # fitting the null (linear mixed) model
 saige_command_step1 = 'Rscript step1_fitNULLGLMM.R     \
@@ -848,6 +883,9 @@ def saige_pipeline(
             if dependency := dependencies_dict.get(gene):
                 run_job.depends_on(dependency)
             run_job.image(CELLREGMAP_IMAGE)
+            j = batch.new_job("my R job")
+            j.image("some/R:image")
+            j.command("Rscript myscript.R --param 1 --param2")
             # the python_job.call only returns one object
             # the object is a file containing y_df, geno_df, kinship_df
             # all pickled into a file
