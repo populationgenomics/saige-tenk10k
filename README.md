@@ -7,11 +7,17 @@ This is a hail batch pipeline to run the new [QTL version of SAIGE](https://gith
 
 ## Plan A
 
+### preprocessing
 * Hail query to filter WGS object to QC-passing, non ref-ref, rare (freq<5%) variants
+* SAIGE R script to create sparse GRM
+  * just once for all individuals, figure out which variants to use (just common?)
+
+### gene-specific (and cell-type specific?)
 * Hail query to filter object to relevant variants (gene-specific, maybe cell-type-specific also)
 * Python (R?) to manipulate data to generate appropriate input files
 * SAIGE running
-  * create SPARSE GRM?
   * null model (one per gene)
   * association (multiple?)
+
+### cell-type-specific (all genes), aggregate
 * back to python to aggregate results
