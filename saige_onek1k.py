@@ -413,35 +413,46 @@ def build_fit_null_command(
     sparse_grm_file: str,  # data/input/nfam_5_nindep_0.mtx
     sparse_grm_sampleid_file: str,  # data/input/nfam_5_nindep_0.mtx.sampleID
     pheno_file: str,
-    pheno_col: str = 'y',
+    cov_col_list: str,
+    sample_id_pheno: str,  # IND_ID
     plink_path: str,  # ./input/nfam_100_nindep_0_step1_includeMoreRareVariants_poly
     output_prefix: str,  # should end in sparseGRM
-    n_threads: int = 4,
-    n_random: int = 2000,
-    relatedness_cutoff: float = 0.125,
+    pheno_col: str = 'y',
+    trait_type: str = 'count',
+    skip_vre: str = 'FALSE',  # this is a boolean but that's encoded differently between R and python
+    is_cov_offset: str = 'FALSE',
+    is_cov_transform: str = 'FALSE',
+    skip_model_fitting: str = 'FALSE',
+    is_overwrite_vre_file: str = 'TRUE',
 
 ):
     """Build SAIGE command for SPARSE GRM
 
     Input:
-    plink_path: path to (GRM) plink file
-    various flags
+    specify every flag here
 
     Output:
-    Rscript command (str) ready to run
+    Rscript command (str) ready to run (bash)
     """
     saige_command_step1 = 'Rscript step1_fitNULLGLMM_qtl.R'
     saige_command_step1 += f' --sparseGRMFile={sparse_grm_file}'
     saige_command_step1 += f' --sparseGRMSampleIDFile={sparse_grm_sampleid_file}'
     saige_command_step1 += f' --phenoFile={pheno_file}'
     saige_command_step1 += f' --phenoCol={pheno_col}'
+    saige_command_step1 += f' --covarColList={cov_col_list}'
+    saige_command_step1 += f' --sampleIDColinphenoFile={sample_id_pheno}'
+    saige_command_step1 += f' --traitType={trait_type}'
     saige_command_step1 += f' --outputPrefix={output_prefix}'
+    saige_command_step1 += f' --skipVarianceRatioEstimation={skip_vre}'
+    saige_command_step1 += f' --isCovariateOffset={is_cov_offset}'
+    saige_command_step1 += f' --isCovariateTransform={is_cov_transform}'
+    saige_command_step1 += f' --skipModelFitting={skip_model_fitting}'
     saige_command_step1 += f' --plinkFile={plink_path}'
-    saige_command_step1 += f' --relatednessCutoff={relatedness_cutoff}'
+    saige_command_step1 += f' --IsOverwriteVarianceRatioFile={is_overwrite_vre_file}'
     return saige_command_step1
 
 def build_run_set_test_command(
-    plink_path: str,  # ./input/nfam_100_nindep_0_step1_includeMoreRareVariants_poly
+    plink_prefix: str,  # ./input/nfam_100_nindep_0_step1_includeMoreRareVariants_poly
     output_prefix: str,  # should end in sparseGRM
     n_threads: int = 4,
     n_random: int = 2000,
@@ -457,8 +468,10 @@ def build_run_set_test_command(
     Output:
     Rscript command (str) ready to run
     """
-    saige_command_step2 = 'Rscript createSparseGRM.R'
-    saige_command_step2 += f' --plinkFile={plink_path}'
+    saige_command_step2 = 'Rscript step2_tests_qtl.R'
+    saige_command_step2 += f' --bedFile={plink_prefix}.bed'
+    saige_command_step2 += f' --bimFile={plink_prefix}.bim'
+    saige_command_step2 += f' --famFile={plink_prefix}.fam'
     saige_command_step2 += f' --nThreads={n_threads}'
     saige_command_step2 += f' --outputPrefix={output_prefix}'
     saige_command_step2 += f' --numRandomMarkerforSparseKin={n_random}'
