@@ -10,7 +10,7 @@ This is a hail batch pipeline to run the new [QTL version of SAIGE](https://gith
 ### preprocessing
 * Hail query to filter WGS object to QC-passing, non ref-ref, rare (freq<5%) variants
 * SAIGE R script to create sparse GRM
-  * just once for all individuals, figure out which variants to use (just common?)
+  * just once for all individuals, figure out which variants to use (just common? Ask Wei)
 
 ### gene-specific (and cell-type specific?)
 * Hail query to filter object to relevant variants (gene-specific, maybe cell-type-specific also)
@@ -21,3 +21,10 @@ This is a hail batch pipeline to run the new [QTL version of SAIGE](https://gith
 
 ### cell-type-specific (all genes), aggregate
 * back to python to aggregate results
+
+## Data
+
+TenK10K is matched single-cell RNA-seq (scRNA-seq) and whole-genome sequencing (WGS) data from up to 10,000 individuals:
+
+* Phase 0: OneK1K data only (1,000 individuals) - already generated
+* Phase 1: OneK1K + BioHEART (2,000 individuals) - WGS done, scRNA-seq in progress
