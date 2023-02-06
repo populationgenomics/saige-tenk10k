@@ -129,6 +129,7 @@ def filter_variants(
 
 # region CREATE_SPARSE_GRM
 
+# NEW
 def build_sparse_grm_command(
     plink_path: str,  # ./input/nfam_100_nindep_0_step1_includeMoreRareVariants_poly
     output_prefix: str,  # should end in sparseGRM
@@ -158,6 +159,7 @@ def build_sparse_grm_command(
 
 # region GET_GENE_SPECIFIC_VARIANTS
 
+# same as https://github.com/populationgenomics/cellregmap-pipeline/blob/main/batch.py
 def get_promoter_variants(
     mt_path: str,  # ouput path from function above
     ht_path: str,
@@ -227,6 +229,7 @@ def get_promoter_variants(
     )
 
     # export this as a Hail table for downstream analysis
+    # consider exporting the whole MT?
     ht_path = output_path(
         f'summary_hts/{gene_name}_rare_promoter_summary.ht', 'analysis'
     )
@@ -245,9 +248,9 @@ def get_promoter_variants(
 # region PREPARE_INPUT_FILES
 
 # this will need to change:
-# pheno and cov may be the same
+# pheno and cov may be included within the same file
 # geno can be plink directly
-# kinship is not necessary, can be computed using step0 of saige (?)
+# kinship is not necessary, can be computed using step0 of saige (create sparse grm)
 # a group file will be needed (for gene-set tests)
 def prepare_input_files(
     gene_name: str,
@@ -404,8 +407,63 @@ def prepare_input_files(
 
 
 
-# region GET_SAIGE_PVALUES
+# region GET_SAIGE_COMMANDS
 
+def build_fit_null_command(
+    sparse_grm_file: str,  # data/input/nfam_5_nindep_0.mtx
+    sparse_grm_sampleid_file: str,  # data/input/nfam_5_nindep_0.mtx.sampleID
+    pheno_file: str,
+    pheno_col: str = 'y',
+    plink_path: str,  # ./input/nfam_100_nindep_0_step1_includeMoreRareVariants_poly
+    output_prefix: str,  # should end in sparseGRM
+    n_threads: int = 4,
+    n_random: int = 2000,
+    relatedness_cutoff: float = 0.125,
+
+):
+    """Build SAIGE command for SPARSE GRM
+
+    Input:
+    plink_path: path to (GRM) plink file
+    various flags
+
+    Output:
+    Rscript command (str) ready to run
+    """
+    saige_command_step1 = 'Rscript step1_fitNULLGLMM_qtl.R'
+    saige_command_step1 += f' --sparseGRMFile={sparse_grm_file}'
+    saige_command_step1 += f' --sparseGRMSampleIDFile={sparse_grm_sampleid_file}'
+    saige_command_step1 += f' --phenoFile={pheno_file}'
+    saige_command_step1 += f' --phenoCol={pheno_col}'
+    saige_command_step1 += f' --outputPrefix={output_prefix}'
+    saige_command_step1 += f' --plinkFile={plink_path}'
+    saige_command_step1 += f' --relatednessCutoff={relatedness_cutoff}'
+    return saige_command_step1
+
+def build_run_set_test_command(
+    plink_path: str,  # ./input/nfam_100_nindep_0_step1_includeMoreRareVariants_poly
+    output_prefix: str,  # should end in sparseGRM
+    n_threads: int = 4,
+    n_random: int = 2000,
+    relatedness_cutoff: float = 0.125,
+
+):
+    """Build SAIGE command for SPARSE GRM
+
+    Input:
+    plink_path: path to (GRM) plink file
+    various flags
+
+    Output:
+    Rscript command (str) ready to run
+    """
+    saige_command_step2 = 'Rscript createSparseGRM.R'
+    saige_command_step2 += f' --plinkFile={plink_path}'
+    saige_command_step2 += f' --nThreads={n_threads}'
+    saige_command_step2 += f' --outputPrefix={output_prefix}'
+    saige_command_step2 += f' --numRandomMarkerforSparseKin={n_random}'
+    saige_command_step2 += f' --relatednessCutoff={relatedness_cutoff}'
+    return saige_command_step2
 
 
 # fitting the null (linear mixed) model
@@ -446,16 +504,9 @@ saige_command_step2 = 'Rscript step2_SPAtests.R        \
      --is_fastTest=TRUE'
 
 
-def get_saige_pvs(pheno, covs, genotypes, contexts=None):
-    """
-    change
-    """
 
 
-    return np.array([pv_norm, pv0, pv1, pv2, pv3, pv4, pv5, pv6])
-
-
-# endregion GET_SAIGE_PVALUES
+# endregion GET_SAIGE_COMMANDS
 
 # region RUN_ASSOCIATION
 
