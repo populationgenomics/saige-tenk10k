@@ -61,13 +61,13 @@ DEFAULT_ANNOTATION_HT = dataset_path(
 # CELLREGMAP_IMAGE = get_config()['workflow'][
 #     'driver_image'
 # ]  # australia-southeast1-docker.pkg.dev/cpg-common/images/cellregmap:dev
-SAIGE_DOCKER_IMAGE = 'wzhou88/saige:1.1.6.3'  # from https://saigegit.github.io/SAIGE-doc/docs/Installation_docker.html
+SAIGE_DOCKER_IMAGE = 'australia-southeast1-docker.pkg.dev/cpg-common/images/saige-qtl'  # do I need the get_config part?
 
-MULTIPY_IMAGE = 'australia-southeast1-docker.pkg.dev/cpg-common/images/multipy:0.16'
+MULTIPY_IMAGE = 'australia-southeast1-docker.pkg.dev/cpg-common/images/multipy:0.16'  # not sure I will need this
 
 # region SUBSET_VARIANTS
 
-
+# same as https://github.com/populationgenomics/cellregmap-pipeline/blob/main/batch.py
 def filter_variants(
     mt_path: str,  # 'mt/v7.mt'
     samples: list[str],
@@ -83,7 +83,7 @@ def filter_variants(
     Output:
     subset hail matrix table, containing only variants that:
     1) are not ref-only, 2) biallelic, 3) meet QC filters, 4) are rare (MAF<5%)
-    
+
     also, plink file containing variants that satisfy 1),2),3)
     but that are common (MAF>1%) to build sparse GRM
     """
@@ -104,14 +104,14 @@ def filter_variants(
         & (mt.n_unsplit_alleles == 2)  # biallelic
         & (hl.is_snp(mt.alleles[0], mt.alleles[1]))  # SNPs
     )
-    
+
     mt = hl.variant_qc(mt)
     # filter common (enough) variants to build sparse GRM
     grm_mat = mt.filter_rows(
         (mt.variant_qc.AF[1] > 0.01) & (mt.variant_qc.AF[1] < 1)
         | (mt.variant_qc.AF[1] < 0.99) & (mt.variant_qc.AF[1] > 0)
     )
-    
+
     # export to plink
     from hail.methods import export_plink
     export_plink(grm_mt, grm_plink_file, ind_id=grm_mt.s)
@@ -130,19 +130,19 @@ def filter_variants(
 # region CREATE_SPARSE_GRM
 
 def build_sparse_grm_command(
-    plink_path: str  # ./input/nfam_100_nindep_0_step1_includeMoreRareVariants_poly
+    plink_path: str,  # ./input/nfam_100_nindep_0_step1_includeMoreRareVariants_poly
     output_prefix: str,  # should end in sparseGRM
-    n_threads=4: int,
-    n_random=2000: int,
-    relatedness_cutoff=0.125: float,
-    
+    n_threads: int = 4,
+    n_random: int = 2000,
+    relatedness_cutoff: float = 0.125,
+
 ):
     """Build SAIGE command for SPARSE GRM
-    
+
     Input:
-    plink_path: path to (GRM) plink file 
+    plink_path: path to (GRM) plink file
     various flags
-    
+
     Output:
     Rscript command (str) ready to run
     """
