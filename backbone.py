@@ -6,7 +6,9 @@ from cpg_utils.hail_batch import (
 
 import hailtop.batch as hb
 
-HAIL_IMAGE = 'blablabla'
+HAIL_IMAGE = 'blablabla'  # needs hail query
+SAIGE_QTL_IMAGE = 'australia-southeast1-docker.pkg.dev/cpg-common/images/saige-qtl'
+PY_IMAGE = 'blabla'  # does not, but may need scanpy (or Seurat??)
 
 sb = hb.ServiceBackend(
         billing_project=get_config()['hail']['billing_project'],
@@ -15,20 +17,27 @@ sb = hb.ServiceBackend(
 
 batch = hb.Batch('SAIGE QTL pipeline', backend=sb)
 
-# FIRST THREE STEPS DONE ONLY ONCE
+# FIRST STEPS DONE ONLY ONCE
 
 # input: all variants called by WGS (MT)
-# output: filtered MT i) QC, ii) no ref-ref
+# output: filtered MT i) QC, ii) no ref-ref, iii) scRNA-seq individuals only
 filter_job = batch.new_python_job(name='MT filter job')
 filter_job.image(HAIL_IMAGE)  # what image??
 filter_job.call(params)
 
 # input: filtered MT
-# output: filtered MT common variants only
+# output: GRM MT i.e., filtered MT common variants only?
 grm_variants_job = batch.new_python_job(name='GRM variants filter job')
 grm_variants_job.depends_on(filter_job)
 grm_variants_job.image(HAIL_IMAGE)
 grm_variants_job.call(params)
+
+# inputs: GRM MT
+# output: Sparse GRM object
+sparse_grm_job = batch.new_job(name='Create sparse GRM')
+sparse_grm_job.depends_on(grm_variants_job)
+sparse_grm_job.image(SAIGE_QTL_IMAGE)
+sparse_grm_job.call(params)
 
 # input: filtered MT
 # output: filtered MT rare variants only
@@ -36,3 +45,44 @@ rv_filter_job = batch.new_python_job(name='rare variants filter job')
 rv_filter_job.depends_on(filter_job)
 rv_filter_job.image(HAIL_IMAGE)
 rv_filter_job.call(params)
+
+
+# identify relevant genes,
+# i.e., expressed in (=present in pheno file for)
+# at least one cell type
+# or provided as inputs
+relevant_genes = ['gene1', 'gene2']
+
+# ONCE PER GENE, ACROSS ALL CELL TYPES
+
+# input: RV filtered MT, gene, optional: regulatory category
+# output: MT i) filtered, ii) rare + iii) proximal, iv) regulatory (possibly only some category)
+for gene in relevant_genes:
+    gene_job = batch.new_python_job(f'Extract proximal regulatory variants for: {gene}')
+    gene_job.depends_on(filter_job)
+    gene_job.image(HAIL_IMAGE)
+    gene_job.call(params)
+
+
+# ONCE FOR EVERY GENE AND CELL TYPE COMBINATION
+celltypes = ['celltype1', 'celltype2']
+
+# jobs below may be combined but add them separately at this stage for clarity
+for celltype in celltypes:
+    # obtain cell type expressed genes
+    for gene in celltype_genes:
+
+        # input: gene ID, phenotype file, covariate file
+        # output: pheno_cov file
+        pheno_cov_job = batch.new_python_job(f'Make pheno cov file for: {gene}, {celltype}')
+        # does not depend on any other jobs
+        pheno_cov_job.image(PY_IMAGE)
+        pheno_cov_job.call(params)
+
+        # input: sparse GRM,
+        fit_null_job = batch.new_python_job()
+        # syntax below probably does not work
+        dependencies = [sparse_grm_job, gene_job, pheno_cov_job]
+        fit_null_job.depends_on(dependencies)
+        fit_null_job.image(SAIGE_QTL_IMAGE)
+        fit_null_job.call(params)
