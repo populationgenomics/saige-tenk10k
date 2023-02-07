@@ -246,49 +246,28 @@ def get_promoter_variants(
 
 # endregion GET_GENE_SPECIFIC_VARIANTS
 
-# region PREPARE_INPUT_FILES
+# region PREPARE_PHENO_COV_FILE
 
-# this will need to change:
-# pheno and cov may be included within the same file
-# geno can be plink directly
-# kinship is not necessary, can be computed using step0 of saige (create sparse grm)
-# a group file will be needed (for gene-set tests)
-def prepare_input_files(
+def prepare_pheno_cov_file(
     gene_name: str,
     cell_type: str,
-    genotype_file_bed: str,
-    genotype_file_bim: str,
-    genotype_file_fam: str,
     phenotype_file: str,
-    kinship_file: str,
+    cov_file: str,
     sample_mapping_file: str,
 ):
-    """Prepare association test input files
+    """Prepare pheno_cov file for SAIGE-QTL
 
     Input:
-    genotype: plink files
-    phenotype: gene expression
+    phenotype: gene expression (either tsv or scanpy obj)
+    covariates
 
     Output:
-    genotype matrix
-    phenotype vector
+    pheno_cov file path? maybe no need to return anything, just write to file
     """
 
-    # check that variants exist for this gene, before importing
-    bim_file = to_path(genotype_file_bim)
-    if (not bim_file.exists()) or bim_file.stat().st_size == 0:
-        logging.info(f"{bim_file} does not exist")
-        return None
-
-    from pandas_plink import read_plink1_bin
-
-    expression_filename = to_path(
+    pheno_cov_filename = to_path(
         output_path(f"expression_files/{gene_name}_{cell_type}.csv")
     )
-    genotype_filename = to_path(
-        output_path(f"genotype_files/{gene_name}_rare_regulatory.csv")
-    )
-    kinship_filename = to_path(output_path(f"{gene_name}_kinship_common_samples.csv"))
 
     # read in phenotype file (tsv)
     phenotype = pd.read_csv(phenotype_file, sep="\t", index_col=0)
@@ -299,26 +278,7 @@ def prepare_input_files(
         coords={"sample": phenotype.index.values, "gene": phenotype.columns.values},
     )
 
-    # read in genotype file (plink format)
-    to_path(genotype_file_bed).copy("temp.bed")  # bed
-    bim_file.copy("temp.bim")  # bim
-    to_path(genotype_file_fam).copy("temp.fam")  # fam
 
-    geno = read_plink1_bin("temp.bed")
-
-    if kinship_file is not None:
-        # read in GRM (genotype relationship matrix; kinship matrix)
-        kinship = pd.read_csv(kinship_file, index_col=0)
-        kinship.index = kinship.index.astype("str")
-        assert all(
-            kinship.columns == kinship.index
-        )  # symmetric matrix, donors x donors
-        kinship = xr.DataArray(
-            kinship.values,
-            dims=["sample_0", "sample_1"],
-            coords={"sample_0": kinship.columns, "sample_1": kinship.index},
-        )
-        kinship = kinship.sortby("sample_0").sortby("sample_1")
 
     # this file will map different IDs (and OneK1K ID to CPG ID)
     sample_mapping = pd.read_csv(dataset_path(sample_mapping_file), sep="\t")
@@ -346,12 +306,7 @@ def prepare_input_files(
     donors_g = sample_mapping_both["InternalID"].unique()
     assert len(donors_e) == len(donors_g)
 
-    if kinship_file is not None:
-        # samples in kinship
-        donors_e_short = [re.sub(".*_", "", donor) for donor in donors_e]
-        donors_k = sorted(
-            set(list(kinship.sample_0.values)).intersection(donors_e_short)
-        )
+
 
     logging.info(f"Number of unique common donors: {len(donors_g)}")
 
@@ -368,43 +323,17 @@ def prepare_input_files(
         data=y.values.reshape(y.shape[0], 1), index=y.sample.values, columns=[gene_name]
     )
 
-    # genotype
-    geno = geno.sel(sample=donors_g)
-    # make data frame to save as csv
-    data = geno.values
-    geno_df = pd.DataFrame(data, columns=geno.snp.values, index=geno.sample.values)
-    geno_df = geno_df.dropna(axis=1)
-    # delete large files to free up memory
-    del geno
-
-    if kinship_file is not None:
-        # kinship
-        kinship = kinship.sel(sample_0=donors_k, sample_1=donors_k)
-        assert all(kinship.sample_0 == donors_k)
-        assert all(kinship.sample_1 == donors_k)
-        # make data frame to save as csv
-        kinship_df = pd.DataFrame(
-            kinship.values, columns=kinship.sample_0, index=kinship.sample_1
-        )
-        del kinship  # delete kinship to free up memory
+    #
 
     # save files
     with expression_filename.open("w") as ef:
         y_df.to_csv(ef, index=False)
 
-    with genotype_filename.open("w") as gf:
-        geno_df.to_csv(gf, index=False)
 
-    if kinship_file is not None:
-        with kinship_filename.open("w") as kf:
-            kinship_df.to_csv(kf, index=False)
-    else:
-        kinship_df = None
-
-    return y_df, geno_df, kinship_df
+    return pheno_cov_filename
 
 
-# endregion PREPARE_INPUT_FILES
+# endregion PREPARE_PHENO_COV_FILE
 
 
 # region GET_SAIGE_COMMANDS
