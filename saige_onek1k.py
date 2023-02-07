@@ -6,11 +6,12 @@ __author__ = "annacuomo"
 """
 Hail Batch workflow for the rare-variant association analysis, including:
 
+MAKE BELOW LESS VAGUE
 - get relevant variants around a gene and export genotypes as plink files
 - generate input files for association tests
 - run association tests
 """
-# now copied from https://github.com/populationgenomics/cellregmap-pipeline/edit/main/batch.py
+# using https://github.com/populationgenomics/cellregmap-pipeline/edit/main/batch.py as template
 
 # import python modules
 import os
@@ -55,9 +56,9 @@ logging.basicConfig(
 DEFAULT_JOINT_CALL_MT = dataset_path("mt/v7.mt")
 DEFAULT_ANNOTATION_HT = dataset_path(
     "tob_wgs_vep/104/vep104.3_GRCh38.ht"
-)  # atm VEP only
+)  # atm VEP only - add open chromatin?
 
-
+# maybe more generic "hail" image instead?
 CELLREGMAP_IMAGE = get_config()["workflow"][
     "driver_image"
 ]  # australia-southeast1-docker.pkg.dev/cpg-common/images/cellregmap:dev
