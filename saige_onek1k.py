@@ -426,7 +426,8 @@ def build_fit_null_command(
     skip_model_fitting: str = "FALSE",
     is_overwrite_vre_file: str = "TRUE",
 ):
-    """Build SAIGE command for SPARSE GRM
+    """Build SAIGE command for fitting null model
+    This will fit a Poisson / NB mixed model under the null hypothesis
 
     Input:
     - Sparse GRM file (generated previously using build_sparse_grm_command)
@@ -437,6 +438,13 @@ def build_fit_null_command(
     - Plink path: path to plink file
     - output prefix: where to save the fitted model (.rda)
     - pheno col: name of column specifying pheno (default: "y")
+    - trait type: count = Poisson, count_nb = Negative Binomial
+    - option to skip Variance Ratio estimation (discouraged)
+    - option to add an offset to the fixed covariates (or if there are no covariates add an intercept?)
+    - option to transform (scale?) covariates?
+    - option to skip model fitting (discouraged)
+    - genotype file (plink format)
+    - overwrite variance ratio file (estimated here)
 
     Output:
     Rscript command (str) ready to run (bash)
@@ -479,11 +487,12 @@ def build_run_set_test_command(
     is_emp_spa: str = "FALSE",
     max_maf_group: float = 0.5,
 ):
-    """Build SAIGE command for SPARSE GRM
+    """Build SAIGE command for running set test
+    This will run a set test using Burden, SKAT and SKAT-O
 
     Input:
-    plink_path: path to (GRM) plink file
-    various flags
+    plink_prefix: path to plink files (bim, bed, fam)
+    saige ouput path: path to output saige file
 
     Output:
     Rscript command (str) ready to run
