@@ -32,7 +32,7 @@ grm_variants_job.depends_on(filter_job)
 grm_variants_job.image(HAIL_IMAGE)
 grm_variants_job.call(params)
 
-# inputs: GRM MT
+# input: GRM MT
 # output: Sparse GRM object
 sparse_grm_job = batch.new_job(name='Create sparse GRM')
 sparse_grm_job.depends_on(grm_variants_job)
@@ -45,6 +45,15 @@ rv_filter_job = batch.new_python_job(name='rare variants filter job')
 rv_filter_job.depends_on(filter_job)
 rv_filter_job.image(HAIL_IMAGE)
 rv_filter_job.call(params)
+
+# input: GRM MT or filtered MT or rare variants(check with Wei)
+# output: plink object for a subset of variants for variance ratio estimation
+vr_geno_job = batch.new_python_job(name='Variance ratio subset job')
+vr_geno_job.depends_on(filter_job)
+# vr_geno_job.depends_on(grm_variants_job)
+# vr_geno_job.depends_on(rv_filter_job)
+vr_geno_job.image(HAIL_IMAGE)
+vr_geno_job.call(params)
 
 
 # identify relevant genes,
@@ -82,7 +91,7 @@ for celltype in celltypes:
         # input: sparse GRM,
         fit_null_job = batch.new_python_job()
         # syntax below probably does not work
-        dependencies = [sparse_grm_job, gene_job, pheno_cov_job]
+        dependencies = [sparse_grm_job, vr_geno_job, pheno_cov_job]
         fit_null_job.depends_on(dependencies)
         fit_null_job.image(SAIGE_QTL_IMAGE)
         fit_null_job.call(params)
