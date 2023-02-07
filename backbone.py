@@ -88,10 +88,32 @@ for celltype in celltypes:
         pheno_cov_job.image(PY_IMAGE)
         pheno_cov_job.call(params)
 
-        # input: sparse GRM,
+        # input: sparse GRM, pheno_cov file, subset plink files
+        # output: null model object, variance ratio (VR) estimate file
         fit_null_job = batch.new_python_job()
         # syntax below probably does not work
         dependencies = [sparse_grm_job, vr_geno_job, pheno_cov_job]
         fit_null_job.depends_on(dependencies)
         fit_null_job.image(SAIGE_QTL_IMAGE)
-        fit_null_job.call(params)
+        # python job creating Rscript command
+        fit_null_job.call(
+            get_step1_command,
+            params)
+        # regular job submitting the Rscript command to bash
+        fit_null_job.call(
+            run_saige_step1,
+            params)
+
+        # input: null model object, VR file, gene specific genotypes
+        run_association_job = batch.new_python_job()
+        dependencies = [fit_null_job, gene_job]
+        run_association_job.depends_on(dependencies)
+        run_association_job.image(SAIGE_QTL_IMAGE)
+        # python job creating Rscript command
+        run_association_job.call(
+            get_step2_command,
+            params)
+        # regular job submitting the Rscript command to bash
+        run_association_job.call(
+            run_saige_step2,
+            params)
