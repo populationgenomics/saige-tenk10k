@@ -6,14 +6,14 @@ from cpg_utils.hail_batch import (
 import hailtop.batch as hb
 
 # should this be changed to have a _ instead of - ??
-from saige_tenk10k import (
-    hail_functions,
-)  # attempt to define functions elsewhere to keep this cleaner
-from saige_tenk10k import saige_commands
+from saige-tenk10k import hail_funs  # attempt to define functions elsewhere to keep this cleaner
+from saige-tenk10k import saige_commands
 
 HAIL_IMAGE = "blablabla"  # needs hail query
 SAIGE_QTL_IMAGE = "australia-southeast1-docker.pkg.dev/cpg-common/images/saige-qtl"
-PY_IMAGE = "blabla"  # does not, but may need scanpy (or Seurat??)
+PY_IMAGE = "blabla"  # does not need hail, but may need scanpy (or R's Seurat??)
+
+
 
 sb = hb.ServiceBackend(
     billing_project=get_config()["hail"]["billing_project"],
@@ -25,43 +25,22 @@ batch = hb.Batch("SAIGE QTL pipeline", backend=sb)
 # FIRST STEPS DONE ONLY ONCE
 
 # input: all variants called by WGS (MT)
-# output: filtered MT i) QC, ii) no ref-ref, iii) scRNA-seq individuals only
+# output 1: MT with variants that are i) QC-ed, ii) no ref-ref, iii) rare (freq<5%)
+#               +   samples that are scRNA-seq individuals only
+# ouput 2: plink files for same samples and variants (except not rare) to build GRM
 filter_job = batch.new_python_job(name="MT filter job")
 filter_job.image(HAIL_IMAGE)  # what image??
-filter_job.call(hail_functions.filter_variants, params)
-
-# input: filtered MT
-# output: GRM MT i.e., filtered MT common variants only?
-grm_variants_job = batch.new_python_job(name="GRM variants filter job")
-grm_variants_job.depends_on(filter_job)
-grm_variants_job.image(HAIL_IMAGE)
-grm_variants_job.call(params)
+filter_job.call(hail_funs.filter_variants, params)
 
 # input: GRM MT
 # output: Sparse GRM object
 sparse_grm_job = batch.new_job(name="Create sparse GRM")
-sparse_grm_job.depends_on(grm_variants_job)
+sparse_grm_job.depends_on(filter_job)
 sparse_grm_job.image(SAIGE_QTL_IMAGE)
 # python job creating Rscript command
 cmd = sparse_grm_job.call(saige_commands.build_sparse_grm_command, params)
 # regular job submitting the Rscript command to bash
 sparse_grm_job.command(cmd)
-
-# input: filtered MT
-# output: filtered MT rare variants only
-rv_filter_job = batch.new_python_job(name="rare variants filter job")
-rv_filter_job.depends_on(filter_job)
-rv_filter_job.image(HAIL_IMAGE)
-rv_filter_job.call(params)
-
-# input: GRM MT or filtered MT or rare variants(check with Wei)
-# output: plink object for a subset of variants for variance ratio estimation
-vr_geno_job = batch.new_python_job(name="Variance ratio subset job")
-vr_geno_job.depends_on(filter_job)
-# vr_geno_job.depends_on(grm_variants_job)
-# vr_geno_job.depends_on(rv_filter_job)
-vr_geno_job.image(HAIL_IMAGE)
-vr_geno_job.call(params)
 
 
 # identify relevant genes,
@@ -78,7 +57,7 @@ for gene in relevant_genes:
     gene_job = batch.new_python_job(f"Extract proximal regulatory variants for: {gene}")
     gene_job.depends_on(filter_job)
     gene_job.image(HAIL_IMAGE)
-    gene_job.call(params)
+    gene_job.call(hail_funs.get_promoter_variants, params)
 
 
 # ONCE FOR EVERY GENE AND CELL TYPE COMBINATION
@@ -102,7 +81,7 @@ for celltype in celltypes:
         # output: null model object, variance ratio (VR) estimate file
         fit_null_job = batch.new_python_job(f"Fit null model for: {gene}, {celltype}")
         # syntax below probably does not work
-        dependencies = [sparse_grm_job, vr_geno_job, pheno_cov_job]
+        dependencies = [sparse_grm_job, filter_job, pheno_cov_job]
         fit_null_job.depends_on(dependencies)
         fit_null_job.image(SAIGE_QTL_IMAGE)
         # python job creating Rscript command

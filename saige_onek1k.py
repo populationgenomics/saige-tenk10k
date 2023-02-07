@@ -62,7 +62,7 @@ DEFAULT_ANNOTATION_HT = dataset_path(
 CELLREGMAP_IMAGE = get_config()["workflow"][
     "driver_image"
 ]  # australia-southeast1-docker.pkg.dev/cpg-common/images/cellregmap:dev
-SAIGE_QTL_IMAGE = "australia-southeast1-docker.pkg.dev/cpg-common/images/saige-qtl"  # do I need the get_config part?
+SAIGE_QTL_IMAGE = "australia-southeast1-docker.pkg.dev/cpg-common/images/saige-qtl"  # correct?
 
 MULTIPY_IMAGE = "australia-southeast1-docker.pkg.dev/cpg-common/images/multipy:0.16"  # not sure I will need this
 
