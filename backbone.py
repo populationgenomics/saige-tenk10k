@@ -62,10 +62,10 @@ vr_geno_job.call(params)
 # or provided as inputs
 relevant_genes = ['gene1', 'gene2']
 
-# ONCE PER GENE, ACROSS ALL CELL TYPES
-
 # input: RV filtered MT, gene, optional: regulatory category
-# output: MT i) filtered, ii) rare + iii) proximal, iv) regulatory (possibly only some category)
+# output 1: MT i) filtered, ii) rare + iii) proximal, iv) regulatory (possibly only some category)
+# annotated with open chromatin info
+# output 2: group file(s)
 for gene in relevant_genes:
     gene_job = batch.new_python_job(f'Extract proximal regulatory variants for: {gene}')
     gene_job.depends_on(filter_job)
@@ -104,7 +104,8 @@ for celltype in celltypes:
             run_saige_step1,
             params)
 
-        # input: null model object, VR file, gene specific genotypes
+        # input: null model object, VR file, gene specific genotypes (w open chromatin flags)
+        # ouput: summary stats
         run_association_job = batch.new_python_job()
         dependencies = [fit_null_job, gene_job]
         run_association_job.depends_on(dependencies)
