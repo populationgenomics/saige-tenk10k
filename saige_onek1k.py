@@ -58,9 +58,9 @@ DEFAULT_ANNOTATION_HT = dataset_path(
 )  # atm VEP only
 
 
-# CELLREGMAP_IMAGE = get_config()["workflow"][
-#     "driver_image"
-# ]  # australia-southeast1-docker.pkg.dev/cpg-common/images/cellregmap:dev
+CELLREGMAP_IMAGE = get_config()["workflow"][
+    "driver_image"
+]  # australia-southeast1-docker.pkg.dev/cpg-common/images/cellregmap:dev
 SAIGE_QTL_IMAGE = "australia-southeast1-docker.pkg.dev/cpg-common/images/saige-qtl"  # do I need the get_config part?
 
 MULTIPY_IMAGE = "australia-southeast1-docker.pkg.dev/cpg-common/images/multipy:0.16"  # not sure I will need this
@@ -417,7 +417,7 @@ def build_fit_null_command(
     cov_col_list: str,
     sample_id_pheno: str,  # IND_ID
     plink_path: str,  # ./input/nfam_100_nindep_0_step1_includeMoreRareVariants_poly
-    output_prefix: str,  # should end in sparseGRM
+    output_prefix: str,
     pheno_col: str = "y",
     trait_type: str = "count",
     skip_vre: str = "FALSE",  # this is a boolean but that's encoded differently between R and python
@@ -429,7 +429,14 @@ def build_fit_null_command(
     """Build SAIGE command for SPARSE GRM
 
     Input:
-    specify every flag here
+    - Sparse GRM file (generated previously using build_sparse_grm_command)
+    - Sparse GRM sample ID file (to match sample ID's? check)
+    - Phenotype / covariate file - rows: samples, cols: pheno (y), cov1, cov2 etc
+    - List of columns from previous file that should be used as covariates
+    - Column name of sample column (e.g., IND_ID, or CPG_ID etc)
+    - Plink path: path to plink file
+    - output prefix: where to save the fitted model (.rda)
+    - pheno col: name of column specifying pheno (default: "y")
 
     Output:
     Rscript command (str) ready to run (bash)
