@@ -8,7 +8,7 @@ Hail Batch workflow for the rare-variant association analysis, including:
 
 MAKE BELOW LESS VAGUE
 - get relevant variants around a gene and export genotypes as plink files
-- generate input files for association tests
+- generate other input files for association tests (phenotype, covariares, groups)
 - run association tests
 """
 # using https://github.com/populationgenomics/cellregmap-pipeline/edit/main/batch.py as template
@@ -115,6 +115,7 @@ def filter_variants(
 
     # export to plink common variants only for sparse GRM
     from hail.methods import export_plink
+
     export_plink(grm_mt, grm_plink_file, ind_id=grm_mt.s)
 
     # filter rare variants only (MAF < 5%)
@@ -255,6 +256,7 @@ def get_promoter_variants(
 
 # region PREPARE_PHENO_COV_FILE
 
+
 def prepare_pheno_cov_file(
     gene_name: str,
     cell_type: str,
@@ -314,8 +316,6 @@ def prepare_pheno_cov_file(
     donors_g = sample_mapping_both["InternalID"].unique()
     assert len(donors_e) == len(donors_g)
 
-
-
     logging.info(f"Number of unique common donors: {len(donors_g)}")
 
     # subset files
@@ -336,7 +336,6 @@ def prepare_pheno_cov_file(
     # save files
     with expression_filename.open("w") as ef:
         y_df.to_csv(ef, index=False)
-
 
     return pheno_cov_filename
 
@@ -403,6 +402,7 @@ def build_fit_null_command(
     saige_command_step1 += f" --plinkFile={plink_path}"
     saige_command_step1 += f" --IsOverwriteVarianceRatioFile={is_overwrite_vre_file}"
     return saige_command_step1
+
 
 # NEW
 def build_run_set_test_command(
@@ -548,7 +548,7 @@ def summarise_association_results(
     logging.info("before glob (pv files) - summarise job")
     storage_client = storage.Client()
     bucket = get_config()["storage"]["default"]["default"].removeprefix("gs://")
-    prefix = f"{get_config()["workflow"]["output_prefix"]}/{celltype}/"
+    prefix = f"{get_config()['workflow']['output_prefix']}/{celltype}/"
     existing_pv_files = set(
         f"gs://{bucket}/{filepath.name}"
         for filepath in storage_client.list_blobs(bucket, prefix=prefix, delimiter="/")
