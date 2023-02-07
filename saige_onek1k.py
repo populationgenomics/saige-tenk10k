@@ -414,7 +414,7 @@ def build_fit_null_command(
     sparse_grm_file: str,  # data/input/nfam_5_nindep_0.mtx
     sparse_grm_sampleid_file: str,  # data/input/nfam_5_nindep_0.mtx.sampleID
     pheno_file: str,
-    cov_col_list: str,
+    cov_col_list: str,  # PC1
     sample_id_pheno: str,  # IND_ID
     plink_path: str,  # ./input/nfam_100_nindep_0_step1_includeMoreRareVariants_poly
     output_prefix: str,
@@ -443,13 +443,14 @@ def build_fit_null_command(
     - option to add an offset to the fixed covariates (or if there are no covariates add an intercept?)
     - option to transform (scale?) covariates?
     - option to skip model fitting (discouraged)
-    - genotype file (plink format)
+    - genotype file to estimate variance ratio (plink format) - which variants?
     - overwrite variance ratio file (estimated here)
 
     Output:
     Rscript command (str) ready to run (bash)
     """
     saige_command_step1 = "Rscript step1_fitNULLGLMM_qtl.R"
+    # figure out whether these are always needed or no
     saige_command_step1 += f" --sparseGRMFile={sparse_grm_file}"
     saige_command_step1 += f" --sparseGRMSampleIDFile={sparse_grm_sampleid_file}"
     saige_command_step1 += f" --phenoFile={pheno_file}"
@@ -493,6 +494,11 @@ def build_run_set_test_command(
     Input:
     plink_prefix: path to plink files (bim, bed, fam)
     saige ouput path: path to output saige file
+    chrom: chromosome to run this on
+    GMMAT model file: null model fit from previous step (.rda)
+    Variance Ratio file: as estimated from previous step (.txt)
+    group annotation: ??
+    group file:
 
     Output:
     Rscript command (str) ready to run
