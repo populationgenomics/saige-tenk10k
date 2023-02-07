@@ -107,14 +107,13 @@ def filter_variants(
 
     mt = hl.variant_qc(mt)
     # filter common (enough) variants to build sparse GRM
-    grm_mat = mt.filter_rows(
+    grm_mt = mt.filter_rows(
         (mt.variant_qc.AF[1] > 0.01) & (mt.variant_qc.AF[1] < 1)
         | (mt.variant_qc.AF[1] < 0.99) & (mt.variant_qc.AF[1] > 0)
     )
 
-    # export to plink
+    # export to plink common variants only for sparse GRM
     from hail.methods import export_plink
-
     export_plink(grm_mt, grm_plink_file, ind_id=grm_mt.s)
 
     # filter rare variants only (MAF < 5%)
@@ -142,7 +141,10 @@ def build_sparse_grm_command(
 
     Input:
     plink_path: path to (GRM) plink file
-    various flags
+    output prefix: where to save sparse GRM
+    n threads: to use for computation, maybe different on GCP?
+    n random: ???
+    relatedness cutoff for pruning?
 
     Output:
     Rscript command (str) ready to run
@@ -162,8 +164,8 @@ def build_sparse_grm_command(
 
 # same as https://github.com/populationgenomics/cellregmap-pipeline/blob/main/batch.py
 def get_promoter_variants(
-    mt_path: str,  # ouput path from function above
-    ht_path: str,
+    mt_path: str,  # output path from function above
+    ht_path: str,  # open chromatin annos in same file??
     gene_details: dict[str, str],  # output of make_gene_loc_dict
     window_size: int,
     plink_file: str,  # "tob_wgs_rv/pseudobulk_rv_association/plink_files/GENE"
@@ -229,6 +231,10 @@ def get_promoter_variants(
         f"Number of rare (freq<5%) QC-passing, biallelic SNPs in promoter regions: {mt.count()[0]}"
     )
 
+    # add aditional filtering for all regions that are open
+    # these flags will need to be different for each cell type
+    # but can be dealth with upon running (setting annotations in a way that only open regions for that chromatin are run)
+
     # export this as a Hail table for downstream analysis
     # consider exporting the whole MT?
     ht_path = output_path(
@@ -253,7 +259,7 @@ def prepare_pheno_cov_file(
     cell_type: str,
     phenotype_file: str,
     cov_file: str,
-    sample_mapping_file: str,
+    sample_mapping_file: str,  # may still be needed to match ids with genotypes
 ):
     """Prepare pheno_cov file for SAIGE-QTL
 
@@ -278,7 +284,8 @@ def prepare_pheno_cov_file(
         coords={"sample": phenotype.index.values, "gene": phenotype.columns.values},
     )
 
-
+    # read in covariate file (tsv)
+    covs = pd.read_csv(cov_file, sep="\t", index_col=0)
 
     # this file will map different IDs (and OneK1K ID to CPG ID)
     sample_mapping = pd.read_csv(dataset_path(sample_mapping_file), sep="\t")
@@ -427,7 +434,7 @@ def build_run_set_test_command(
     GMMAT model file: null model fit from previous step (.rda)
     Variance Ratio file: as estimated from previous step (.txt)
     group annotation: select only specific annotations from group file (e.g., lof)
-    group file: for each gene/set, one row specifying variants, one row specifying each variant's anno
+    group file: for each gene/set, one row specifying variants, one row specifying each variant's anno, one optional row with all weights
     allele order: specifying whether alt-first or ref-first in genotype files
     min MAF: minimum variant minor allele frequency to include
     min MAC: minimum variant minor allele count to include
