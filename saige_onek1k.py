@@ -61,7 +61,7 @@ DEFAULT_ANNOTATION_HT = dataset_path(
 # CELLREGMAP_IMAGE = get_config()["workflow"][
 #     "driver_image"
 # ]  # australia-southeast1-docker.pkg.dev/cpg-common/images/cellregmap:dev
-SAIGE_DOCKER_IMAGE = "australia-southeast1-docker.pkg.dev/cpg-common/images/saige-qtl"  # do I need the get_config part?
+SAIGE_QTL_IMAGE = "australia-southeast1-docker.pkg.dev/cpg-common/images/saige-qtl"  # do I need the get_config part?
 
 MULTIPY_IMAGE = "australia-southeast1-docker.pkg.dev/cpg-common/images/multipy:0.16"  # not sure I will need this
 
@@ -505,44 +505,6 @@ def build_run_set_test_command(
     return saige_command_step2
 
 
-# fitting the null (linear mixed) model
-saige_command_step1 = "Rscript step1_fitNULLGLMM.R     \
-    --sparseGRMFile=output/sparseGRM_relatednessCutoff_0.125_1000_randomMarkersUsed.sparseGRM.mtx   \
-    --sparseGRMSampleIDFile=output/sparseGRM_relatednessCutoff_0.125_1000_randomMarkersUsed.sparseGRM.mtx.sampleIDs.txt     \
-    --plinkFile=./input/nfam_100_nindep_0_step1_includeMoreRareVariants_poly_22chr.forCate_vr \
-    --useSparseGRMtoFitNULL=TRUE    \
-    --phenoFile=./input/pheno_1000samples.txt_withdosages_withBothTraitTypes.txt \
-    --phenoCol=y_binary \
-    --covarColList=x1,x2 \
-    --qCovarColList=x2  \
-    --sampleIDColinphenoFile=IID \
-    --traitType=binary        \
-    --isCateVarianceRatio=TRUE	\
-    --outputPrefix=./output/example_binary_sparseGRM	\
-    --IsOverwriteVarianceRatioFile=TRUE	"
-
-# performing the gene-based association tests
-saige_command_step2 = "Rscript step2_SPAtests.R        \
-     --bgenFile=./input/genotype_100markers.bgen    \
-     --bgenFileIndex=./input/genotype_100markers.bgen.bgi \
-     --SAIGEOutputFile=./output/genotype_100markers_bgen_groupTest_out.txt \
-     --chrom=1 \
-     --AlleleOrder=ref-first \
-     --minMAF=0 \
-     --minMAC=0.5 \
-     --sampleFile=./input/samplelist.txt \
-     --GMMATmodelFile=./output/example_binary_sparseGRM.rda \
-     --varianceRatioFile=./output/example_binary_sparseGRM.varianceRatio.txt      \
-     --sparseGRMFile=output/sparseGRM_relatednessCutoff_0.125_1000_randomMarkersUsed.sparseGRM.mtx   \
-     --sparseGRMSampleIDFile=output/sparseGRM_relatednessCutoff_0.125_1000_randomMarkersUsed.sparseGRM.mtx.sampleIDs.txt  \
-     --groupFile=./input/group_new_chrposa1a2.txt    \
-     --annotation_in_groupTest="lof,missense:lof,missense:lof:synonymous"        \
-     --maxMAF_in_groupTest=0.0001,0.001,0.01 \
-     --is_output_markerList_in_groupTest=TRUE \
-     --LOCO=FALSE \
-     --is_fastTest=TRUE"
-
-
 # endregion GET_SAIGE_COMMANDS
 
 # region RUN_ASSOCIATION
@@ -936,7 +898,7 @@ def saige_pipeline(
         logging.info(f"before glob: pv files for {celltype}")
         storage_client = storage.Client()
         bucket = get_config()["storage"]["default"]["default"].removeprefix("gs://")
-        prefix = f"{get_config()["workflow"]["output_prefix"]}/{celltype}/"
+        prefix = f"{get_config()['workflow']['output_prefix']}/{celltype}/"
         existing_files = set(
             f"gs://{bucket}/{filepath.name}"
             for filepath in storage_client.list_blobs(
@@ -968,10 +930,11 @@ def saige_pipeline(
             copy_common_env(run_job)
             if dependency := dependencies_dict.get(gene):
                 run_job.depends_on(dependency)
-            run_job.image(CELLREGMAP_IMAGE)
-            j = batch.new_job("my R job")
+            run_job.image(SAIGE_QTL_IMAGE)
+            j = batch.new_job("Fit null model")
             j.image("some/R:image")
-            j.command("Rscript myscript.R --param 1 --param2")
+            step1_cmd = build_fit_null_command()
+            j.command(step1_cmd)
             # the python_job.call only returns one object
             # the object is a file containing y_df, geno_df, kinship_df
             # all pickled into a file
