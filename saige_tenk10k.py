@@ -36,6 +36,7 @@ from cpg_utils.hail_batch import (
 
 import numpy as np
 import pandas as pd
+import scanpy as sc
 import xarray as xr
 
 from limix.qc import quantile_gaussianize
@@ -275,69 +276,64 @@ def prepare_pheno_cov_file(
     """
 
     pheno_cov_filename = to_path(
-        output_path(f"expression_files/{gene_name}_{cell_type}.csv")
+        output_path(f"pheno_cov_files/{gene_name}_{cell_type}.tsv")
     )
 
-    # read in phenotype file (tsv)
-    phenotype = pd.read_csv(phenotype_file, sep="\t", index_col=0)
-
+    # read in phenotype file (scanpy object AnnData)
+    # open anndata
+    adata = sc.read(phenotype_file)
+    # sparse to dense
+    mat = adata.raw.X.todense()
+    # make pandas dataframe
+    mat_df = pd.DataFrame(
+        data=mat.T, index=adata.raw.var.index, columns=adata.obs.index
+    )
+    # turn into xr array
     phenotype = xr.DataArray(
-        phenotype.values,
-        dims=["sample", "gene"],
-        coords={"sample": phenotype.index.values, "gene": phenotype.columns.values},
+        mat_df.values,
+        dims=['trait', 'cell'],
+        coords={'trait': mat_df.index.values, 'cell': mat_df.columns.values},
     )
+    phenotype = phenotype.sel(cell=sample_mapping['phenotype_sample_id'].values)
+
+    # delete large files to free up memory
+    del mat
+    del mat_df
+
 
     # read in covariate file (tsv)
+    # this file is defined at cell level, as:
+    # cell barcode | cov1 | cov2 | ... | cov N
     covs = pd.read_csv(cov_file, sep="\t", index_col=0)
 
-    # this file will map different IDs (and OneK1K ID to CPG ID)
+    # this file will map different IDs (and OneK1K ID to CPG ID) as well as donors to cells
+    #         CPG ID  | OneK1K ID |    cell barcode
+    # e.g.,   CPG7385 |  686_687  | AAACCTGCAACGATCT-1
     sample_mapping = pd.read_csv(dataset_path(sample_mapping_file), sep="\t")
 
-    # ensure samples are the same and in the same order across input files
-    # samples with expression data
-    donors_exprs = set(phenotype.sample.values).intersection(
-        set(sample_mapping["OneK1K_ID"].unique())
-    )
+    cov_samples = covs.merge(sample_mapping, on='barcode')
 
-    logging.info(f"Number of unique donors with expression data: {len(donors_exprs)}")
-
-    # samples with genotype data
-    donors_geno = set(geno.sample.values).intersection(
-        set(sample_mapping["InternalID"].unique())
-    )
-    logging.info(f"Number of unique donors with genotype data: {len(donors_geno)}")
-
-    # samples with both (can this be done in one step?)
-    sample_mapping1 = sample_mapping.loc[sample_mapping["OneK1K_ID"].isin(donors_exprs)]
-    sample_mapping_both = sample_mapping1.loc[
-        sample_mapping1["InternalID"].isin(donors_geno)
-    ]
-    donors_e = sample_mapping_both["OneK1K_ID"].unique()
-    donors_g = sample_mapping_both["InternalID"].unique()
-    assert len(donors_e) == len(donors_g)
-
-    logging.info(f"Number of unique common donors: {len(donors_g)}")
-
-    # subset files
 
     # phenotype
-    phenotype = phenotype.sel(sample=donors_e)
     # select gene
     y = phenotype.sel(gene=gene_name)
-    y = quantile_gaussianize(y)
+    # y = quantile_gaussianize(y)  # do not do this here (will use a Poisson likelihood)
     del phenotype  # delete to free up memory
-    # make data frame to save as csv
+    # make data frame to save as tsv
     y_df = pd.DataFrame(
         data=y.values.reshape(y.shape[0], 1), index=y.sample.values, columns=[gene_name]
     )
 
-    #
+    # make final data frame
+    # columns = y | cov1 | ... | covN | indID
+    pheno_cov_df = y_df.merge(cov_samples, on="barcode")
+    print(pheno_cov_df.head())
 
     # save files
-    with expression_filename.open("w") as ef:
-        y_df.to_csv(ef, index=False)
+    with pheno_cov_filename.open("w") as pcf:
+        pheno_cov_df.to_csv(pcf, index=False, sep="\t")
 
-    return pheno_cov_filename
+    return pheno_cov_filename  # maybe no need for this?
 
 
 # endregion PREPARE_PHENO_COV_FILE

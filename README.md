@@ -22,6 +22,22 @@ This is a hail batch pipeline to run the new [QTL version of SAIGE](https://gith
 ### cell-type-specific (all genes), aggregate
 * back to python to aggregate results
 
+To run:
+```
+analysis-runner \
+    --dataset tob-wgs \
+    --access-level standard \
+    --output-dir "tob_wgs_rv/pseudobulk_rv_association/saige_qtl/" \
+    --image ? \
+    --description "Saige QTL batch job" \
+    python3 saige_tenk10k.py \
+      --expression-files-prefix scrna-seq/grch38_association_files \
+      --sample-mapping-file-tsv scrna-seq/grch38_association_files/OneK1K_CPG_IDs.tsv \
+      --genes VPREB3 \
+      --chromosomes 22 \
+      --celltypes B_intermediate
+```
+
 ## Data
 
 TenK10K is matched single-cell RNA-seq (scRNA-seq) and whole-genome sequencing (WGS) data from up to 10,000 individuals:
