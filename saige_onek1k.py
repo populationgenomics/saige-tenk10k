@@ -497,8 +497,14 @@ def build_run_set_test_command(
     chrom: chromosome to run this on
     GMMAT model file: null model fit from previous step (.rda)
     Variance Ratio file: as estimated from previous step (.txt)
-    group annotation: ??
-    group file:
+    group annotation: select only specific annotations from group file (e.g., lof)
+    group file: for each gene/set, one row specifying variants, one row specifying each variant's anno
+    allele order: specifying whether alt-first or ref-first in genotype files
+    min MAF: minimum variant minor allele frequency to include
+    min MAC: minimum variant minor allele count to include
+    LOCO: leave one chromosome out (for what specifically?)
+    is no adjusted cov: covariate adjustment?
+    specify whether we're using a sparse GRM (vs full? vs no GRM at all?)
 
     Output:
     Rscript command (str) ready to run
