@@ -1,4 +1,5 @@
 import os
+import logging
 
 from cpg_utils import to_path
 from cpg_utils.hail_batch import (
@@ -42,7 +43,44 @@ expression_h5ad_path = dataset_path(
 
 # endregion INPUT_FILES
 
-# region FUNCTIONS
+# region MISC
+
+# make gene loc info into a dict with genes as keys
+def make_gene_loc_dict(file) -> dict[str, dict]:
+    """
+    Turn gene information into a dictionary
+    to avoid opening the gene loc file for every gene
+    """
+    from csv import DictReader
+
+    gene_dict = {}
+
+    with open(to_path(file)) as handle:
+        reader = DictReader(handle, delimiter="\t")
+
+        for row in reader:
+            gene_dict[row["gene_name"]] = row
+
+    return gene_dict
+
+
+def extract_genes(gene_list, expression_h5ad_path) -> list[str]:
+    """
+    Takes a list of all genes and subsets to only those
+    present in the expression file of interest
+    """
+    adata = sc.read(to_path(expression_h5ad_path))
+    # consider adding extra filters on expression here
+    gene_ids = set(list(adata.raw.var.index))
+    genes = set(gene_list).intersection(gene_ids)
+
+    logging.info(f"Total genes to run: {len(list(sorted(genes)))}")
+
+    return list(sorted(genes))
+
+# endregion MISC
+
+# region PHENO_COV_FILE
 
 def prepare_pheno_cov_file(
     gene_name: str,
@@ -65,7 +103,9 @@ def prepare_pheno_cov_file(
         output_path(f"input/pheno_cov_files/{gene_name}_{cell_type}.tsv")
     )
 
-    # this file will map cells to donors and onek1k ids to cpd ones
+    # this file will map different IDs (and OneK1K ID to CPG ID) as well as donors to cells
+    #         CPG ID  | OneK1K ID |    cell barcode     | cell type
+    # e.g.,   CPG7385 |  686_687  | AAACCTGCAACGATCT-1  |   CD4_T
     sample_mapping = pd.read_csv(
         sample_mapping_file,
         dtype={
@@ -95,45 +135,37 @@ def prepare_pheno_cov_file(
         dims=['trait', 'cell'],
         coords={'trait': mat_df.index.values, 'cell': mat_df.columns.values},
     )
+    # consider only correct cells
     phenotype = phenotype.sel(cell=sample_mapping['cell_barcode'].values)
 
     # delete large files to free up memory
     del mat
     del mat_df
 
-
     # read in covariate file (tsv)
     # this file is defined at cell level, as:
     # cell barcode | cov1 | cov2 | ... | cov N
     covs = pd.read_csv(cov_file, sep="\t", index_col=0)
 
-    # this file will map different IDs (and OneK1K ID to CPG ID) as well as donors to cells
-    #         CPG ID  | OneK1K ID |    cell barcode
-    # e.g.,   CPG7385 |  686_687  | AAACCTGCAACGATCT-1
-    sample_mapping = pd.read_csv(dataset_path(sample_mapping_file), sep="\t")
-
-    # add individual ID to covariates
+    # add individual ID to covariates (this will also subset covs to right cells)
     cov_samples = covs.merge(sample_mapping, on='cell_barcode')
-
 
     # phenotype
     # select gene
-    y = phenotype.sel(gene=gene_name)
-    # y = quantile_gaussianize(y)  # do not do this here (will use a Poisson likelihood)
+    expr = phenotype.sel(gene=gene_name)
     del phenotype  # delete to free up memory
     # make data frame to save as tsv
-    y_df = pd.DataFrame(
-        data=y.values.reshape(y.shape[0], 1), index=y.sample.values, columns=[gene_name]
+    expr_df = pd.DataFrame(
+        data=expr.values.reshape(expr.shape[0], 1), index=expr.sample.values, columns=[gene_name]
     )
 
     # make final data frame
     # columns = y | cov1 | ... | covN | indID
-    pheno_cov_df = y_df.merge(cov_samples, on="barcode")
-    print(pheno_cov_df.head())
+    pheno_cov_df = expr_df.merge(cov_samples, on="cell_barcode")
 
-    # save files
+    # save file
     with pheno_cov_filename.open("w") as pcf:
         pheno_cov_df.to_csv(pcf, index=False, sep="\t")
 
 
-# endregion FUNCTIONS
+# endregion PHENO_COV_FILE

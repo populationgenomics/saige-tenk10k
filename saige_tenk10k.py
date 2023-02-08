@@ -57,13 +57,14 @@ logging.basicConfig(
 DEFAULT_JOINT_CALL_MT = dataset_path("mt/v7.mt")
 DEFAULT_ANNOTATION_HT = dataset_path(
     "tob_wgs_vep/104/vep104.3_GRCh38.ht"
-)  # atm VEP only - add open chromatin?
+)  # atm VEP only - add open chromatin info
 
-# maybe more generic "hail" image instead?
-CELLREGMAP_IMAGE = get_config()["workflow"][
+HAIL_IMAGE = get_config()["workflow"][
     "driver_image"
-]  # australia-southeast1-docker.pkg.dev/cpg-common/images/cellregmap:dev
-SAIGE_QTL_IMAGE = "australia-southeast1-docker.pkg.dev/cpg-common/images/saige-qtl"  # correct?
+]  # ?
+SAIGE_QTL_IMAGE = (
+    "australia-southeast1-docker.pkg.dev/cpg-common/images/saige-qtl"  # correct?
+)
 
 MULTIPY_IMAGE = "australia-southeast1-docker.pkg.dev/cpg-common/images/multipy:0.16"  # not sure I will need this
 
@@ -103,12 +104,12 @@ def filter_variants(
     mt = mt.filter_rows(  # check these filters!
         (hl.len(hl.or_else(mt.filters, hl.empty_set(hl.tstr))) == 0)  # QC
         & (hl.len(mt.alleles) == 2)  # remove hom-ref
-        & (mt.n_unsplit_alleles == 2)  # biallelic
-        & (hl.is_snp(mt.alleles[0], mt.alleles[1]))  # SNPs
+        & (mt.n_unsplit_alleles == 2)  # biallelic (revisit)
+        & (hl.is_snp(mt.alleles[0], mt.alleles[1]))  # SNPs (revisit)
     )
 
     mt = hl.variant_qc(mt)
-    # filter common (enough) variants to build sparse GRM
+    # filter common (enough) variants to build sparse GRM (ask Wei)
     grm_mt = mt.filter_rows(
         (mt.variant_qc.AF[1] > 0.01) & (mt.variant_qc.AF[1] < 1)
         | (mt.variant_qc.AF[1] < 0.99) & (mt.variant_qc.AF[1] > 0)
@@ -132,9 +133,9 @@ def filter_variants(
 
 # region CREATE_SPARSE_GRM
 
-# NEW
+# Create sparse GRM
 def build_sparse_grm_command(
-    plink_path: str,  # ./input/nfam_100_nindep_0_step1_includeMoreRareVariants_poly
+    plink_path: str,  # path to plink files generated in filter job
     output_prefix: str,  # should end in sparseGRM
     n_threads: int = 4,
     n_random: int = 2000,
@@ -168,10 +169,10 @@ def build_sparse_grm_command(
 # same as https://github.com/populationgenomics/cellregmap-pipeline/blob/main/batch.py
 def get_promoter_variants(
     mt_path: str,  # output path from function above
-    ht_path: str,  # open chromatin annos in same file??
+    ht_path: str,  # add open chromatin annos in same file
     gene_details: dict[str, str],  # output of make_gene_loc_dict
     window_size: int,
-    plink_file: str,  # "tob_wgs_rv/pseudobulk_rv_association/plink_files/GENE"
+    plink_file: str,  # "tob_wgs_rv/saige_qtl/input/plink_files/GENE"
 ):
     """Subset hail matrix table
 
@@ -199,7 +200,7 @@ def get_promoter_variants(
     # get relevant chromosome
     chrom = gene_details["chr"]
 
-    # subset to window
+    # subset to genomic window around the gene
     # get gene body position (start and end) and build interval
     left_boundary = max(1, int(gene_details["start"]) - window_size)
     right_boundary = min(
@@ -220,28 +221,31 @@ def get_promoter_variants(
     )  # add checkpoint to avoid repeat evaluation
     logging.info(f"Number of variants within interval: {mt.count()[0]}")
 
+    # add anotations
+    anno_ht = hl.read_table(ht_path)
     # annotate using VEP
-    vep_ht = hl.read_table(ht_path)
-    mt = mt.annotate_rows(vep=vep_ht[mt.row_key].vep)
+    mt = mt.annotate_rows(vep=anno_ht[mt.row_key].vep)
+    # annotate using VEP
+    mt = mt.annotate_rows(atac=anno_ht[mt.row_key].atac)
 
-    # filter variants found to be in promoter regions
+    # filter variants found to be in promoter regions - change?
     mt = mt.filter_rows(
         mt.vep.regulatory_feature_consequences["biotype"].contains("promoter")
     )
-    promoter_path = output_path(f"{gene_name}promoter_variants.mt", "tmp")
-    mt = mt.checkpoint(promoter_path, overwrite=True)  # checkpoint
-    logging.info(
-        f"Number of rare (freq<5%) QC-passing, biallelic SNPs in promoter regions: {mt.count()[0]}"
-    )
-
     # add aditional filtering for all regions that are open
     # these flags will need to be different for each cell type
     # but can be dealth with upon running (setting annotations in a way that only open regions for that chromatin are run)
+    mt = mt.filter_rows(mt.atac.open_chromatin > 0)
+    anno_path = output_path(f"{gene_name}_open_promoter_variants.mt", "tmp")
+    mt = mt.checkpoint(anno_path, overwrite=True)  # checkpoint
+    logging.info(
+        f"Number of rare (freq<5%) QC-passing, biallelic SNPs in promoter and open regions: {mt.count()[0]}"
+    )
 
     # export this as a Hail table for downstream analysis
     # consider exporting the whole MT?
     ht_path = output_path(
-        f"summary_hts/{gene_name}_rare_promoter_summary.ht", "analysis"
+        f"summary_hts/{gene_name}_rare_promoter_open_summary.ht", "analysis"
     )
     ht = mt.rows()
     ht.write(ht_path, overwrite=True)
@@ -263,21 +267,38 @@ def prepare_pheno_cov_file(
     cell_type: str,
     phenotype_file: str,
     cov_file: str,
-    sample_mapping_file: str,  # may still be needed to match ids with genotypes
+    sample_mapping_file: str,
 ):
-    """Prepare pheno_cov file for SAIGE-QTL
+    """Prepare pheno+cov file for SAIGE-QTL
 
     Input:
-    phenotype: gene expression (either tsv or scanpy obj)
-    covariates
+    phenotype: gene expression (h5ad)
+    covariates: cell-level (tsv)
 
     Output:
     pheno_cov file path? maybe no need to return anything, just write to file
     """
 
     pheno_cov_filename = to_path(
-        output_path(f"pheno_cov_files/{gene_name}_{cell_type}.tsv")
+        output_path(f"input/pheno_cov_files/{gene_name}_{cell_type}.tsv")
     )
+
+    # this file will map different IDs (and OneK1K ID to CPG ID) as well as donors to cells
+    #         CPG ID  | OneK1K ID |    cell barcode     | cell type
+    # e.g.,   CPG7385 |  686_687  | AAACCTGCAACGATCT-1  |   CD4_T
+    sample_mapping = pd.read_csv(
+        sample_mapping_file,
+        dtype={
+            "onek1k_id_long": str,
+            "onek1k_id_short": str,
+            "cpg_id": str,
+            "cell_barcode": str,
+            "celltype_label": str,
+        },
+        index_col=0,
+    )
+    # subset to relevant cells (given cell_type)
+    sample_mapping = sample_mapping["celltype_label" == cell_type]
 
     # read in phenotype file (scanpy object AnnData)
     # open anndata
@@ -291,49 +312,39 @@ def prepare_pheno_cov_file(
     # turn into xr array
     phenotype = xr.DataArray(
         mat_df.values,
-        dims=['trait', 'cell'],
-        coords={'trait': mat_df.index.values, 'cell': mat_df.columns.values},
+        dims=["trait", "cell"],
+        coords={"trait": mat_df.index.values, "cell": mat_df.columns.values},
     )
-    phenotype = phenotype.sel(cell=sample_mapping['phenotype_sample_id'].values)
+    # consider only correct cells
+    phenotype = phenotype.sel(cell=sample_mapping["cell_barcode"].values)
 
     # delete large files to free up memory
     del mat
     del mat_df
-
 
     # read in covariate file (tsv)
     # this file is defined at cell level, as:
     # cell barcode | cov1 | cov2 | ... | cov N
     covs = pd.read_csv(cov_file, sep="\t", index_col=0)
 
-    # this file will map different IDs (and OneK1K ID to CPG ID) as well as donors to cells
-    #         CPG ID  | OneK1K ID |    cell barcode
-    # e.g.,   CPG7385 |  686_687  | AAACCTGCAACGATCT-1
-    sample_mapping = pd.read_csv(dataset_path(sample_mapping_file), sep="\t")
+    # add individual ID to covariates (this will also subset covs to right cells)
+    cov_samples = covs.merge(sample_mapping, on="cell_barcode")
 
-    cov_samples = covs.merge(sample_mapping, on='barcode')
-
-
-    # phenotype
-    # select gene
-    y = phenotype.sel(gene=gene_name)
-    # y = quantile_gaussianize(y)  # do not do this here (will use a Poisson likelihood)
+    # extract expressino for the specific gene
+    expr = phenotype.sel(gene=gene_name)
     del phenotype  # delete to free up memory
     # make data frame to save as tsv
-    y_df = pd.DataFrame(
-        data=y.values.reshape(y.shape[0], 1), index=y.sample.values, columns=[gene_name]
+    expr_df = pd.DataFrame(
+        data=expr.values.reshape(expr.shape[0], 1), index=expr.sample.values, columns=[gene_name]
     )
 
     # make final data frame
     # columns = y | cov1 | ... | covN | indID
-    pheno_cov_df = y_df.merge(cov_samples, on="barcode")
-    print(pheno_cov_df.head())
+    pheno_cov_df = expr_df.merge(cov_samples, on="cell_barcode")
 
     # save files
     with pheno_cov_filename.open("w") as pcf:
         pheno_cov_df.to_csv(pcf, index=False, sep="\t")
-
-    return pheno_cov_filename  # maybe no need for this?
 
 
 # endregion PREPARE_PHENO_COV_FILE
@@ -341,14 +352,14 @@ def prepare_pheno_cov_file(
 
 # region GET_SAIGE_COMMANDS
 
-# NEW
+# Fit null model
 def build_fit_null_command(
-    sparse_grm_file: str,  # data/input/nfam_5_nindep_0.mtx
-    sparse_grm_sampleid_file: str,  # data/input/nfam_5_nindep_0.mtx.sampleID
+    sparse_grm_file: str,  # .mtx
+    sparse_grm_sampleid_file: str,  # .mtx.sampleID
     pheno_file: str,
     cov_col_list: str,  # PC1
     sample_id_pheno: str,  # IND_ID
-    plink_path: str,  # ./input/nfam_100_nindep_0_step1_includeMoreRareVariants_poly
+    plink_path: str,
     output_prefix: str,
     pheno_col: str = "y",
     trait_type: str = "count",
@@ -400,10 +411,10 @@ def build_fit_null_command(
     return saige_command_step1
 
 
-# NEW
+# Run gene set association
 def build_run_set_test_command(
-    plink_prefix: str,  # ./input/nfam_100_nindep_0_step1_includeMoreRareVariants_poly
-    saige_output_file: str,  # should end in txt?
+    plink_prefix: str,
+    saige_output_file: str,  # should end in txt? just path?
     chrom: str,  # check
     gmmat_model_path: str,  # generated by step1 (.rda)
     variance_ratio_path: str,  # generated by step1 (.txt)
@@ -468,58 +479,7 @@ def build_run_set_test_command(
 
 # endregion GET_SAIGE_COMMANDS
 
-# region RUN_ASSOCIATION
 
-
-def run_gene_association(
-    gene_name: str,  # "VPREB3"
-    prepared_inputs: hb.resource.PythonResult,
-    pv_path: str,  # "Bnaive/VPREB3_pvals.csv"
-):
-    """Run gene-set association test
-
-    change
-    """
-
-    # if the previous method depdency returned None, we will fail to
-    # unpack dataframes from it
-    if prepared_inputs is None:
-        return prepared_inputs
-
-    from numpy import eye, ones
-
-    # read the 3 dataframes generated by the previous job
-    p_df, g_df, _ = prepared_inputs
-
-    # because the current matrix is counting the copies of the reference allele
-    # while we are interested in the alternative allele, flip the genotypes
-    genotypes = 2 - g_df
-
-    # get phenotypes
-    pheno = p_df.values
-
-    # covariates (intercept at present)
-    covs = ones((genotypes.shape[0], 1))  # intercept of ones as covariates
-
-    # contexts (no context-specific analysis now, just identity)
-    contexts = eye(genotypes.shape[0])
-
-    # create p-values data frame
-    pvalues = get_crm_pvs(pheno, covs, genotypes, contexts)
-    pv_df = pd.DataFrame(
-        data=pvalues.reshape(pvalues.shape[0], 1).T,
-        columns=cols,
-        index=[gene_name],
-    )
-
-    pv_filename = to_path(pv_path)
-    with pv_filename.open("w") as pf:
-        pv_df.to_csv(pf)
-
-    return str(pv_filename)
-
-
-# endregion RUN_ASSOCIATION
 
 
 # region AGGREGATE_RESULTS
@@ -604,48 +564,19 @@ def make_gene_loc_dict(file) -> dict[str, dict]:
     return gene_dict
 
 
-# can probably be merged with below
-def extract_genes(gene_list, expression_tsv_path) -> list[str]:
+def extract_genes(gene_list, expression_h5ad_path) -> list[str]:
     """
     Takes a list of all genes and subsets to only those
     present in the expression file of interest
     """
-    expression_df = pd.read_csv(to_path(expression_tsv_path), sep="\t")
-    expression_df = filter_lowly_expressed_genes(expression_df)
-    gene_ids = set(list(expression_df.columns.values)[1:])
+    adata = sc.read(to_path(expression_h5ad_path))
+    # consider adding extra filters on expression here
+    gene_ids = set(list(adata.raw.var.index))
     genes = set(gene_list).intersection(gene_ids)
 
     logging.info(f"Total genes to run: {len(list(sorted(genes)))}")
 
     return list(sorted(genes))
-
-
-# copied from https://github.com/populationgenomics/tob-wgs/blob/main/scripts/eqtl_hail_batch/launch_eqtl_spearman.py
-# generalised to specify min pct samples as input
-def filter_lowly_expressed_genes(expression_df, min_pct=10):
-    """Remove genes with low expression in all samples
-    Input:
-    expression_df: a data frame with samples as rows and genes as columns,
-    containing normalised expression values (i.e., the average number of molecules
-    for each gene detected in each person).
-    Returns:
-    A filtered version of the input data frame, after removing columns (genes)
-    with 0 values in more than {min_pct}% of the rows (samples) - 10 by default.
-    """
-    # Remove genes with 0 expression in all samples
-    expression_df = expression_df.loc[:, (expression_df != 0).any(axis=0)]
-    genes_not_equal_zero = expression_df.iloc[:, 1:].values != 0
-    n_expr_over_zero = pd.DataFrame(genes_not_equal_zero.sum(axis=0))
-    percent_expr_over_zero = (n_expr_over_zero / len(expression_df.index)) * 100
-    percent_expr_over_zero.index = expression_df.columns[1:]
-
-    # Filter genes with less than 10 percent individuals with non-zero expression
-    atleastNpercent = percent_expr_over_zero[(percent_expr_over_zero > min_pct)[0]]
-    sample_ids = expression_df["sampleid"]
-    expression_df = expression_df[atleastNpercent.index]
-    expression_df.insert(loc=0, column="sampleid", value=sample_ids)
-
-    return expression_df
 
 
 def remove_sc_outliers(df, outliers=None):
@@ -668,11 +599,11 @@ config = get_config()
 
 @click.command()
 @click.option("--celltypes")
-@click.option('--geneloc-files-prefix', default='scrna-seq/grch38_association_files')
-@click.option("--pheno-cov-prefix")
+@click.option("--geneloc-files-prefix", default="scrna-seq/grch38_association_files")
+@click.option("--expression-files-prefix")
 @click.option(
     "--sample-mapping-file-tsv",
-    default="scrna-seq/grch38_association_files/OneK1K_CPG_IDs.tsv", # this needs to be updated
+    default="scrna-seq/grch38_association_files/OneK1K_CPG_IDs.tsv",  # this needs to be updated
 )
 @click.option("--mt-path", default=DEFAULT_JOINT_CALL_MT)
 @click.option("--anno-ht-path", default=DEFAULT_ANNOTATION_HT)
@@ -694,7 +625,7 @@ config = get_config()
 def saige_pipeline(
     celltypes: str,
     geneloc_files_prefix: str,
-    pheno_cov_prefix: str,
+    expression_files_prefix: str,
     sample_mapping_file_tsv: str,
     mt_path: str,
     anno_ht_path: str,
@@ -710,9 +641,11 @@ def saige_pipeline(
     )
     batch = hb.Batch("CellRegMap pipeline", backend=sb)
 
-    # extract samples for which we have single-cell (sc) data
+    # extract individuals for which we have single-cell (sc) data
     sample_mapping_file = pd.read_csv(dataset_path(sample_mapping_file_tsv), sep="\t")
+    # we may want to exclude these from the smf directly
     sample_mapping_file = remove_sc_outliers(sample_mapping_file)
+    # check column names - CPG_ID would be better?
     sc_samples = sample_mapping_file["InternalID"].unique()
 
     # filter to QC-passing, rare, biallelic variants
@@ -721,7 +654,7 @@ def saige_pipeline(
 
         filter_job = batch.new_python_job(name="MT filter job")
         copy_common_env(filter_job)
-        filter_job.image(CELLREGMAP_IMAGE)
+        filter_job.image(HAIL_IMAGE)
         filter_job.call(
             filter_variants,
             mt_path=mt_path,
@@ -767,11 +700,11 @@ def saige_pipeline(
     # only run this for relevant genes
     _plink_genes = set()
     for celltype in celltype_list:
-        expression_tsv_path = dataset_path(
+        expression_h5ad_path = dataset_path(
             os.path.join(
                 expression_files_prefix,
                 "expression_files",
-                f"{celltype}_expression.tsv",
+                f"{celltype}_expression.h5ad",
             )
         )
         logging.info(f"before extracting {celltype}-expressed genes - plink files")
