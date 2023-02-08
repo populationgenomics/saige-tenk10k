@@ -508,7 +508,7 @@ def summarise_association_results(
     existing_pv_files = set(
         f"gs://{bucket}/{filepath.name}"
         for filepath in storage_client.list_blobs(bucket, prefix=prefix, delimiter="/")
-        if filepath.name.endswith("_pvals.csv")
+        if filepath.name.endswith("_results.tsv")
     )
     logging.info(f"after glob - {len(existing_pv_files)} pv files to summarise")
 
@@ -516,7 +516,7 @@ def summarise_association_results(
         raise Exception("No PV files, nothing to do")
 
     pv_all_df = pd.concat(
-        [pd.read_csv(to_path(pv_df), index_col=0) for pv_df in existing_pv_files]
+        [pd.read_csv(to_path(pv_df), index_col=0, sep="\t") for pv_df in existing_pv_files]
     )
 
     # run qvalues for all tests (multiple testing correction)
@@ -826,7 +826,12 @@ def saige_pipeline(
             # python job creating Rscript command
             cmd = fit_null_job.call(
                 build_fit_null_command,
-                pheno_file = pheno_cov_filename,
+                pheno_file=pheno_cov_filename,
+                cov_col_list=cols,  # define these when making cov file
+                sample_id_pheno="cpg_id",  # check
+                plink_path=subset_plink_path,  # this is just for variance ratio estimation?
+                output_prefix=output_path(),
+                pheno_col=gene,  # consider swapping to y
             )
             # regular job submitting the Rscript command to bash
             fit_null_job.command(cmd)
