@@ -683,7 +683,6 @@ def saige_pipeline(
                 f"GRCh38_geneloc_chr{chromosome}.tsv",
             )
         )
-
         # concatenating across chromosomes to have a single dict
         gene_dict.update(make_gene_loc_dict(geneloc_tsv_path))
 
@@ -693,25 +692,22 @@ def saige_pipeline(
     else:
         genes_of_interest = list(gene_dict.keys())
 
-    # processing cell types (needs to be passed as a single script for click to like it)
-    celltype_list = celltypes.split(" ")
-    logging.info(f"Cell types to run: {celltype_list}")
-
-    # only run this for relevant genes
+    # only run if there is sufficient expression
     _plink_genes = set()
-    for celltype in celltype_list:
+    for chromosome in chromosomes_list:
         expression_h5ad_path = dataset_path(
             os.path.join(
                 expression_files_prefix,
-                "expression_files",
-                f"{celltype}_expression.h5ad",
+                "expression_objects",
+                f"sce{chromosome}.h5ad",
             )
         )
-        logging.info(f"before extracting {celltype}-expressed genes - plink files")
-        _plink_genes |= set(extract_genes(genes_of_interest, expression_tsv_path))
-        logging.info(f"after extracting {celltype}-expressed genes - plink files")
+        logging.info(f"before extracting chrom {chromosome} genes - plink files")
+        _plink_genes |= set(extract_genes(genes_of_interest, expression_h5ad_path))
+        logging.info(f"after extracting chrom {chromosome} genes - plink files")
     plink_genes = list(sorted(_plink_genes))
     logging.info(f"Done selecting genes, total number: {len(plink_genes)}")
+
 
     # Setup MAX concurrency by genes
     _dependent_jobs: list[hb.job.Job] = []
@@ -757,7 +753,7 @@ def saige_pipeline(
         if filter_job:
             plink_job.depends_on(filter_job)
 
-        plink_job.image(CELLREGMAP_IMAGE)
+        plink_job.image(HAIL_IMAGE)
         plink_job.call(
             get_promoter_variants,
             mt_path=output_mt_path,
@@ -768,31 +764,15 @@ def saige_pipeline(
         )
         dependencies_dict[gene] = plink_job
 
+    # processing cell types (needs to be passed as a single script for click to like it)
+    celltype_list = celltypes.split(" ")
+    logging.info(f"Cell types to run: {celltype_list}")
+
     # the next phase will be done for each cell type
     for celltype in celltype_list:
-        expression_tsv_path = dataset_path(
-            os.path.join(
-                expression_files_prefix,
-                "expression_files",
-                f"{celltype}_expression.tsv",
-            )
-        )
-        logging.info(
-            f"before extracting {celltype}-expressed genes to run association for"
-        )
-        genes_list = extract_genes(genes_of_interest, expression_tsv_path)
-        logging.info(
-            f"after extracting {celltype}-expressed genes: run association for {len(genes_list)} genes"
-        )
-        # logging.info(f"Genes to run: {genes_list}")
-        if not genes_list:
-            logging.info("No genes to run, exit!")
-            continue
-
         gene_run_jobs = []
-
-        # cell_type_root = output_path(celltype)
-        logging.info(f"before glob: pv files for {celltype}")
+        # need to remind myself of what was happening here
+        logging.info(f"before glob: result files for {celltype}")
         storage_client = storage.Client()
         bucket = get_config()["storage"]["default"]["default"].removeprefix("gs://")
         prefix = f"{get_config()['workflow']['output_prefix']}/{celltype}/"
@@ -801,18 +781,17 @@ def saige_pipeline(
             for filepath in storage_client.list_blobs(
                 bucket, prefix=prefix, delimiter="/"
             )
-            if filepath.name.endswith("_pvals.csv")
+            if filepath.name.endswith("_results.csv")
         )
-        # existing_files = list(to_path(cell_type_root).glob("*_pvals.csv"))
-        logging.info(f"after glob: {len(existing_files)} pv files for {celltype}")
-
-        for gene in genes_list:
+        logging.info(f"after glob: {len(existing_files)} result files for {celltype}")
+        # end of confusing part
+        for gene in plink_genes:
 
             # wrapped this with output_path
-            pv_file = output_path(f"{celltype}/{gene}_pvals.csv")
+            res_file = output_path(f"output/{celltype}/{gene}_results.csv")
 
             # check if running is required
-            if pv_file in existing_files:
+            if res_file in existing_files:
                 logging.info(f"We already ran associations for {gene}!")
                 continue
 
@@ -821,6 +800,61 @@ def saige_pipeline(
                 continue
 
             plink_output_prefix = gene_dict[gene]["plink"]
+
+            # input: gene ID, phenotype file, covariate file
+            # output: pheno_cov file
+            pheno_cov_prefix = output_path(pheno_cov_prefix)
+            pheno_cov_filename = f'{pheno_cov_prefix}/{celltype}/{gene}.tsv'
+            pheno_cov_job = batch.new_python_job(
+                f"Make pheno cov file for: {gene}, {celltype}"
+            )
+            manage_concurrency_for_job(pheno_cov_job)
+            copy_common_env(pheno_cov_job)
+            # does not depend on any other jobs
+            pheno_cov_job.image(HAIL_IMAGE)
+            pheno_cov_job.call(
+                prepare_pheno_cov_file,
+                gene_name=gene,
+                cell_type=celltype,
+                phenotype_file=pheno_cov_filename,
+                cov_file=covariate_filename,
+                sample_mapping_file=sample_mapping_file,
+            )
+
+            # input: sparse GRM, pheno_cov file, subset plink files
+            # output: null model object, variance ratio (VR) estimate file
+            fit_null_job = batch.new_python_job(f"Fit null model for: {gene}, {celltype}")
+            manage_concurrency_for_job(fit_null_job)
+            copy_common_env(fit_null_job)
+            # syntax below probably does not work
+            dependencies = [sparse_grm_job, filter_job, pheno_cov_job]
+            fit_null_job.depends_on(dependencies)
+            fit_null_job.image(SAIGE_QTL_IMAGE)
+            # python job creating Rscript command
+            cmd = fit_null_job.call(
+                build_fit_null_command,
+                pheno_file = pheno_cov_filename,
+            )
+            # regular job submitting the Rscript command to bash
+            fit_null_job.command(cmd)
+
+            # input: null model object, VR file, gene specific genotypes (w open chromatin flags)
+            # ouput: summary stats
+            run_association_job = batch.new_python_job(
+                f"Run gene set association for: {gene}, {celltype}"
+            )
+            dependencies = [fit_null_job, gene_job]
+            run_association_job.depends_on(dependencies)
+            run_association_job.image(SAIGE_QTL_IMAGE)
+            # python job creating Rscript command
+            cmd = run_association_job.call(
+                build_run_set_test_command, params
+            )
+            # regular job submitting the Rscript command to bash
+            run_association_job.command(cmd)
+
+
+
             # prepare input files
             run_job = batch.new_python_job(f"Run association for: {celltype}, {gene}")
             manage_concurrency_for_job(run_job)
