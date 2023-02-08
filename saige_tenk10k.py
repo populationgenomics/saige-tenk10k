@@ -484,7 +484,7 @@ def build_run_set_test_command(
 
 # region AGGREGATE_RESULTS
 
-
+# this is the last function that still needs updating
 def summarise_association_results(
     # pv_dfs: list[str],
     celltype: str,
@@ -520,20 +520,13 @@ def summarise_association_results(
     )
 
     # run qvalues for all tests (multiple testing correction)
-    _, qvals = qvalue(pv_all_df["P_CRM_VC"])
-    pv_all_df["Q_CRM_VC"] = list(qvals)
-    _, qvals = qvalue(pv_all_df["P_CRM_burden_max"])
-    pv_all_df["Q_CRM_burden_max"] = list(qvals)
-    _, qvals = qvalue(pv_all_df["P_CRM_burden_sum"])
-    pv_all_df["Q_CRM_burden_sum"] = list(qvals)
-    _, qvals = qvalue(pv_all_df["P_CRM_burden_comphet"])
-    pv_all_df["Q_CRM_burden_comphet"] = list(qvals)
-    _, qvals = qvalue(pv_all_df["P_CRM_omnibus_max"])
-    pv_all_df["Q_CRM_omnibus_max"] = list(qvals)
-    _, qvals = qvalue(pv_all_df["P_CRM_omnibus_sum"])
-    pv_all_df["Q_CRM_omnibus_sum"] = list(qvals)
-    _, qvals = qvalue(pv_all_df["P_CRM_omnibus_comphet"])
-    pv_all_df["Q_CRM_omnibus_comphet"] = list(qvals)
+    _, qvals = qvalue(pv_all_df["Pvalue"])
+    pv_all_df["Qvalue"] = list(qvals)
+    _, qvals = qvalue(pv_all_df["Pvalue_Burden"])
+    pv_all_df["Qvalue_Burden"] = list(qvals)
+    _, qvals = qvalue(pv_all_df["Pvalue_SKAT"])
+    pv_all_df["Qvalue_SKAT"] = list(qvals)
+
 
     pv_all_filename = to_path(pv_all_filename_str)
     logging.info(f"Write summary results to {pv_all_filename}")
