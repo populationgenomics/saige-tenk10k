@@ -668,10 +668,11 @@ config = get_config()
 
 @click.command()
 @click.option("--celltypes")
-@click.option("--expression-files-prefix", default="scrna-seq/grch38_association_files")
+@click.option('--geneloc-files-prefix', default='scrna-seq/grch38_association_files')
+@click.option("--pheno-cov-prefix")
 @click.option(
     "--sample-mapping-file-tsv",
-    default="scrna-seq/grch38_association_files/OneK1K_CPG_IDs.tsv",
+    default="scrna-seq/grch38_association_files/OneK1K_CPG_IDs.tsv", # this needs to be updated
 )
 @click.option("--mt-path", default=DEFAULT_JOINT_CALL_MT)
 @click.option("--anno-ht-path", default=DEFAULT_ANNOTATION_HT)
@@ -692,7 +693,8 @@ config = get_config()
 )
 def saige_pipeline(
     celltypes: str,
-    expression_files_prefix: str,
+    geneloc_files_prefix: str,
+    pheno_cov_prefix: str,
     sample_mapping_file_tsv: str,
     mt_path: str,
     anno_ht_path: str,
@@ -740,9 +742,10 @@ def saige_pipeline(
     else:
         chromosomes_list = chromosomes.split(" ")
     for chromosome in chromosomes_list:
+        # check that these are still appropriate
         geneloc_tsv_path = dataset_path(
             os.path.join(
-                expression_files_prefix,
+                geneloc_files_prefix,
                 "gene_location_files",
                 f"GRCh38_geneloc_chr{chromosome}.tsv",
             )
