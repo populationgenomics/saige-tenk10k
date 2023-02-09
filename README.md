@@ -22,6 +22,7 @@ It outputs three objects:
 
 ### Expression preprocessing (once per cell type)
 Python script to combine expression (pheno), covariates into a single pheno_cov file as input to saige-qtl.
+
 Inputs:
 * chromosome-specific scanpy (AnnData) objects, single-cell expression for all cells, all genes for that chromosome (sctransformed sc-counts)
 * covariates: combination of 1) exploded donor-level covariates (e.g. sex) and 2) cell-level covariates (PCs, batch)

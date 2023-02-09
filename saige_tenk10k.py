@@ -76,20 +76,31 @@ def filter_variants(
     samples: list[str],
     output_rv_mt_path: str,  # "tob_wgs/densified_rv_only.mt"
     output_cv_mt_path: str,  # "tob_wgs/densified_cv_only.mt"
-    vre_plink_file: str,     # "tob_wgs/
+    vre_plink_path: str,     # "tob_wgs/vr_plink_20k_variants
+    cv_maf_threshold: float = 0.01,
+    rv_maf_threshold: float = 0.05,
+    vre_mac_threshold: int = 20,
+    vre_n_markers: int = 20000,
 ):
     """Subset hail matrix table
 
     Input:
-    joint call hail matrix table
-    set of samples for which we have scRNA-seq data
+    - joint call hail matrix table
+    - set of samples for which we have scRNA-seq data
+    - file paths for ouputs
+    - MAF thresholds to define common / rare variants
 
-    Output:
+    Output 1&2:
     subset hail matrix table, containing only variants that:
-    1) are not ref-only, 2) biallelic, 3) meet QC filters, 4) are rare (MAF<5%)
+    i) are not ref-only, ii) biallelic, iii) meet QC filters,
+    and samples that are contained in sc sample list.
 
-    also, plink file containing variants that satisfy 1),2),3)
-    but that are common (MAF>1%) to build sparse GRM
+    Then, in output1 variants are also rare (freq < rv_maf_threshold)
+    and in output that are common (freq > cv_maf_threshold)
+
+    Output 3:
+    plink file containing a random subset of 2,000 variants that satisfy i),ii),iii)
+    that are additionally sufficiently common (MAC>20) and not in LD
     """
     # read hail matrix table object (WGS data)
     init_batch()
@@ -110,11 +121,25 @@ def filter_variants(
     )
 
     mt = hl.variant_qc(mt)
-    # filter common (enough) variants to build sparse GRM (ask Wei)
-    grm_mt = mt.filter_rows(
-        (mt.variant_qc.AF[1] > 0.01) & (mt.variant_qc.AF[1] < 1)
-        | (mt.variant_qc.AF[1] < 0.99) & (mt.variant_qc.AF[1] > 0)
+
+    # subset variants for variance ratio estimation
+    tot_counts = mt.variant_qc.AC.sum()  # ????
+    vre_mt = mt.filter_rows(
+        (mt.variant_qc.AC[1] > vre_mac_threshold) & (mt.variant_qc.AC[1] < tot_counts)
+        | (mt.variant_qc.AF[1] < (tot_counts-vre_mac_threshold)) & (mt.variant_qc.AC[1] > 0)
     )
+    # perform LD pruning (in case this is very costly, can we subset to say 10X the amount we need and hope there are enough left after pruning still?)
+    pruned_variant_table = hl.ld_prune(vre_mt.GT, r2=0.2, bp_window_size=500000)
+    vre_mt = vre_mt.filter_rows(hl.is_defined(pruned_variant_table[vre_mt.row_key]))
+    # randomly sample {vre_n_markers} variants
+    vre_mt = vre_mt[sample(vre_n_markers)]  # figure out syntax
+
+    # filter common variants for single-variant association
+    cv_mt = mt.filter_rows(
+        (mt.variant_qc.AF[1] > cv_maf_threshold) & (mt.variant_qc.AF[1] < 1)
+        | (mt.variant_qc.AF[1] < (1-cv_maf_threshold)) & (mt.variant_qc.AF[1] > 0)
+    )
+    cv_mt.write(output_cv_mt_path, overwrite=True)
 
     # export to plink common variants only for sparse GRM
     from hail.methods import export_plink
@@ -123,10 +148,10 @@ def filter_variants(
 
     # filter rare variants only (MAF < 5%)
     mt = mt.filter_rows(
-        (mt.variant_qc.AF[1] < 0.05) & (mt.variant_qc.AF[1] > 0)
-        | (mt.variant_qc.AF[1] > 0.95) & (mt.variant_qc.AF[1] < 1)
+        (mt.variant_qc.AF[1] < rv_maf_threshold) & (mt.variant_qc.AF[1] > 0)
+        | (mt.variant_qc.AF[1] > (1-rv_maf_threshold)) & (mt.variant_qc.AF[1] < 1)
     )
-    mt.write(output_mt_path, overwrite=True)
+    mt.write(output_rv_mt_path, overwrite=True)
     logging.info(f"Number of rare (freq<5%) and QCed biallelic SNPs: {mt.count()[0]}")
 
 
