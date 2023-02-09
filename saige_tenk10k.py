@@ -132,7 +132,8 @@ def filter_variants(
     pruned_variant_table = hl.ld_prune(vre_mt.GT, r2=0.2, bp_window_size=500000)
     vre_mt = vre_mt.filter_rows(hl.is_defined(pruned_variant_table[vre_mt.row_key]))
     # randomly sample {vre_n_markers} variants
-    vre_mt = vre_mt.sample_rows(vre_mt.count[0]/vre_n_markers)  # figure out syntax
+    vre_mt = vre_mt.sample_rows((vre_n_markers + 10)/vre_mt.count[0])
+    vre_mt = vre_mt.head(vre_n_markers)
 
     # export to plink common variants only for sparse GRM
     from hail.methods import export_plink
