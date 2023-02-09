@@ -6,12 +6,13 @@ __author__ = "annacuomo"
 """
 Hail Batch workflow for the rare-variant association analysis, including:
 
-MAKE BELOW LESS VAGUE
-- get relevant variants around a gene and export genotypes as plink files
-- generate other input files for association tests (phenotype, covariares, groups)
-- run association tests
+- get relevant variants around a gene and export genotypes as plink files,
+- generate other input files for association tests (phenotype, covariates, groups),
+- run association tests.
+
+More details in README
+ouput files in tob_wgs_genetics/saige_qtl/output
 """
-# using https://github.com/populationgenomics/cellregmap-pipeline/edit/main/batch.py as template
 
 # import python modules
 import os
@@ -59,24 +60,19 @@ DEFAULT_ANNOTATION_HT = dataset_path(
     "tob_wgs_vep/104/vep104.3_GRCh38.ht"
 )  # atm VEP only - add open chromatin info
 
-HAIL_IMAGE = get_config()["workflow"][
-    "driver_image"
-]  # ?
-SAIGE_QTL_IMAGE = (
-    "australia-southeast1-docker.pkg.dev/cpg-common/images/saige-qtl"  # correct?
-)
-
-MULTIPY_IMAGE = "australia-southeast1-docker.pkg.dev/cpg-common/images/multipy:0.16"  # not sure I will need this
+HAIL_IMAGE = get_config()["workflow"]["driver_image"]
+SAIGE_QTL_IMAGE = "australia-southeast1-docker.pkg.dev/cpg-common/images/saige-qtl"
+MULTIPY_IMAGE = "australia-southeast1-docker.pkg.dev/cpg-common/images/multipy:0.16"
 
 # region SUBSET_VARIANTS
 
-# only needs to be run for a given cohort (e.g., OneK1K)
+# only needs to be run once for a given cohort (e.g., OneK1K)
 def filter_variants(
     mt_path: str,  # "mt/v7.mt"
     samples: list[str],
     output_rv_mt_path: str,  # "tob_wgs/densified_rv_only.mt"
     output_cv_mt_path: str,  # "tob_wgs/densified_cv_only.mt"
-    vre_plink_path: str,     # "tob_wgs/vr_plink_20k_variants
+    vre_plink_path: str,  # "tob_wgs/vr_plink_20k_variants
     cv_maf_threshold: float = 0.01,
     rv_maf_threshold: float = 0.05,
     vre_mac_threshold: int = 20,
@@ -126,14 +122,17 @@ def filter_variants(
     tot_counts = mt.variant_qc.AC.sum()  # ????
     vre_mt = mt.filter_rows(
         (mt.variant_qc.AC[1] > vre_mac_threshold) & (mt.variant_qc.AC[1] < tot_counts)
-        | (mt.variant_qc.AF[1] < (tot_counts-vre_mac_threshold)) & (mt.variant_qc.AC[1] > 0)
+        | (mt.variant_qc.AF[1] < (tot_counts - vre_mac_threshold))
+        & (mt.variant_qc.AC[1] > 0)
     )
     # perform LD pruning
-    vre_mt = vre_mt.sample_rows(p=0.1)  # in case this is very costly, subset first a bit
+    vre_mt = vre_mt.sample_rows(
+        p=0.01
+    )  # in case this is very costly, subset first a bit
     pruned_variant_table = hl.ld_prune(vre_mt.GT, r2=0.2, bp_window_size=500000)
     vre_mt = vre_mt.filter_rows(hl.is_defined(pruned_variant_table[vre_mt.row_key]))
     # randomly sample {vre_n_markers} variants
-    vre_mt = vre_mt.sample_rows((vre_n_markers*1.1)/vre_mt.count[0])
+    vre_mt = vre_mt.sample_rows((vre_n_markers * 1.1) / vre_mt.count[0])
     vre_mt = vre_mt.head(vre_n_markers)
 
     # export to plink common variants only for sparse GRM
@@ -144,22 +143,116 @@ def filter_variants(
     # filter common variants for single-variant association
     cv_mt = mt.filter_rows(
         (mt.variant_qc.AF[1] > cv_maf_threshold) & (mt.variant_qc.AF[1] < 1)
-        | (mt.variant_qc.AF[1] < (1-cv_maf_threshold)) & (mt.variant_qc.AF[1] > 0)
+        | (mt.variant_qc.AF[1] < (1 - cv_maf_threshold)) & (mt.variant_qc.AF[1] > 0)
     )
     cv_mt.write(output_cv_mt_path, overwrite=True)
-    logging.info(f"Number of common (freq>{cv_maf_threshold*100}%) and QCed biallelic SNPs: {cv_mt.count()[0]}")
+    logging.info(
+        f"Number of common (freq>{cv_maf_threshold*100}%) and QCed biallelic SNPs: {cv_mt.count()[0]}"
+    )
 
     # filter rare variants only (MAF < 5%)
     mt = mt.filter_rows(
         (mt.variant_qc.AF[1] < rv_maf_threshold) & (mt.variant_qc.AF[1] > 0)
-        | (mt.variant_qc.AF[1] > (1-rv_maf_threshold)) & (mt.variant_qc.AF[1] < 1)
+        | (mt.variant_qc.AF[1] > (1 - rv_maf_threshold)) & (mt.variant_qc.AF[1] < 1)
     )
     mt.write(output_rv_mt_path, overwrite=True)
-    logging.info(f"Number of rare (freq<{rv_maf_threshold*100}%) and QCed biallelic SNPs: {mt.count()[0]}")
+    logging.info(
+        f"Number of rare (freq<{rv_maf_threshold*100}%) and QCed biallelic SNPs: {mt.count()[0]}"
+    )
 
 
 # endregion SUBSET_VARIANTS
 
+# region PREPARE_PHENO_COV_FILE
+
+
+def prepare_pheno_cov_file(
+    chromosome: str,
+    cell_type: str,
+    phenotype_file: str,
+    cov_file: str,
+    sample_mapping_file: str,
+):
+    """Prepare pheno+cov file for SAIGE-QTL
+
+    Input:
+    phenotype: gene expression (h5ad)
+    covariates: cell-level (tsv)
+
+    Output:
+    pheno_cov file path (not actually returned, just written to inside function)
+    """
+
+    pheno_cov_filename = to_path(
+        output_path(f"input/pheno_cov_files/{cell_type}_chr{chromosome}_allgenes.tsv")
+    )
+
+    # this file will map different IDs (and OneK1K ID to CPG ID) as well as donors to cells
+    #         CPG ID  | OneK1K ID |    cell barcode     | cell type
+    # e.g.,   CPG7385 |  686_687  | AAACCTGCAACGATCT-1  |   CD4_T
+    sample_mapping = pd.read_csv(
+        sample_mapping_file,
+        dtype={
+            "onek1k_id_long": str,
+            "onek1k_id_short": str,
+            "cpg_id": str,
+            "cell_barcode": str,
+            "celltype_label": str,
+        },
+        index_col=0,
+    )
+    # subset to relevant cells (given cell_type)
+    sample_mapping = sample_mapping["celltype_label" == cell_type]
+
+    # read in phenotype file (scanpy object AnnData)
+    # open anndata
+    adata = sc.read(phenotype_file)
+    # sparse to dense
+    mat = adata.raw.X.todense()
+    # make pandas dataframe
+    mat_df = pd.DataFrame(
+        data=mat.T, index=adata.raw.var.index, columns=adata.obs.index
+    )
+    # turn into xr array
+    phenotype = xr.DataArray(
+        mat_df.values,
+        dims=["trait", "cell"],
+        coords={"trait": mat_df.index.values, "cell": mat_df.columns.values},
+    )
+    # consider only correct cells
+    phenotype = phenotype.sel(cell=sample_mapping["cell_barcode"].values)
+
+    # delete large files to free up memory
+    del mat
+    del mat_df
+
+    # read in covariate file (tsv)
+    # this file is defined at cell level, as:
+    # cell barcode | cov1 | cov2 | ... | cov N
+    covs = pd.read_csv(cov_file, sep="\t", index_col=0)
+
+    # add individual ID to covariates (this will also subset covs to right cells)
+    cov_samples = covs.merge(sample_mapping, on="cell_barcode")
+
+    # make data frame to save as tsv
+    expr_df = pd.DataFrame(
+        data=phenotype.values.T,
+        index=phenotype.sample.values,
+        columns=phenotype.trait.values,
+    )
+
+    del phenotype  # delete to free up memory
+
+    # make final data frame
+    # columns = y | cov1 | ... | covN | indID
+    pheno_cov_df = expr_df.merge(cov_samples, on="cell_barcode")
+
+    # save files
+    with pheno_cov_filename.open("w") as pcf:
+        pheno_cov_df.to_csv(pcf, index=False, sep="\t")
+
+
+# endregion PREPARE_PHENO_COV_FILE
 
 # region GET_GENE_SPECIFIC_VARIANTS
 
@@ -255,96 +348,6 @@ def get_promoter_variants(
 
 
 # endregion GET_GENE_SPECIFIC_VARIANTS
-
-# region PREPARE_PHENO_COV_FILE
-
-
-def prepare_pheno_cov_file(
-    gene_name: str,
-    cell_type: str,
-    phenotype_file: str,
-    cov_file: str,
-    sample_mapping_file: str,
-):
-    """Prepare pheno+cov file for SAIGE-QTL
-
-    Input:
-    phenotype: gene expression (h5ad)
-    covariates: cell-level (tsv)
-
-    Output:
-    pheno_cov file path? maybe no need to return anything, just write to file
-    """
-
-    pheno_cov_filename = to_path(
-        output_path(f"input/pheno_cov_files/{gene_name}_{cell_type}.tsv")
-    )
-
-    # this file will map different IDs (and OneK1K ID to CPG ID) as well as donors to cells
-    #         CPG ID  | OneK1K ID |    cell barcode     | cell type
-    # e.g.,   CPG7385 |  686_687  | AAACCTGCAACGATCT-1  |   CD4_T
-    sample_mapping = pd.read_csv(
-        sample_mapping_file,
-        dtype={
-            "onek1k_id_long": str,
-            "onek1k_id_short": str,
-            "cpg_id": str,
-            "cell_barcode": str,
-            "celltype_label": str,
-        },
-        index_col=0,
-    )
-    # subset to relevant cells (given cell_type)
-    sample_mapping = sample_mapping["celltype_label" == cell_type]
-
-    # read in phenotype file (scanpy object AnnData)
-    # open anndata
-    adata = sc.read(phenotype_file)
-    # sparse to dense
-    mat = adata.raw.X.todense()
-    # make pandas dataframe
-    mat_df = pd.DataFrame(
-        data=mat.T, index=adata.raw.var.index, columns=adata.obs.index
-    )
-    # turn into xr array
-    phenotype = xr.DataArray(
-        mat_df.values,
-        dims=["trait", "cell"],
-        coords={"trait": mat_df.index.values, "cell": mat_df.columns.values},
-    )
-    # consider only correct cells
-    phenotype = phenotype.sel(cell=sample_mapping["cell_barcode"].values)
-
-    # delete large files to free up memory
-    del mat
-    del mat_df
-
-    # read in covariate file (tsv)
-    # this file is defined at cell level, as:
-    # cell barcode | cov1 | cov2 | ... | cov N
-    covs = pd.read_csv(cov_file, sep="\t", index_col=0)
-
-    # add individual ID to covariates (this will also subset covs to right cells)
-    cov_samples = covs.merge(sample_mapping, on="cell_barcode")
-
-    # extract expressino for the specific gene
-    expr = phenotype.sel(gene=gene_name)
-    del phenotype  # delete to free up memory
-    # make data frame to save as tsv
-    expr_df = pd.DataFrame(
-        data=expr.values.reshape(expr.shape[0], 1), index=expr.sample.values, columns=[gene_name]
-    )
-
-    # make final data frame
-    # columns = y | cov1 | ... | covN | indID
-    pheno_cov_df = expr_df.merge(cov_samples, on="cell_barcode")
-
-    # save files
-    with pheno_cov_filename.open("w") as pcf:
-        pheno_cov_df.to_csv(pcf, index=False, sep="\t")
-
-
-# endregion PREPARE_PHENO_COV_FILE
 
 
 # region GET_SAIGE_COMMANDS
@@ -472,9 +475,8 @@ def build_run_set_test_command(
 # endregion GET_SAIGE_COMMANDS
 
 
-
-
 # region AGGREGATE_RESULTS
+
 
 def summarise_association_results(
     celltype: str,
@@ -506,7 +508,10 @@ def summarise_association_results(
         raise Exception("No PV files, nothing to do")
 
     pv_all_df = pd.concat(
-        [pd.read_csv(to_path(pv_df), index_col=0, sep="\t") for pv_df in existing_pv_files]
+        [
+            pd.read_csv(to_path(pv_df), index_col=0, sep="\t")
+            for pv_df in existing_pv_files
+        ]
     )
 
     # run qvalues for all tests (multiple testing correction)
@@ -516,7 +521,6 @@ def summarise_association_results(
     pv_all_df["Qvalue_Burden"] = list(qvals)
     _, qvals = qvalue(pv_all_df["Pvalue_SKAT"])
     pv_all_df["Qvalue_SKAT"] = list(qvals)
-
 
     pv_all_filename = to_path(pv_all_filename_str)
     logging.info(f"Write summary results to {pv_all_filename}")
@@ -583,19 +587,20 @@ config = get_config()
 @click.command()
 @click.option("--celltypes")
 @click.option("--geneloc-files-prefix", default="scrna-seq/grch38_association_files")
-@click.option("--expression-files-prefix")
+@click.option("--input-files-prefix", default="tob_wgs_genetics/saige_qtl/input")
 @click.option(
     "--sample-mapping-file-tsv",
     default="scrna-seq/grch38_association_files/OneK1K_CPG_IDs.tsv",  # this needs to be updated
 )
 @click.option("--mt-path", default=DEFAULT_JOINT_CALL_MT)
-@click.option("--anno-ht-path", default=DEFAULT_ANNOTATION_HT)
+@click.option("--anno-ht-path", default=DEFAULT_ANNOTATION_HT)  # this needs to be updated
 @click.option(
     "--chromosomes",
     help="List of chromosome numbers to run rare variant association analysis on. "
     "Space separated, as one argument (Default: all)",
 )
 @click.option("--genes", default=None)
+@click.option("--window_size", default=50000, help="cis size of window around gene")
 @click.option(
     "--max-gene-concurrency",
     type=int,
@@ -608,7 +613,7 @@ config = get_config()
 def saige_pipeline(
     celltypes: str,
     geneloc_files_prefix: str,
-    expression_files_prefix: str,
+    input_files_prefix: str,
     sample_mapping_file_tsv: str,
     mt_path: str,
     anno_ht_path: str,
@@ -622,7 +627,7 @@ def saige_pipeline(
         billing_project=get_config()["hail"]["billing_project"],
         remote_tmpdir=remote_tmpdir(),
     )
-    batch = hb.Batch("CellRegMap pipeline", backend=sb)
+    batch = hb.Batch("SAIGE-QTL pipeline", backend=sb)
 
     # extract individuals for which we have single-cell (sc) data
     sample_mapping_file = pd.read_csv(dataset_path(sample_mapping_file_tsv), sep="\t")
@@ -632,8 +637,10 @@ def saige_pipeline(
     sc_samples = sample_mapping_file["InternalID"].unique()
 
     # filter to QC-passing, rare, biallelic variants
-    output_mt_path = output_path("densified_rv_only.mt")
-    if not to_path(output_mt_path).exists():
+    output_rv_mt_path = output_path("densified_rv_only.mt")
+    output_cv_mt_path = output_path("densified_cv_only.mt")
+    vre_plink_path = output_path("vr_plink_20k_variants")
+    if not to_path(output_rv_mt_path).exists():
 
         filter_job = batch.new_python_job(name="MT filter job")
         copy_common_env(filter_job)
@@ -642,7 +649,9 @@ def saige_pipeline(
             filter_variants,
             mt_path=mt_path,
             samples=list(sc_samples),
-            output_mt_path=output_mt_path,
+            output_rv_mt_path=output_rv_mt_path,
+            output_cv_mt_path=output_cv_mt_path,
+            vre_plink_path=vre_plink_path,
         )
 
     else:
@@ -680,7 +689,7 @@ def saige_pipeline(
     for chromosome in chromosomes_list:
         expression_h5ad_path = dataset_path(
             os.path.join(
-                expression_files_prefix,
+                input_files_prefix,
                 "expression_objects",
                 f"sce{chromosome}.h5ad",
             )
@@ -690,7 +699,6 @@ def saige_pipeline(
         logging.info(f"after extracting chrom {chromosome} genes - plink files")
     plink_genes = list(sorted(_plink_genes))
     logging.info(f"Done selecting genes, total number: {len(plink_genes)}")
-
 
     # Setup MAX concurrency by genes
     _dependent_jobs: list[hb.job.Job] = []
@@ -739,7 +747,7 @@ def saige_pipeline(
         plink_job.image(HAIL_IMAGE)
         plink_job.call(
             get_promoter_variants,
-            mt_path=output_mt_path,
+            mt_path=output_rv_mt_path,
             ht_path=anno_ht_path,
             gene_details=gene_dict[gene],
             window_size=window_size,
@@ -752,6 +760,28 @@ def saige_pipeline(
     logging.info(f"Cell types to run: {celltype_list}")
 
     # the next phase will be done for each cell type
+    for celltype in celltype_list:
+        for chromosome in chromosomes_list:
+            # input: gene ID, phenotype file, covariate file
+            # output: pheno_cov file
+            pheno_cov_job = batch.new_python_job(
+                f"Make pheno cov file for: {gene}, {celltype}"
+            )
+            manage_concurrency_for_job(pheno_cov_job)
+            copy_common_env(pheno_cov_job)
+            # does not depend on any other jobs
+            pheno_cov_job.image(HAIL_IMAGE)
+            pheno_cov_job.call(
+                prepare_pheno_cov_file,
+                gene_name=gene,
+                cell_type=celltype,
+                phenotype_file=f'sce{chromosome}.h5ad',
+                cov_file=f'{celltype}_covs.tsv',
+                sample_mapping_file=sample_mapping_file,
+            )
+
+
+
     for celltype in celltype_list:
         gene_run_jobs = []
         # need to remind myself of what was happening here
@@ -784,42 +814,26 @@ def saige_pipeline(
 
             plink_output_prefix = gene_dict[gene]["plink"]
 
-            # input: gene ID, phenotype file, covariate file
-            # output: pheno_cov file
-            pheno_cov_prefix = output_path(pheno_cov_prefix)
-            pheno_cov_filename = f'{pheno_cov_prefix}/{celltype}/{gene}.tsv'
-            pheno_cov_job = batch.new_python_job(
-                f"Make pheno cov file for: {gene}, {celltype}"
-            )
-            manage_concurrency_for_job(pheno_cov_job)
-            copy_common_env(pheno_cov_job)
-            # does not depend on any other jobs
-            pheno_cov_job.image(HAIL_IMAGE)
-            pheno_cov_job.call(
-                prepare_pheno_cov_file,
-                gene_name=gene,
-                cell_type=celltype,
-                phenotype_file=pheno_cov_filename,
-                cov_file=covariate_filename,
-                sample_mapping_file=sample_mapping_file,
-            )
 
             # input: sparse GRM, pheno_cov file, subset plink files
             # output: null model object, variance ratio (VR) estimate file
-            fit_null_job = batch.new_python_job(f"Fit null model for: {gene}, {celltype}")
+            fit_null_job = batch.new_python_job(
+                f"Fit null model for: {gene}, {celltype}"
+            )
             manage_concurrency_for_job(fit_null_job)
             copy_common_env(fit_null_job)
             # syntax below probably does not work
-            dependencies = [sparse_grm_job, filter_job, pheno_cov_job]
+            dependencies = [filter_job, pheno_cov_job]
             fit_null_job.depends_on(dependencies)
             fit_null_job.image(SAIGE_QTL_IMAGE)
+            pheno_cov_filename = output_path(f"input/pheno_cov_files/{celltype}_chr{chromosome}_genes.tsv")
             # python job creating Rscript command
             cmd = fit_null_job.call(
                 build_fit_null_command,
                 pheno_file=pheno_cov_filename,
-                cov_col_list=cols,  # define these when making cov file
+                cov_col_list="PC1",  # define these when making cov file
                 sample_id_pheno="cpg_id",  # check
-                plink_path=subset_plink_path,  # this is just for variance ratio estimation?
+                plink_path=vre_plink_path,  # this is just for variance ratio estimation?
                 output_prefix=output_path(),
                 pheno_col=gene,  # consider swapping to y
             )
@@ -831,51 +845,16 @@ def saige_pipeline(
             run_association_job = batch.new_python_job(
                 f"Run gene set association for: {gene}, {celltype}"
             )
-            dependencies = [fit_null_job, gene_job]
+            dependencies = [fit_null_job, plink_job]
             run_association_job.depends_on(dependencies)
             run_association_job.image(SAIGE_QTL_IMAGE)
             # python job creating Rscript command
             cmd = run_association_job.call(
-                build_run_set_test_command, params
-            )
+                build_run_set_test_command,
+                )
             # regular job submitting the Rscript command to bash
             run_association_job.command(cmd)
 
-
-
-            # prepare input files
-            run_job = batch.new_python_job(f"Run association for: {celltype}, {gene}")
-            manage_concurrency_for_job(run_job)
-            copy_common_env(run_job)
-            if dependency := dependencies_dict.get(gene):
-                run_job.depends_on(dependency)
-            run_job.image(SAIGE_QTL_IMAGE)
-            j = batch.new_job("Fit null model")
-            j.image("some/R:image")
-            step1_cmd = build_fit_null_command()
-            j.command(step1_cmd)
-            # the python_job.call only returns one object
-            # the object is a file containing y_df, geno_df, kinship_df
-            # all pickled into a file
-            input_results = run_job.call(
-                prepare_input_files,
-                gene_name=gene,
-                cell_type=celltype,
-                genotype_file_bed=plink_output_prefix + ".bed",
-                genotype_file_bim=plink_output_prefix + ".bim",
-                genotype_file_fam=plink_output_prefix + ".fam",
-                phenotype_file=expression_tsv_path,
-                kinship_file=None,  # change this to work when this file is needed
-                sample_mapping_file=sample_mapping_file_tsv,
-            )
-            # run association in the same python env
-            gene_run_jobs.append(run_job)
-            run_job.call(
-                run_gene_association,
-                gene_name=gene,
-                prepared_inputs=input_results,
-                pv_path=pv_file,
-            )
 
         # combine all p-values across all chromosomes, genes (per cell type)
         summarise_job = batch.new_python_job(f"Summarise all results for {celltype}")

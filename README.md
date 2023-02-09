@@ -77,12 +77,12 @@ Python to aggregate all results from Step2 above
 analysis-runner \
     --dataset tob-wgs \
     --access-level standard \
-    --output-dir "tob_wgs/saige_qtl/" \
+    --output-dir "tob_wgs_genetics/saige_qtl/" \
     --image ? \
     --description "Saige QTL batch job" \
     python3 saige_tenk10k.py \
-      --expression-files-prefix scrna-seq/grch38_association_files \
-      --sample-mapping-file-tsv scrna-seq/grch38_association_files/OneK1K_CPG_IDs.tsv \
+      --input-files-prefix tob_wgs_genetics/saige_qtl/input \
+      --sample-mapping-file-tsv tob_wgs_genetics/saige_qtl/input/smf.tsv \
       --genes VPREB3 \
       --chromosomes 22 \
       --celltypes B_intermediate
