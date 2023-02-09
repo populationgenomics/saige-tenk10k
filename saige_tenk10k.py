@@ -339,6 +339,17 @@ def get_promoter_variants(
     ht = mt.rows()
     ht.write(ht_path, overwrite=True)
 
+    # write as group file
+    df0 = pd.DataFrame([[gene_name, "var"],[gene_name, "anno"]])
+    variants = ht.locus.collect()
+    annos = ht.atac.collect()
+    data = [[variants], [annos]]
+    df = df0.concat(pd.DataFrame(data), axis=1)
+    group_filename = output_path(
+        f"input/group_files/{gene_name}_groups.tsv",
+    )
+    df.to_csv(group_filename)
+
     # export MT object to PLINK (promoter variants)
     # pylint: disable=import-outside-toplevel
     from hail.methods import export_plink
