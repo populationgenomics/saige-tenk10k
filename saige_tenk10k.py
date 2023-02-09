@@ -112,7 +112,7 @@ def filter_variants(
     # densify
     mt = hl.experimental.densify(mt)
 
-    # filter out low quality variants and consider biallelic SNPss only (no multi-allelic, no ref-only, no indels)
+    # filter out low quality variants and consider biallelic SNPs only (no multi-allelic, no ref-only, no indels)
     mt = mt.filter_rows(  # check these filters!
         (hl.len(hl.or_else(mt.filters, hl.empty_set(hl.tstr))) == 0)  # QC
         & (hl.len(mt.alleles) == 2)  # remove hom-ref
@@ -147,8 +147,7 @@ def filter_variants(
         | (mt.variant_qc.AF[1] < (1-cv_maf_threshold)) & (mt.variant_qc.AF[1] > 0)
     )
     cv_mt.write(output_cv_mt_path, overwrite=True)
-
-
+    logging.info(f"Number of common (freq>{cv_maf_threshold*100}%) and QCed biallelic SNPs: {cv_mt.count()[0]}")
 
     # filter rare variants only (MAF < 5%)
     mt = mt.filter_rows(
@@ -156,43 +155,11 @@ def filter_variants(
         | (mt.variant_qc.AF[1] > (1-rv_maf_threshold)) & (mt.variant_qc.AF[1] < 1)
     )
     mt.write(output_rv_mt_path, overwrite=True)
-    logging.info(f"Number of rare (freq<5%) and QCed biallelic SNPs: {mt.count()[0]}")
+    logging.info(f"Number of rare (freq<{rv_maf_threshold*100}%) and QCed biallelic SNPs: {mt.count()[0]}")
 
 
 # endregion SUBSET_VARIANTS
 
-# region CREATE_SPARSE_GRM
-
-# Create sparse GRM
-def build_sparse_grm_command(
-    plink_path: str,  # path to plink files generated in filter job
-    output_prefix: str,  # should end in sparseGRM
-    n_threads: int = 4,
-    n_random: int = 2000,
-    relatedness_cutoff: float = 0.125,
-):
-    """Build SAIGE command for SPARSE GRM
-
-    Input:
-    plink_path: path to (GRM) plink file
-    output prefix: where to save sparse GRM
-    n threads: to use for computation, maybe different on GCP?
-    n random: ???
-    relatedness cutoff for pruning?
-
-    Output:
-    Rscript command (str) ready to run
-    """
-    saige_command_step0 = "Rscript createSparseGRM.R"
-    saige_command_step0 += f" --plinkFile={plink_path}"
-    saige_command_step0 += f" --nThreads={n_threads}"
-    saige_command_step0 += f" --outputPrefix={output_prefix}"
-    saige_command_step0 += f" --numRandomMarkerforSparseKin={n_random}"
-    saige_command_step0 += f" --relatednessCutoff={relatedness_cutoff}"
-    return saige_command_step0
-
-
-# endregion CREATE_SPARSE_GRM
 
 # region GET_GENE_SPECIFIC_VARIANTS
 
@@ -384,8 +351,6 @@ def prepare_pheno_cov_file(
 
 # Fit null model
 def build_fit_null_command(
-    sparse_grm_file: str,  # .mtx
-    sparse_grm_sampleid_file: str,  # .mtx.sampleID
     pheno_file: str,
     cov_col_list: str,  # PC1
     sample_id_pheno: str,  # IND_ID
@@ -403,8 +368,6 @@ def build_fit_null_command(
     This will fit a Poisson / NB mixed model under the null hypothesis
 
     Input:
-    - Sparse GRM file (generated previously using build_sparse_grm_command)
-    - Sparse GRM sample ID file (to match sample ID's? check)
     - Phenotype / covariate file - rows: samples, cols: pheno (y), cov1, cov2 etc
     - List of columns from previous file that should be used as covariates
     - Column name of sample column (e.g., IND_ID, or CPG_ID etc)
@@ -424,8 +387,7 @@ def build_fit_null_command(
     """
     saige_command_step1 = "Rscript step1_fitNULLGLMM_qtl.R"
     # figure out whether these are always needed or no
-    saige_command_step1 += f" --sparseGRMFile={sparse_grm_file}"
-    saige_command_step1 += f" --sparseGRMSampleIDFile={sparse_grm_sampleid_file}"
+    saige_command_step1 += f" --useGRMtoFitNULL=FALSE"
     saige_command_step1 += f" --phenoFile={pheno_file}"
     saige_command_step1 += f" --phenoCol={pheno_col}"
     saige_command_step1 += f" --covarColList={cov_col_list}"
@@ -514,9 +476,7 @@ def build_run_set_test_command(
 
 # region AGGREGATE_RESULTS
 
-# this is the last function that still needs updating
 def summarise_association_results(
-    # pv_dfs: list[str],
     celltype: str,
     pv_all_filename_str: str,
 ):
