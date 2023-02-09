@@ -70,12 +70,13 @@ MULTIPY_IMAGE = "australia-southeast1-docker.pkg.dev/cpg-common/images/multipy:0
 
 # region SUBSET_VARIANTS
 
-# same as https://github.com/populationgenomics/cellregmap-pipeline/blob/main/batch.py
+# only needs to be run for a given cohort (e.g., OneK1K)
 def filter_variants(
     mt_path: str,  # "mt/v7.mt"
     samples: list[str],
-    output_mt_path: str,  # "tob_wgs_rv/densified_rv_only.mt"
-    grm_plink_file: str,
+    output_rv_mt_path: str,  # "tob_wgs/densified_rv_only.mt"
+    output_cv_mt_path: str,  # "tob_wgs/densified_cv_only.mt"
+    vre_plink_file: str,     # "tob_wgs/
 ):
     """Subset hail matrix table
 
