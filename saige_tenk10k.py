@@ -128,11 +128,12 @@ def filter_variants(
         (mt.variant_qc.AC[1] > vre_mac_threshold) & (mt.variant_qc.AC[1] < tot_counts)
         | (mt.variant_qc.AF[1] < (tot_counts-vre_mac_threshold)) & (mt.variant_qc.AC[1] > 0)
     )
-    # perform LD pruning (in case this is very costly, can we subset to say 10X the amount we need and hope there are enough left after pruning still?)
+    # perform LD pruning
+    vre_mt = vre_mt.sample_rows(p=0.1)  # in case this is very costly, subset first a bit
     pruned_variant_table = hl.ld_prune(vre_mt.GT, r2=0.2, bp_window_size=500000)
     vre_mt = vre_mt.filter_rows(hl.is_defined(pruned_variant_table[vre_mt.row_key]))
     # randomly sample {vre_n_markers} variants
-    vre_mt = vre_mt.sample_rows((vre_n_markers + 1)/vre_mt.count[0])
+    vre_mt = vre_mt.sample_rows((vre_n_markers*1.1)/vre_mt.count[0])
     vre_mt = vre_mt.head(vre_n_markers)
 
     # export to plink common variants only for sparse GRM
