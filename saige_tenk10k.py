@@ -11,7 +11,7 @@ Hail Batch workflow for the rare-variant association analysis, including:
 - run association tests.
 
 More details in README
-ouput files in tob_wgs_genetics/saige_qtl/output
+output files in tob_wgs_genetics/saige_qtl/output
 """
 
 # import python modules
@@ -813,7 +813,7 @@ def saige_pipeline(
 
             plink_output_prefix = gene_dict[gene]["plink"]
 
-            # input: sparse GRM, pheno_cov file, subset plink files
+            # input: pheno_cov file, subset plink files
             # output: null model object, variance ratio (VR) estimate file
             fit_null_job = batch.new_python_job(
                 f"Fit null model for: {gene}, {celltype}"
@@ -835,13 +835,14 @@ def saige_pipeline(
                 sample_id_pheno="cpg_id",  # check
                 plink_path=vre_plink_path,  # this is just for variance ratio estimation?
                 output_prefix=output_path("output/saige_model"),
-                pheno_col=gene,  # consider swapping to y
+                pheno_col=gene,
+                trait_type="count",  # to evaluate vs "count_NB"
             )
             # regular job submitting the Rscript command to bash
             fit_null_job.command(cmd)
 
             # input: null model object, VR file, gene specific genotypes (w open chromatin flags)
-            # ouput: summary stats
+            # output: summary stats
             run_association_job = batch.new_python_job(
                 f"Run gene set association for: {gene}, {celltype}"
             )
