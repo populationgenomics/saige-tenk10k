@@ -826,7 +826,7 @@ def saige_pipeline(
             dependencies = [filter_job, pheno_cov_job]
             fit_null_job.depends_on(dependencies)
             fit_null_job.image(SAIGE_QTL_IMAGE)
-            pheno_cov_filename = output_path(f"input/pheno_cov_files/{celltype}_chr{chromosome}_genes.tsv")
+            pheno_cov_filename = output_path(f"input/pheno_cov_files/{celltype}_chr{chromosome}_allgenes.tsv")
             # python job creating Rscript command
             cmd = fit_null_job.call(
                 build_fit_null_command,
@@ -834,7 +834,7 @@ def saige_pipeline(
                 cov_col_list="PC1",  # define these when making cov file
                 sample_id_pheno="cpg_id",  # check
                 plink_path=vre_plink_path,  # this is just for variance ratio estimation?
-                output_prefix=output_path(),
+                output_prefix=output_path("output/saige_model"),
                 pheno_col=gene,  # consider swapping to y
             )
             # regular job submitting the Rscript command to bash
@@ -851,7 +851,15 @@ def saige_pipeline(
             # python job creating Rscript command
             cmd = run_association_job.call(
                 build_run_set_test_command,
-                )
+                plink_prefix=plink_output_prefix,
+                saige_output_file=output_path("output/saige"),
+                chrom=chromosome,
+                gmmat_model_path=output_path("output/saige_model.rda"),
+                variance_ratio_path=output_path("output/saige_model.varianceRatio.txt"),
+                group_annotation=f"open_chromatin_{celltype}",
+                group_file=dataset_path(f"input/group_files/{gene}_group.txt"),
+                allele_order="ref-first",
+            )
             # regular job submitting the Rscript command to bash
             run_association_job.command(cmd)
 
