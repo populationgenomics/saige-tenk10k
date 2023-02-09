@@ -72,7 +72,7 @@ Output:
 ### Results aggregation (once per cell type)
 Python to aggregate all results from Step2 above
 
-To run (update):
+### To run (this may need to be updated):
 ```
 analysis-runner \
     --dataset tob-wgs \
