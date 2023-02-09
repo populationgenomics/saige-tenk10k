@@ -16,7 +16,6 @@ ouput files in tob_wgs_genetics/saige_qtl/output
 
 # import python modules
 import os
-import re
 import sys
 
 import click
@@ -593,7 +592,9 @@ config = get_config()
     default="scrna-seq/grch38_association_files/OneK1K_CPG_IDs.tsv",  # this needs to be updated
 )
 @click.option("--mt-path", default=DEFAULT_JOINT_CALL_MT)
-@click.option("--anno-ht-path", default=DEFAULT_ANNOTATION_HT)  # this needs to be updated
+@click.option(
+    "--anno-ht-path", default=DEFAULT_ANNOTATION_HT
+)  # this needs to be updated
 @click.option(
     "--chromosomes",
     help="List of chromosome numbers to run rare variant association analysis on. "
@@ -775,12 +776,10 @@ def saige_pipeline(
                 prepare_pheno_cov_file,
                 gene_name=gene,
                 cell_type=celltype,
-                phenotype_file=f'sce{chromosome}.h5ad',
-                cov_file=f'{celltype}_covs.tsv',
+                phenotype_file=f"sce{chromosome}.h5ad",
+                cov_file=f"{celltype}_covs.tsv",
                 sample_mapping_file=sample_mapping_file,
             )
-
-
 
     for celltype in celltype_list:
         gene_run_jobs = []
@@ -814,7 +813,6 @@ def saige_pipeline(
 
             plink_output_prefix = gene_dict[gene]["plink"]
 
-
             # input: sparse GRM, pheno_cov file, subset plink files
             # output: null model object, variance ratio (VR) estimate file
             fit_null_job = batch.new_python_job(
@@ -826,7 +824,9 @@ def saige_pipeline(
             dependencies = [filter_job, pheno_cov_job]
             fit_null_job.depends_on(dependencies)
             fit_null_job.image(SAIGE_QTL_IMAGE)
-            pheno_cov_filename = output_path(f"input/pheno_cov_files/{celltype}_chr{chromosome}_allgenes.tsv")
+            pheno_cov_filename = output_path(
+                f"input/pheno_cov_files/{celltype}_chr{chromosome}_allgenes.tsv"
+            )
             # python job creating Rscript command
             cmd = fit_null_job.call(
                 build_fit_null_command,
@@ -862,7 +862,6 @@ def saige_pipeline(
             )
             # regular job submitting the Rscript command to bash
             run_association_job.command(cmd)
-
 
         # combine all p-values across all chromosomes, genes (per cell type)
         summarise_job = batch.new_python_job(f"Summarise all results for {celltype}")
