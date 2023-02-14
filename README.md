@@ -12,6 +12,7 @@ This is a hail batch pipeline to run the new [QTL version of SAIGE](https://gith
 Hail query to filter WGS object to i) QC-passing, ii) non ref-ref variants, and considering only samples for which we have scRNA-seq data.
 
 It outputs three objects:
+
 * MT object, rare (freq<5%) variants
 * MT object, common (freq>1%) variants
 * plink object for only 2,000 variants (MAC>20), after LD pruning - this is for the estimation of the variance ratio (VR plinks)
@@ -21,9 +22,11 @@ It outputs three objects:
   * just once for all individuals, all variants after LD-pruning, and MAF>1% -->
 
 ### Expression preprocessing (once per cell type)
+
 Python script to combine expression (pheno), covariates into a single pheno_cov file as input to saige-qtl.
 
 Inputs:
+
 * chromosome-specific scanpy (AnnData) objects, single-cell expression for all cells, all genes for that chromosome (sctransformed sc-counts)
 * covariates: combination of 1) exploded donor-level covariates (e.g., sex) and 2) cell-level covariates (PCs, batch)
 * sample mapping file: matching donor ID (onek1k vs CPG) and cell barcodes, including cell type labels
@@ -32,11 +35,14 @@ Output file (one per cell type):
 * text file concatenating covs, expression of genes, and individual id (same as plink files) for all cells from that cell type
 
 ### Variant selection (once per gene)
+
 Hail query to filter object to relevant variants
+
 * for common variants, only genomic proximity (+/-100kb)
 * for rare variants, i) genomic proximity (+/-50kb), 2) regulatory consequences (vep), 3) open chromatin (any cell type)
 
 Outputs:
+
 * plink files (.bed, .bim, .fam) for common variants
 * plink files (.bed, .bim, .fam) for rare variants
 * group file for rare variants. For each region(=gene?)
@@ -45,34 +51,43 @@ Outputs:
   * row3: region1 | weight | 0.5          | 0.3
 
 ### Run association (for each gene, cell type combination)
+
 For both step 1 and step2:
   * Python job to build command ("Rscript --arg1 par1 --arg2 par2..)
   * Job to run command
 
 #### Step1: Fit null model
+
 Inputs:
+
 * Pheno cov file
 * VR plinks
 * info on what gene, what covs, what likelihood to use
 
 Outputs:
+
 * model object (.rda)
 * variance ratio estimate (.txt)
 
 #### Step2: Run association
+
 Inputs:
+
 * model object (.rda)
 * variance ratio estimate (.txt)
 * genotypes to test (plink)
 * rare only: group file
 
 Output:
+
 * txt file with all results
 
 ### Results aggregation (once per cell type)
+
 Python to aggregate all results from Step2 above
 
 ### To run (this may need to be updated):
+
 ```
 analysis-runner \
     --dataset tob-wgs \
