@@ -32,6 +32,7 @@ Inputs:
 * sample mapping file: matching donor ID (onek1k vs CPG) and cell barcodes, including cell type labels
 
 Output file (one per cell type):
+
 * text file concatenating covs, expression of genes, and individual id (same as plink files) for all cells from that cell type
 
 ### Variant selection (once per gene)
@@ -53,6 +54,7 @@ Outputs:
 ### Run association (for each gene, cell type combination)
 
 For both step 1 and step2:
+
   * Python job to build command ("Rscript --arg1 par1 --arg2 par2..)
   * Job to run command
 
@@ -86,9 +88,9 @@ Output:
 
 Python to aggregate all results from Step2 above
 
-### To run (this may need to be updated):
+### To run (this may need to be updated)
 
-```
+```shell
 analysis-runner \
     --dataset tob-wgs \
     --access-level standard \
