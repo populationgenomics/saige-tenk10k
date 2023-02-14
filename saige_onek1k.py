@@ -130,7 +130,7 @@ def filter_variants(
 # region CREATE_SPARSE_GRM
 
 def build_sparse_grm_command(
-    plink_path: str  # ./input/nfam_100_nindep_0_step1_includeMoreRareVariants_poly
+    plink_path: str,  # ./input/nfam_100_nindep_0_step1_includeMoreRareVariants_poly
     output_prefix: str,  # should end in sparseGRM
     n_threads=4: int,
     n_random=2000: int,
