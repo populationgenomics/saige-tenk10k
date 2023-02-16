@@ -826,7 +826,7 @@ def saige_pipeline(
 
             # input: pheno_cov file, subset plink files
             # output: null model object, variance ratio (VR) estimate file
-            fit_null_job = batch.new_python_job(
+            fit_null_job = batch.new_job(
                 f"Fit null model for: {gene}, {celltype}"
             )
             manage_concurrency_for_job(fit_null_job)
@@ -839,8 +839,7 @@ def saige_pipeline(
                 f"input/pheno_cov_files/{celltype}_chr{chromosome}_allgenes.tsv"
             )
             # python job creating Rscript command
-            cmd = fit_null_job.call(
-                build_fit_null_command,
+            cmd = build_fit_null_command(
                 pheno_file=pheno_cov_filename,
                 cov_col_list="PC1",  # define these when making cov file
                 sample_id_pheno="cpg_id",  # check
@@ -854,15 +853,14 @@ def saige_pipeline(
 
             # input: null model object, VR file, gene specific genotypes (w open chromatin flags)
             # output: summary stats
-            run_association_job = batch.new_python_job(
+            run_association_job = batch.new_job(
                 f"Run gene set association for: {gene}, {celltype}"
             )
             dependencies = [fit_null_job, plink_job]
             run_association_job.depends_on(dependencies)
             run_association_job.image(SAIGE_QTL_IMAGE)
-            # python job creating Rscript command
-            cmd = run_association_job.call(
-                build_run_set_test_command,
+            # build Rscript command
+            cmd = build_run_set_test_command(
                 plink_prefix=plink_output_prefix,
                 saige_output_file=output_path("output/saige"),
                 chrom=chromosome,
