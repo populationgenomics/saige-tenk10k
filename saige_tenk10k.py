@@ -39,9 +39,6 @@ import pandas as pd
 import scanpy as sc
 import xarray as xr
 
-from limix.qc import quantile_gaussianize
-from scipy.stats import shapiro
-
 import hail as hl
 import hailtop.batch as hb
 
@@ -64,6 +61,7 @@ SAIGE_QTL_IMAGE = 'australia-southeast1-docker.pkg.dev/cpg-common/images/saige-q
 MULTIPY_IMAGE = 'australia-southeast1-docker.pkg.dev/cpg-common/images/multipy:0.16'
 
 # region SUBSET_VARIANTS
+
 
 # only needs to be run once for a given cohort (e.g., OneK1K)
 def filter_variants(
