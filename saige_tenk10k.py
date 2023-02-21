@@ -455,6 +455,7 @@ def build_fit_null_command(
 
 # Run gene set association
 def build_run_set_test_command(
+    test_type: str,
     plink_prefix: str,
     saige_output_file: str,  # should end in txt? just path?
     chrom: str,  # check
@@ -478,6 +479,7 @@ def build_run_set_test_command(
     This will run a set test using Burden, SKAT and SKAT-O
 
     Input:
+    - test_type: "single" or "set"
     - plink_prefix: path to plink files (bim, bed, fam)
     - saige ouput path: path to output saige file
     - chrom: chromosome to run this on
@@ -512,9 +514,10 @@ def build_run_set_test_command(
     saige_command_step2 += f' --pval_cutoff_for_fastTest={pval_cutoff}'
     saige_command_step2 += f' --SPAcutoff={spa_cutoff}'
     saige_command_step2 += f' --is_EmpSPA={is_emp_spa}'
-    saige_command_step2 += f' --annotation_in_groupTest={group_annotation}'
-    saige_command_step2 += f' --maxMAF_in_groupTest={max_maf_group}'
-    saige_command_step2 += f' --groupFile={group_file}'
+    if test_type == 'set':
+        saige_command_step2 += f' --annotation_in_groupTest={group_annotation}'
+        saige_command_step2 += f' --maxMAF_in_groupTest={max_maf_group}'
+        saige_command_step2 += f' --groupFile={group_file}'
     return saige_command_step2
 
 
