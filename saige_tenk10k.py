@@ -263,7 +263,8 @@ def get_promoter_variants(
     open_chr_ht_path: str,
     gene_details: dict[str, str],  # output of make_gene_loc_dict
     window_size: int,
-    plink_file: str,  # 'tob_wgs_rv/saige_qtl/input/plink_files/GENE'
+    rv_plink_file: str,  # 'tob_wgs_rv/saige_qtl/input/plink_files/set/GENE'
+    cv_plink_file: str,  # 'tob_wgs_rv/saige_qtl/input/plink_files/single/GENE'
 ):
     """Subset hail matrix table
 
@@ -279,16 +280,18 @@ def get_promoter_variants(
     Output:
     For retained variants, that are: 1) regulatory based on annotations
     2) within 50kb up or down-stream of the gene body (or in the gene body itself)
-    (on top of all filters done above)
+    (on top of all filters done above) 3) rare or common
     - writes genotypes to plink
     - writes ht
+    - writes group file (set only, tsv)
 
     returns nothing (simply writes out to plink)
     """
 
     # read hail matrix table object (pre-filtered)
     init_batch()
-    mt = hl.read_matrix_table(mt_path)
+    rv_mt = hl.read_matrix_table(rv_mt_path)
+    cv_mt = hl.read_matrix_table(cv_mt_path)
 
     gene_name = gene_details['gene_name']
 
@@ -307,26 +310,52 @@ def get_promoter_variants(
     logging.info(f'Interval considered: {gene_interval}')  # 'chr22:23219960-23348287'
 
     # include variants up to {window size} up- and downstream
-    mt = hl.filter_intervals(
-        mt, [hl.parse_locus_interval(gene_interval, reference_genome='GRCh38')]
+    # RV
+    rv_mt = hl.filter_intervals(
+        rv_mt, [hl.parse_locus_interval(gene_interval, reference_genome='GRCh38')]
     )
-    mt_path = output_path(f'{gene_name}_in_window.mt', 'tmp')
-    mt = mt.checkpoint(
-        mt_path, overwrite=True
+    rv_mt_path = output_path(f'{gene_name}_rare_in_window.mt', 'tmp')
+    rv_mt = rv_mt.checkpoint(
+        rv_mt_path, overwrite=True
     )  # add checkpoint to avoid repeat evaluation
-    logging.info(f'Number of variants within interval: {mt.count()[0]}')
+    logging.info(f'Number of rare variants within interval: {rv_mt.count()[0]}')
 
-    # add anotations
+    # CV
+    # include variants up to {window size} up- and downstream
+    cv_mt = hl.filter_intervals(
+        cv_mt, [hl.parse_locus_interval(gene_interval, reference_genome='GRCh38')]
+    )
+    cv_mt_path = output_path(f'{gene_name}_common_in_window.mt', 'tmp')
+    cv_mt = cv_mt.checkpoint(
+        cv_mt_path, overwrite=True
+    )  # add checkpoint to avoid repeat evaluation
+    logging.info(f'Number of common variants within interval: {cv_mt.count()[0]}')
+
+    # export this as a Hail table for downstream analysis
+    # consider exporting the whole MT?
+    cv_ht_path = output_path(
+        f'summary_hts/{gene_name}_common_cis_summary.ht', 'analysis'
+    )
+    ht = cv_mt.rows()
+    ht.write(cv_ht_path, overwrite=True)
+
+    # export MT object to PLINK
+    # pylint: disable=import-outside-toplevel
+    from hail.methods import export_plink
+
+    export_plink(cv_mt, cv_plink_file, ind_id=cv_mt.s)
+
+    # add anotations (rare)
     # annotate using VEP
     vep_anno_ht = hl.read_table(vep_ht_path)
-    mt = mt.annotate_rows(vep=vep_anno_ht[mt.row_key].vep)
+    rv_mt = rv_mt.annotate_rows(vep=vep_anno_ht[rv_mt.row_key].vep)
     # annotate using open chromatin info
     oc_anno_ht = hl.read_table(open_chr_ht_path)
-    mt = mt.annotate_rows(atac=oc_anno_ht[mt.row_key].open_chromatin)
+    rv_mt = rv_mt.annotate_rows(atac=oc_anno_ht[rv_mt.row_key].open_chromatin)
 
     # filter variants found to be in promoter regions - change?
-    mt = mt.filter_rows(
-        mt.vep.regulatory_feature_consequences['biotype'].contains('promoter')
+    rv_mt = rv_mt.filter_rows(
+        rv_mt.vep.regulatory_feature_consequences['biotype'].contains('promoter')
     )
     # add aditional filtering for all regions that are open
     # these flags will need to be different for each cell type
@@ -340,11 +369,11 @@ def get_promoter_variants(
 
     # export this as a Hail table for downstream analysis
     # consider exporting the whole MT?
-    ht_path = output_path(
+    rv_ht_path = output_path(
         f'summary_hts/{gene_name}_rare_promoter_open_summary.ht', 'analysis'
     )
-    ht = mt.rows()
-    ht.write(ht_path, overwrite=True)
+    ht = rv_mt.rows()
+    ht.write(rv_ht_path, overwrite=True)
 
     # write as group file
     df0 = pd.DataFrame([[gene_name, 'var'], [gene_name, 'anno']])
@@ -361,7 +390,7 @@ def get_promoter_variants(
     # pylint: disable=import-outside-toplevel
     from hail.methods import export_plink
 
-    export_plink(mt, plink_file, ind_id=mt.s)
+    export_plink(rv_mt, rv_plink_file, ind_id=rv_mt.s)
 
 
 # endregion GET_GENE_SPECIFIC_VARIANTS
