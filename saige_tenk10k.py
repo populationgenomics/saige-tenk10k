@@ -52,9 +52,12 @@ logging.basicConfig(
 )
 
 DEFAULT_JOINT_CALL_MT = dataset_path('mt/v7.mt')
-DEFAULT_ANNOTATION_HT = dataset_path(
+VEP_ANNOTATION_HT = dataset_path(
     'tob_wgs_vep/104/vep104.3_GRCh38.ht'
-)  # atm VEP only - add open chromatin info
+)
+OC_ANNOTATION_HT = dataset_path(
+    'tob_wgs_rv/open_chromatin_annotation/open_chromatin_annotated.ht'
+)
 
 HAIL_IMAGE = get_config()['workflow']['driver_image']
 SAIGE_QTL_IMAGE = 'australia-southeast1-docker.pkg.dev/cpg-common/images/saige-qtl'
@@ -351,7 +354,7 @@ def get_promoter_variants(
     )
     df.to_csv(group_filename)
 
-    # export MT object to PLINK (promoter variants)
+    # export MT object to PLINK
     # pylint: disable=import-outside-toplevel
     from hail.methods import export_plink
 
@@ -366,8 +369,8 @@ def get_promoter_variants(
 # Fit null model
 def build_fit_null_command(
     pheno_file: str,
-    cov_col_list: str,  # PC1
-    sample_id_pheno: str,  # IND_ID
+    cov_col_list: str,  
+    sample_id_pheno: str,  
     plink_path: str,
     output_prefix: str,
     pheno_col: str = 'y',
@@ -402,6 +405,7 @@ def build_fit_null_command(
     saige_command_step1 = 'Rscript step1_fitNULLGLMM_qtl.R'
     # figure out whether these are always needed or no
     saige_command_step1 += f' --useGRMtoFitNULL=FALSE'
+    saige_command_step1 += f' --useSparseGRMtoFitNULL=FALSE'
     saige_command_step1 += f' --phenoFile={pheno_file}'
     saige_command_step1 += f' --phenoCol={pheno_col}'
     saige_command_step1 += f' --covarColList={cov_col_list}'
@@ -442,19 +446,18 @@ def build_run_set_test_command(
     This will run a set test using Burden, SKAT and SKAT-O
 
     Input:
-    plink_prefix: path to plink files (bim, bed, fam)
-    saige ouput path: path to output saige file
-    chrom: chromosome to run this on
-    GMMAT model file: null model fit from previous step (.rda)
-    Variance Ratio file: as estimated from previous step (.txt)
-    group annotation: select only specific annotations from group file (e.g., lof)
-    group file: for each gene/set, one row specifying variants, one row specifying each variant's anno, one optional row with all weights
-    allele order: specifying whether alt-first or ref-first in genotype files
-    min MAF: minimum variant minor allele frequency to include
-    min MAC: minimum variant minor allele count to include
-    LOCO: leave one chromosome out (for what specifically?)
-    is no adjusted cov: covariate adjustment?
-    specify whether we're using a sparse GRM (vs full? vs no GRM at all?)
+    - plink_prefix: path to plink files (bim, bed, fam)
+    - saige ouput path: path to output saige file
+    - chrom: chromosome to run this on
+    - GMMAT model file: null model fit from previous step (.rda)
+    - Variance Ratio file: as estimated from previous step (.txt)
+    - group annotation: select only specific annotations from group file (e.g., lof)
+    - group file: for each gene/set, one row specifying variants, one row specifying each variant's anno, one optional row with all weights
+    - allele order: specifying whether alt-first or ref-first in genotype files
+    - min MAF: minimum variant minor allele frequency to include
+    - min MAC: minimum variant minor allele count to include
+    - LOCO: leave one chromosome out (for what specifically?)
+    - is no adjusted cov: covariate adjustment?
 
     Output:
     Rscript command (str) ready to run
