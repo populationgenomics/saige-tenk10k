@@ -52,9 +52,7 @@ logging.basicConfig(
 )
 
 DEFAULT_JOINT_CALL_MT = dataset_path('mt/v7.mt')
-VEP_ANNOTATION_HT = dataset_path(
-    'tob_wgs_vep/104/vep104.3_GRCh38.ht'
-)
+VEP_ANNOTATION_HT = dataset_path('tob_wgs_vep/104/vep104.3_GRCh38.ht')
 OC_ANNOTATION_HT = dataset_path(
     'tob_wgs_rv/open_chromatin_annotation/open_chromatin_annotated.ht'
 )
@@ -83,7 +81,7 @@ def filter_variants(
     Input:
     - joint call hail matrix table
     - set of samples for which we have scRNA-seq data
-    - file paths for ouputs
+    - file paths for outputs
     - MAF thresholds to define common / rare variants
 
     Output 1&2:
@@ -92,7 +90,7 @@ def filter_variants(
     and samples that are contained in sc sample list.
 
     Then, in output1 variants are also rare (freq < rv_maf_threshold)
-    and in output that are common (freq > cv_maf_threshold)
+    and in output2 they are common (freq > cv_maf_threshold)
 
     Output 3:
     plink file containing a random subset of 2,000 variants that satisfy i),ii),iii)
@@ -120,7 +118,7 @@ def filter_variants(
 
     # subset variants for variance ratio estimation
     # minor allele count (MAC) > 20
-    tot_counts = mt.variant_qc.AC.sum()  # ????
+    tot_counts = mt.variant_qc.AC.sum()
     vre_mt = mt.filter_rows(
         (mt.variant_qc.AC[1] > vre_mac_threshold) & (mt.variant_qc.AC[1] < tot_counts)
         | (mt.variant_qc.AF[1] < (tot_counts - vre_mac_threshold))
@@ -177,11 +175,11 @@ def prepare_pheno_cov_file(
     """Prepare pheno+cov file for SAIGE-QTL
 
     Input:
-    phenotype: gene expression (h5ad)
-    covariates: cell-level (tsv)
+    - phenotype: gene expression (h5ad)
+    - covariates: cell-level (tsv)
 
     Output:
-    pheno_cov file path (not actually returned, just written to inside function)
+    pheno_cov file path (not actually returned, just written to)
     """
 
     pheno_cov_filename = to_path(
@@ -248,7 +246,7 @@ def prepare_pheno_cov_file(
     # columns = y | cov1 | ... | covN | indID
     pheno_cov_df = expr_df.merge(cov_samples, on='cell_barcode')
 
-    # save files
+    # save files (no row names)
     with pheno_cov_filename.open('w') as pcf:
         pheno_cov_df.to_csv(pcf, index=False, sep='\t')
 
@@ -257,28 +255,33 @@ def prepare_pheno_cov_file(
 
 # region GET_GENE_SPECIFIC_VARIANTS
 
+
 def get_promoter_variants(
-    mt_path: str,  # output path from function above
-    vep_ht_path: str,  
-    open_chr_ht_path: str, 
+    rv_mt_path: str,  # output1 from function above
+    cv_mt_path: str,  # output2 from function above
+    vep_ht_path: str,
+    open_chr_ht_path: str,
     gene_details: dict[str, str],  # output of make_gene_loc_dict
-    window_size: int,  
+    window_size: int,
     plink_file: str,  # 'tob_wgs_rv/saige_qtl/input/plink_files/GENE'
 ):
     """Subset hail matrix table
 
     Input:
-    mt_path: path to already subsetted hail matrix table
-    vep_ht_path: path to VEP HT
-    open_chr_ht_path: path to open chromatin HT
-    gene_details: dict of info for current gene
-    window_size: int, size of flanking region around genes
-    plink_file: str, file prefix for writing plink data
+    - rv_mt_path: path to already subsetted hail MT (RV)
+    - cv_mt_path: path to already subsetted hail MT (CV)
+    - vep_ht_path: path to VEP HT
+    - open_chr_ht_path: path to open chromatin HT
+    - gene_details: dict of info for current gene
+    - window_size: int, size of flanking region around genes
+    - plink_file: str, file prefix for writing plink data
 
     Output:
-    Retained variants, that are: 1) regulatory based on annotations
+    For retained variants, that are: 1) regulatory based on annotations
     2) within 50kb up or down-stream of the gene body (or in the gene body itself)
     (on top of all filters done above)
+    - writes genotypes to plink
+    - writes ht
 
     returns nothing (simply writes out to plink)
     """
@@ -318,7 +321,7 @@ def get_promoter_variants(
     vep_anno_ht = hl.read_table(vep_ht_path)
     mt = mt.annotate_rows(vep=vep_anno_ht[mt.row_key].vep)
     # annotate using open chromatin info
-    oc_anno_ht = hl.read_table(open_chromatin_ht_path)
+    oc_anno_ht = hl.read_table(open_chr_ht_path)
     mt = mt.annotate_rows(atac=oc_anno_ht[mt.row_key].open_chromatin)
 
     # filter variants found to be in promoter regions - change?
@@ -344,7 +347,7 @@ def get_promoter_variants(
     ht.write(ht_path, overwrite=True)
 
     # write as group file
-    df0 = pd.DataFrame([[gene_name, 'var'],[gene_name, 'anno']])
+    df0 = pd.DataFrame([[gene_name, 'var'], [gene_name, 'anno']])
     variants = ht.locus.collect()
     annos = ht.atac.collect()
     data = [[variants], [annos]]
@@ -369,8 +372,8 @@ def get_promoter_variants(
 # Fit null model
 def build_fit_null_command(
     pheno_file: str,
-    cov_col_list: str,  
-    sample_id_pheno: str,  
+    cov_col_list: str,
+    sample_id_pheno: str,
     plink_path: str,
     output_prefix: str,
     pheno_col: str = 'y',
@@ -830,9 +833,7 @@ def saige_pipeline(
 
             # input: pheno_cov file, subset plink files
             # output: null model object, variance ratio (VR) estimate file
-            fit_null_job = batch.new_job(
-                f'Fit null model for: {gene}, {celltype}'
-            )
+            fit_null_job = batch.new_job(f'Fit null model for: {gene}, {celltype}')
             manage_concurrency_for_job(fit_null_job)
             copy_common_env(fit_null_job)
             # syntax below probably does not work
