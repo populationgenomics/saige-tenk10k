@@ -69,11 +69,11 @@ def filter_variants(
     samples: list[str],
     output_rv_mt_path: str,  # 'tob_wgs/densified_rv_only.mt'
     output_cv_mt_path: str,  # 'tob_wgs/densified_cv_only.mt'
-    vre_plink_path: str,  # 'tob_wgs/vr_plink_20k_variants
+    vre_plink_path: str,  # 'tob_wgs/vr_plink_2000_variants
     cv_maf_threshold: float = 0.01,
     rv_maf_threshold: float = 0.05,
     vre_mac_threshold: int = 20,
-    vre_n_markers: int = 20000,
+    vre_n_markers: int = 2000,
 ):
     """Subset hail matrix table
 
@@ -116,6 +116,7 @@ def filter_variants(
     mt = hl.variant_qc(mt)
 
     # subset variants for variance ratio estimation
+    # minor allele count (MAC) > 20
     tot_counts = mt.variant_qc.AC.sum()  # ????
     vre_mt = mt.filter_rows(
         (mt.variant_qc.AC[1] > vre_mac_threshold) & (mt.variant_qc.AC[1] < tot_counts)
@@ -253,29 +254,30 @@ def prepare_pheno_cov_file(
 
 # region GET_GENE_SPECIFIC_VARIANTS
 
-# same as https://github.com/populationgenomics/cellregmap-pipeline/blob/main/batch.py
 def get_promoter_variants(
     mt_path: str,  # output path from function above
-    ht_path: str,  # add open chromatin annos in same file
+    vep_ht_path: str,  
+    open_chr_ht_path: str, 
     gene_details: dict[str, str],  # output of make_gene_loc_dict
-    window_size: int,
+    window_size: int,  
     plink_file: str,  # 'tob_wgs_rv/saige_qtl/input/plink_files/GENE'
 ):
     """Subset hail matrix table
 
     Input:
     mt_path: path to already subsetted hail matrix table
-    ht_path: path to VEP HT
+    vep_ht_path: path to VEP HT
+    open_chr_ht_path: path to open chromatin HT
     gene_details: dict of info for current gene
     window_size: int, size of flanking region around genes
     plink_file: str, file prefix for writing plink data
 
     Output:
-    For retained variants, that are: 1) in promoter regions and
+    Retained variants, that are: 1) regulatory based on annotations
     2) within 50kb up or down-stream of the gene body (or in the gene body itself)
     (on top of all filters done above)
 
-    returns nothing
+    returns nothing (simply writes out to plink)
     """
 
     # read hail matrix table object (pre-filtered)
@@ -309,11 +311,12 @@ def get_promoter_variants(
     logging.info(f'Number of variants within interval: {mt.count()[0]}')
 
     # add anotations
-    anno_ht = hl.read_table(ht_path)
     # annotate using VEP
-    mt = mt.annotate_rows(vep=anno_ht[mt.row_key].vep)
-    # annotate using VEP
-    mt = mt.annotate_rows(atac=anno_ht[mt.row_key].atac)
+    vep_anno_ht = hl.read_table(vep_ht_path)
+    mt = mt.annotate_rows(vep=vep_anno_ht[mt.row_key].vep)
+    # annotate using open chromatin info
+    oc_anno_ht = hl.read_table(open_chromatin_ht_path)
+    mt = mt.annotate_rows(atac=oc_anno_ht[mt.row_key].open_chromatin)
 
     # filter variants found to be in promoter regions - change?
     mt = mt.filter_rows(
