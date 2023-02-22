@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# pylint: disable=import-error,import-outside-toplevel,no-value-for-parameter,wrong-import-order,wrong-import-position
+# pylint: disable=broad-exception-raised,import-error,import-outside-toplevel,missing-module-docstring,no-value-for-parameter,too-many-arguments,too-many-branches,too-many-locals,wrong-import-order,wrong-import-position
 
 __author__ = 'annacuomo'
 
