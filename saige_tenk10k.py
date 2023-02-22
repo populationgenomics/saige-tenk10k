@@ -19,7 +19,7 @@ import os
 import sys
 
 import logging
-from typing import Dict
+from typing import Dict, List
 
 from google.cloud import storage
 
@@ -834,7 +834,7 @@ def saige_pipeline(
             )
 
     for celltype in celltype_list:
-        gene_run_jobs = []
+        gene_run_jobs = List['str']  # str??
         # need to remind myself of what was happening here
         logging.info(f'before glob: result files for {celltype}')
         storage_client = storage.Client()
