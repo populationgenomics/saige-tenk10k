@@ -85,7 +85,8 @@ analysis-runner \
       --sample-mapping-file-tsv tob_wgs_genetics/saige_qtl/input/smf.tsv \
       --genes VPREB3 \
       --chromosomes 22 \
-      --celltypes B_intermediate
+      --celltypes B_intermediate \
+      --test-type 'set'
 ```
 
 ## Data
