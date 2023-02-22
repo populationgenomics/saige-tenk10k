@@ -18,7 +18,6 @@ output files in tob_wgs_genetics/saige_qtl/output
 import os
 import sys
 
-import click
 import logging
 from typing import Dict
 
@@ -34,6 +33,7 @@ from cpg_utils.hail_batch import (
     remote_tmpdir,
 )
 
+import click
 import numpy as np
 import pandas as pd
 import scanpy as sc
