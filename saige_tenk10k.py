@@ -360,11 +360,11 @@ def get_promoter_variants(
     # add aditional filtering for all regions that are open
     # these flags will need to be different for each cell type
     # but can be dealth with upon running (setting annotations in a way that only open regions for that chromatin are run)
-    mt = mt.filter_rows(mt.atac.open_chromatin > 0)
+    rv_mt = rv_mt.filter_rows(rv_mt.open_chromatin > 0)
     anno_path = output_path(f'{gene_name}_open_promoter_variants.mt', 'tmp')
-    mt = mt.checkpoint(anno_path, overwrite=True)  # checkpoint
+    rv_mt = rv_mt.checkpoint(anno_path, overwrite=True)  # checkpoint
     logging.info(
-        f'Number of rare (freq<5%) QC-passing, biallelic SNPs in promoter and open regions: {mt.count()[0]}'
+        f'Number of rare (freq<5%) QC-passing, biallelic SNPs in promoter and open regions: {rv_mt.count()[0]}'
     )
 
     # export this as a Hail table for downstream analysis
@@ -388,7 +388,7 @@ def get_promoter_variants(
 
     # export MT object to PLINK
     # pylint: disable=import-outside-toplevel
-    from hail.methods import export_plink
+    # from hail.methods import export_plink
 
     export_plink(rv_mt, rv_plink_file, ind_id=rv_mt.s)
 
@@ -647,13 +647,17 @@ config = get_config()
 )
 @click.option('--mt-path', default=DEFAULT_JOINT_CALL_MT)
 @click.option(
-    '--anno-ht-path', default=DEFAULT_ANNOTATION_HT
-)  # this needs to be updated
+    '--vep-anno-ht-path', default=VEP_ANNOTATION_HT
+)
+@click.option(
+    '--open-chr-anno-ht-path', default=OC_ANNOTATION_HT
+)
 @click.option(
     '--chromosomes',
     help='List of chromosome numbers to run rare variant association analysis on. '
     'Space separated, as one argument (Default: all)',
 )
+@click.option('--test-type', help="single or set")
 @click.option('--genes', default=None)
 @click.option('--window_size', default=50000, help='cis size of window around gene')
 @click.option(
@@ -672,6 +676,7 @@ def saige_pipeline(
     sample_mapping_file_tsv: str,
     mt_path: str,
     anno_ht_path: str,
+    test_type: str,
     chromosomes: str = 'all',
     genes: str | None = None,
     window_size: int = 50000,
@@ -881,6 +886,7 @@ def saige_pipeline(
             )
             # python job creating Rscript command
             cmd = build_fit_null_command(
+                test_type=test_type,
                 pheno_file=pheno_cov_filename,
                 cov_col_list='PC1',  # define these when making cov file
                 sample_id_pheno='cpg_id',  # check
