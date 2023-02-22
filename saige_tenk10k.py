@@ -514,6 +514,7 @@ def build_run_set_test_command(
     saige_command_step2 += f' --pval_cutoff_for_fastTest={pval_cutoff}'
     saige_command_step2 += f' --SPAcutoff={spa_cutoff}'
     saige_command_step2 += f' --is_EmpSPA={is_emp_spa}'
+    # these additional flags are only needed for a set test
     if test_type == 'set':
         saige_command_step2 += f' --annotation_in_groupTest={group_annotation}'
         saige_command_step2 += f' --maxMAF_in_groupTest={max_maf_group}'
@@ -530,11 +531,14 @@ def build_run_set_test_command(
 def summarise_association_results(
     celltype: str,
     pv_all_filename_str: str,
+    test_type: str,
 ):
     """Summarise results
 
     Input:
-    p-values from all association tests
+    - cell type for which to summarise results
+    - p-values from all association tests
+    - test type: 'set' or 'single'
 
     Output:
     one csv table per cell type,
@@ -545,7 +549,7 @@ def summarise_association_results(
     logging.info('before glob (pv files) - summarise job')
     storage_client = storage.Client()
     bucket = get_config()['storage']['default']['default'].removeprefix('gs://')
-    prefix = f"{get_config()['workflow']['output_prefix']}/{celltype}/"
+    prefix = f"{get_config()['workflow']['output_prefix']}/{test_type}/{celltype}/"
     existing_pv_files = set(
         f'gs://{bucket}/{filepath.name}'
         for filepath in storage_client.list_blobs(bucket, prefix=prefix, delimiter='/')
