@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# pylint: disable=import-error,import-outside-toplevel,wrong-import-position
+# pylint: disable=import-error,import-outside-toplevel,no-value-for-parameter,wrong-import-order,wrong-import-position
 
 __author__ = 'annacuomo'
 
@@ -834,7 +834,7 @@ def saige_pipeline(
             )
 
     for celltype in celltype_list:
-        gene_run_jobs = list()
+        gene_run_jobs = []
         # need to remind myself of what was happening here
         logging.info(f'before glob: result files for {celltype}')
         storage_client = storage.Client()
