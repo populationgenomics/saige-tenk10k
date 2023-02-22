@@ -22,6 +22,7 @@ It outputs three objects:
   * just once for all individuals, all variants after LD-pruning, and MAF>1% -->
 
 ### Expression preprocessing (once per cell type)
+
 Python script to combine expression (pheno), covariates into a single pheno_cov file as input to saige-qtl.
 
 Inputs:
@@ -87,9 +88,9 @@ Output:
 
 Python to aggregate all results from Step2 above
 
-### To run (this may need to be updated):
+### To run (this may need to be updated)
 
-```
+```bash
 analysis-runner \
     --dataset tob-wgs \
     --access-level standard \
