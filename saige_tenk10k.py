@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# pylint: disable=import-error,import-outside-toplevel,missing-function-docstring,missing-module-docstring,no-value-for-parameter,too-many-arguments,too-many-locals,wrong-import-order,wrong-import-position,consider-using-enumerate,chained-comparison
 
 __author__ = 'annacuomo'
 
@@ -646,18 +645,14 @@ config = get_config()
     default='scrna-seq/grch38_association_files/OneK1K_CPG_IDs.tsv',  # this needs to be updated
 )
 @click.option('--mt-path', default=DEFAULT_JOINT_CALL_MT)
-@click.option(
-    '--vep-anno-ht-path', default=VEP_ANNOTATION_HT
-)
-@click.option(
-    '--open-chr-anno-ht-path', default=OC_ANNOTATION_HT
-)
+@click.option('--vep-anno-ht-path', default=VEP_ANNOTATION_HT)
+@click.option('--open-chr-anno-ht-path', default=OC_ANNOTATION_HT)
 @click.option(
     '--chromosomes',
     help='List of chromosome numbers to run rare variant association analysis on. '
     'Space separated, as one argument (Default: all)',
 )
-@click.option('--test-type', help="single or set")
+@click.option('--test-type', help='single or set')
 @click.option('--genes', default=None)
 @click.option('--window_size', default=50000, help='cis size of window around gene')
 @click.option(
@@ -824,16 +819,13 @@ def saige_pipeline(
         for chromosome in chromosomes_list:
             # input: gene ID, phenotype file, covariate file
             # output: pheno_cov file
-            pheno_cov_job = batch.new_python_job(
-                f'Make pheno cov file for: {gene}, {celltype}'
-            )
+            pheno_cov_job = batch.new_python_job(f'Make pheno cov file for: {celltype}')
             manage_concurrency_for_job(pheno_cov_job)
             copy_common_env(pheno_cov_job)
             # does not depend on any other jobs
             pheno_cov_job.image(HAIL_IMAGE)
             pheno_cov_job.call(
                 prepare_pheno_cov_file,
-                gene_name=gene,
                 cell_type=celltype,
                 phenotype_file=f'sce{chromosome}.h5ad',
                 cov_file=f'{celltype}_covs.tsv',
@@ -886,7 +878,6 @@ def saige_pipeline(
             )
             # python job creating Rscript command
             cmd = build_fit_null_command(
-                test_type=test_type,
                 pheno_file=pheno_cov_filename,
                 cov_col_list='PC1',  # define these when making cov file
                 sample_id_pheno='cpg_id',  # check
@@ -908,6 +899,7 @@ def saige_pipeline(
             run_association_job.image(SAIGE_QTL_IMAGE)
             # build Rscript command
             cmd = build_run_set_test_command(
+                test_type=test_type,
                 plink_prefix=plink_output_prefix,
                 saige_output_file=output_path('output/saige'),
                 chrom=chromosome,
