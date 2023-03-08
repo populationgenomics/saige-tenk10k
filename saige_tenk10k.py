@@ -871,8 +871,7 @@ def saige_pipeline(
             manage_concurrency_for_job(fit_null_job)
             copy_common_env(fit_null_job)
             # syntax below probably does not work
-            dependencies = [filter_job, pheno_cov_job]
-            fit_null_job.depends_on(dependencies)
+            fit_null_job.depends_on(filter_job, pheno_cov_job)
             fit_null_job.image(SAIGE_QTL_IMAGE)
             pheno_cov_filename = output_path(
                 f'input/pheno_cov_files/{celltype}_chr{chromosome}_allgenes.tsv'
