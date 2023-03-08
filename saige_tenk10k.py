@@ -175,8 +175,11 @@ def prepare_pheno_cov_file(
     """Prepare pheno+cov file for SAIGE-QTL
 
     Input:
+    - cell type
+    - chromosome
     - phenotype: gene expression (h5ad)
     - covariates: cell-level (tsv)
+    - sample mapping file (tsv)
 
     Output:
     pheno_cov file path (not actually returned, just written to)

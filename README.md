@@ -1,4 +1,4 @@
-# Hail batch workflow to run SAIGE on TenK10K data
+# Hail batch workflow to run SAIGE-QTL on TenK10K data
 
 This is a hail batch pipeline to run the new [QTL version of SAIGE](https://github.com/weizhou0/qtl) on CPG's GCP, to map associations between common and rare genetic variants and single-cell gene expression from blood.
 
@@ -10,6 +10,7 @@ This is a hail batch pipeline to run the new [QTL version of SAIGE](https://gith
 ### Genotypes preprocessing (once per cohort)
 
 Hail query to filter WGS object to i) QC-passing, ii) non ref-ref variants, and considering only samples with scRNA-seq data.
+At present, this also filters out indels and multi-allelic SNPs, which we may want to relax.
 
 It outputs three objects:
 
@@ -21,13 +22,13 @@ It outputs three objects:
 * SAIGE R script to create sparse GRM
   * just once for all individuals, all variants after LD-pruning, and MAF>1% -->
 
-### Expression preprocessing (once per cell type)
+### Expression preprocessing (once per cell type, chromosome)
 
 Python script to combine expression (pheno), covariates into a single pheno_cov file as input to saige-qtl.
 
 Inputs:
 
-* chromosome-specific scanpy (AnnData) objects, single-cell expression for all cells, all genes for that chromosome (sctransformed sc-counts)
+* chromosome and cell type-specific scanpy (AnnData) objects, single-cell expression for all cells, all genes for that chromosome and all cells assigned to that cell type (sctransformed sc-counts)
 * covariates: combination of 1) exploded donor-level covariates (e.g. sex) and 2) cell-level covariates (PCs, batch)
 * sample mapping file: matching donor ID (onek1k vs CPG) and cell barcodes, including cell type labels
 
