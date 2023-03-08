@@ -611,7 +611,7 @@ def extract_genes(gene_list, expression_h5ad_path) -> list[str]:
     """
     adata = sc.read(to_path(expression_h5ad_path))
     # consider adding extra filters on expression here
-    gene_ids = set(list(adata.raw.var.index))
+    gene_ids = set(adata.raw.var.index)
     genes = set(gene_list).intersection(gene_ids)
 
     logging.info(f'Total genes to run: {len(list(sorted(genes)))}')
