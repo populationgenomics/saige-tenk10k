@@ -895,8 +895,7 @@ def saige_pipeline(
             run_association_job = batch.new_job(
                 f'Run gene set association for: {gene}, {celltype}'
             )
-            dependencies = [fit_null_job, plink_job]
-            run_association_job.depends_on(dependencies)
+            run_association_job.depends_on(fit_null_job, plink_job)
             run_association_job.image(SAIGE_QTL_IMAGE)
             # build Rscript command
             cmd = build_run_set_test_command(
