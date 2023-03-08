@@ -1,6 +1,7 @@
 # Hail batch workflow to run SAIGE-QTL on TenK10K data
 
 This is a hail batch pipeline to run the new [QTL version of SAIGE](https://github.com/weizhou0/qtl) on CPG's GCP, to map associations between common and rare genetic variants and single-cell gene expression from blood.
+First, this will be run on the TOB and then BioHEART datasets as part of the TenK10K project (see *Data* below), but in the future all datasets within OurDNA (with scRNA-seq + WGS data) will go through this pipeline as well.
 
 * **Plan A**: at present, just adapting our [CellRegMap Hail batch pipeline](https://github.com/populationgenomics/cellregmap-pipeline/blob/main/batch.py) hoping it can run R / external code smoothly.
 * **Plan B**: if that fails, we may need to adapt [Konrad K's UKBB exomes analysis github](https://github.com/Nealelab/ukb_exomes), underlying [this paper](https://www.sciencedirect.com/science/article/pii/S2666979X22001100), or at least using [these python wrappers for SAIGE](https://github.com/Nealelab/ukb_common/blob/master/utils/saige_pipeline.py).
@@ -8,6 +9,8 @@ This is a hail batch pipeline to run the new [QTL version of SAIGE](https://gith
 ## Plan A
 
 ### Genotypes preprocessing (once per cohort)
+
+Function name: _filter_variants_.
 
 Hail query to filter WGS object to i) QC-passing, ii) non ref-ref variants, and considering only samples with scRNA-seq data.
 At present, this also filters out indels and multi-allelic SNPs, which we may want to relax.
@@ -24,6 +27,8 @@ It outputs three objects:
 
 ### Expression preprocessing (once per cell type, chromosome)
 
+Function name: _prepare_pheno_cov_file_.
+
 Python script to combine expression (pheno), covariates into a single pheno_cov file as input to saige-qtl.
 
 Inputs:
@@ -36,7 +41,15 @@ Output file (one per cell type):
 
 * text file concatenating covs, expression of genes, and individual id (same as plink files) for all cells from that cell type
 
+i.e.,
+
+ind_id | cov1 | ... | covM | gene1 | ... | geneN
+
+Note: if these files get too large, create different files, one per gene.
+
 ### Variant selection (once per gene)
+
+Function name: _get_variants_to_test_.
 
 Hail query to filter object to relevant variants
 

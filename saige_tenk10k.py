@@ -259,7 +259,7 @@ def prepare_pheno_cov_file(
 # region GET_GENE_SPECIFIC_VARIANTS
 
 
-def get_promoter_variants(
+def get_variants_to_test(
     rv_mt_path: str,  # output1 from function above
     cv_mt_path: str,  # output2 from function above
     vep_ht_path: str,
@@ -805,7 +805,7 @@ def saige_pipeline(
 
         plink_job.image(HAIL_IMAGE)
         plink_job.call(
-            get_promoter_variants,
+            get_variants_to_test,
             mt_path=output_rv_mt_path,
             ht_path=anno_ht_path,
             gene_details=gene_dict[gene],
