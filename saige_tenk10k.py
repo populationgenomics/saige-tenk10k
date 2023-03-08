@@ -614,7 +614,7 @@ def extract_genes(gene_list, expression_h5ad_path) -> list[str]:
     """
     adata = sc.read(to_path(expression_h5ad_path))
     # consider adding extra filters on expression here
-    gene_ids = set(list(adata.raw.var.index))
+    gene_ids = set(adata.raw.var.index)
     genes = set(gene_list).intersection(gene_ids)
 
     logging.info(f'Total genes to run: {len(list(sorted(genes)))}')
@@ -874,8 +874,7 @@ def saige_pipeline(
             manage_concurrency_for_job(fit_null_job)
             copy_common_env(fit_null_job)
             # syntax below probably does not work
-            dependencies = [filter_job, pheno_cov_job]
-            fit_null_job.depends_on(dependencies)
+            fit_null_job.depends_on(filter_job, pheno_cov_job)
             fit_null_job.image(SAIGE_QTL_IMAGE)
             pheno_cov_filename = output_path(
                 f'input/pheno_cov_files/{celltype}_chr{chromosome}_allgenes.tsv'
@@ -898,8 +897,7 @@ def saige_pipeline(
             run_association_job = batch.new_job(
                 f'Run gene set association for: {gene}, {celltype}'
             )
-            dependencies = [fit_null_job, plink_job]
-            run_association_job.depends_on(dependencies)
+            run_association_job.depends_on(fit_null_job, plink_job)
             run_association_job.image(SAIGE_QTL_IMAGE)
             # build Rscript command
             cmd = build_run_set_test_command(
