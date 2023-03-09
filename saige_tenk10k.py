@@ -227,7 +227,7 @@ def prepare_pheno_cov_file(
 
     # delete large files to free up memory
     del mat
-    del mat_df
+    # del mat_df
 
     # read in covariate file (tsv)
     # this file is defined at cell level, as:
