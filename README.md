@@ -4,6 +4,7 @@ This is a hail batch pipeline to run the new [QTL version of SAIGE](https://gith
 First, this will be run on the TOB and then BioHEART datasets as part of the TenK10K project (see *Data* below), but in the future all datasets within OurDNA (with scRNA-seq + WGS data) will go through this pipeline as well.
 
 * **Plan A**: at present, just adapting our [CellRegMap Hail batch pipeline](https://github.com/populationgenomics/cellregmap-pipeline/blob/main/batch.py) hoping it can run R / external code smoothly.
+* **Plan A**: at present, just adapting our [CellRegMap Hail batch pipeline](https://github.com/populationgenomics/cellregmap-pipeline/blob/main/batch.py) hoping it can run R / external code smoothly.
 * **Plan B**: if that fails, we may need to adapt [Konrad K's UKBB exomes analysis github](https://github.com/Nealelab/ukb_exomes), underlying [this paper](https://www.sciencedirect.com/science/article/pii/S2666979X22001100), or at least using [these python wrappers for SAIGE](https://github.com/Nealelab/ukb_common/blob/master/utils/saige_pipeline.py).
 
 ## Plan A
@@ -139,6 +140,7 @@ Output:
 
 * cell type-specific summary statistics across all genes (.txt)
 
+### To run (this may need to be updated)
 ### To run (this may need to be updated)
 
 ```bash
