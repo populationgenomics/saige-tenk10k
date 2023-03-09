@@ -10,7 +10,7 @@ First, this will be run on the TOB and then BioHEART datasets as part of the Ten
 
 ### Genotypes preprocessing (once per cohort)
 
-Function name: _filter_variants_.
+Function name: filter_variants.
 
 Hail query to filter WGS object to i) QC-passing, ii) non ref-ref variants, and considering only samples with scRNA-seq data.
 At present, this also filters out indels and multi-allelic SNPs, which we may want to relax.
@@ -27,7 +27,7 @@ It outputs three objects:
 
 ### Expression preprocessing (once per cell type, chromosome)
 
-Function name: _prepare_pheno_cov_file_.
+Function name: prepare_pheno_cov_file.
 
 Python script to combine expression (pheno), covariates into a single pheno_cov file as input to saige-qtl.
 
@@ -57,7 +57,7 @@ ind_id | cov1 | ... | covM | geneN
 
 ### Variant selection (once per gene)
 
-Function name: _get_variants_to_test_.
+Function name: get_variants_to_test.
 
 Hail query to filter object to relevant variants (for a specific gene)
 
@@ -77,7 +77,7 @@ Note: weights are not necessary, annotations can be multiple, separated by comma
 
 ### Run association (for each gene, cell type combination)
 
-Function names: _build_fit_null_command_, _build_run_association_test_command_.
+Function names: build_fit_null_command, build_run_association_test_command.
 
 This sets up R commands to actually run SAIGE-QTL, which is run in two steps.
 
@@ -92,7 +92,7 @@ As such, for both steps 1 and 2, we consider,
 
 #### Step1: Fit null model
 
-Function name: _build_fit_null_command_.
+Function name: build_fit_null_command.
 
 Inputs:
 
@@ -108,7 +108,7 @@ Outputs:
 
 #### Step2: Run association
 
-Function name: _build_run_set_test_command_.
+Function name: build_run_set_test_command.
 
 Inputs:
 
@@ -124,8 +124,20 @@ Output:
 
 ### Results aggregation (once per cell type)
 
+Function name: summarise_association_results
+
 Python to aggregate all results from step 2 above.
 Result tables are gene-specific, this aggregated them all both to have a single-summary and to appropriately perform multiple testing correction.
+If both a set-test and a single-variant association test have been performed, this will results in 2 X n_cell_types final result tables.
+
+Input:
+
+* cell type of interest
+* (cell type and) gene-level specific result tables (.txt)
+
+Output:
+
+* cell type-specific summary statistics across all genes (.txt)
 
 ### To run (this may need to be updated)
 
@@ -133,15 +145,15 @@ Result tables are gene-specific, this aggregated them all both to have a single-
 analysis-runner \
     --dataset tob-wgs \
     --access-level standard \
-    --output-dir "tob_wgs_genetics/saige_qtl/" \
+    --output-dir 'tob_wgs_genetics/saige_qtl/' \
     --image ? \
-    --description "Saige QTL batch job" \
+    --description 'Saige QTL batch job' \
     python3 saige_tenk10k.py \
-      --input-files-prefix tob_wgs_genetics/saige_qtl/input \
-      --sample-mapping-file-tsv tob_wgs_genetics/saige_qtl/input/smf.tsv \
-      --genes VPREB3 \
+      --input-files-prefix 'tob_wgs_genetics/saige_qtl/input' \
+      --sample-mapping-file-tsv 'tob_wgs_genetics/saige_qtl/input/smf.tsv' \
+      --genes 'VPREB3' \
       --chromosomes 22 \
-      --celltypes B_intermediate \
+      --celltypes 'B_intermediate' \
       --test-type 'set'
 ```
 
