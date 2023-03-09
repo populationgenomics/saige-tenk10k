@@ -156,9 +156,7 @@ def filter_variants(
         | (mt.variant_qc.AF[1] > (1 - rv_maf_threshold)) & (mt.variant_qc.AF[1] < 1)
     )
     mt.write(output_rv_mt_path, overwrite=True)
-    logging.info(
-        f'No rare (freq<{rv_maf_threshold}), biallelic SNPs: {mt.count()[0]}'
-    )
+    logging.info(f'No rare (freq<{rv_maf_threshold}), biallelic SNPs: {mt.count()[0]}')
 
 
 # endregion SUBSET_VARIANTS
