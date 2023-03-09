@@ -392,9 +392,6 @@ def get_variants_to_test(
     df.to_csv(group_filename)
 
     # export MT object to PLINK
-    # pylint: disable=import-outside-toplevel
-    # from hail.methods import export_plink
-
     export_plink(rv_mt, rv_plink_file, ind_id=rv_mt.s)
 
 
@@ -808,7 +805,7 @@ def saige_pipeline(
             continue
 
         plink_job = batch.new_python_job(f'Create plink files for: {gene}')
-        # manage_concurrency_for_job(plink_job)
+        manage_concurrency_for_job(plink_job)
         copy_common_env(plink_job)
         if filter_job:
             plink_job.depends_on(filter_job)
@@ -847,7 +844,7 @@ def saige_pipeline(
             )
 
     for celltype in celltype_list:
-        gene_run_jobs = []
+        gene_run_jobs = list[hb.job.Job] = []
         # need to remind myself of what was happening here
         logging.info(f'before glob: result files for {celltype}')
         storage_client = storage.Client()
