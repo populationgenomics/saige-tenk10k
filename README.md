@@ -81,14 +81,14 @@ Function names: _build_fit_null_command_, _build_run_association_test_command_.
 
 This sets up R commands to actually run SAIGE-QTL, which is run in two steps.
 
-Step1 fits a null model for the gene of interest, given appropriate covariates, step2 runs associations for the variants provided.
+Step1 fits a null model (no variants yet) for the gene of interest, given the appropriate covariates, whereas step2 actually runs associations for the variants provided.
+Step 2 comes in two flavours, using either a region-based test (best suited for testing rare variants' effects), or a single-variant tests (typically used for common variants).
 
-Step 2 comes in two flavours, testing either rare variants using a region-based test, or common variants using single-variant tests.
+The command runs an R script, but otherwise behaves like a command line tool.
+As such, for both steps 1 and 2, we consider,
 
-For both step 1 and step2:
-
-  * Python job to build command ("Rscript --arg1 par1 --arg2 par2..)
-  * Job to run command
+  * Python function to build command (which just adds to a string, i.e., "Rscript myscript.R --arg1 par1 --arg2 par2..")
+  * Job to actually run the command with the appropriate arguments
 
 #### Step1: Fit null model
 
@@ -104,6 +104,7 @@ Outputs:
 
 * model object (.rda)
 * variance ratio estimate (.txt)
+* optional: log
 
 #### Step2: Run association
 
@@ -113,16 +114,18 @@ Inputs:
 
 * model object (.rda)
 * variance ratio estimate (.txt)
-* genotypes to test (plink)
-* rare only: group file
+* genotypes to test (plink files: .bed, .bim, .fam)
+* 'set-test' only: group file with group definitions and annotations
 
 Output:
 
 * txt file with all results
+* optional: log
 
 ### Results aggregation (once per cell type)
 
-Python to aggregate all results from Step2 above
+Python to aggregate all results from step 2 above.
+Result tables are gene-specific, this aggregated them all both to have a single-summary and to appropriately perform multiple testing correction.
 
 ### To run (this may need to be updated)
 
@@ -147,5 +150,5 @@ analysis-runner \
 TenK10K is matched single-cell RNA-seq (scRNA-seq) and whole-genome sequencing (WGS) data from up to 10,000 individuals:
 
 * Phase 0: OneK1K data only (1,000 individuals) - already generated
-* Phase 1: OneK1K + BioHEART (2,000 individuals) - WGS done, scRNA-seq in progress
-* Phase 2: TBC
+* Phase 1: OneK1K + BioHEART (2,000 individuals) - WGS done, scRNA-seq in progress (new kit, which should result in many more cells per individual)
+* Phase 2/final: aim is ~ 10,000 individuals from the (extended) TOB/OneK1K, BioHEART, ADAPT, LBIO and AIM cohorts (nothing generated besides current stage of Phase1)
