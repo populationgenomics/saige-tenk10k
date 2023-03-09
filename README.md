@@ -45,13 +45,21 @@ i.e.,
 
 ind_id | cov1 | ... | covM | gene1 | ... | geneN
 
-Note: if these files get too large, create different files, one per gene.
+Note: if these files get too large, create one pheno_cov file per gene instead, i.e.,
+
+File1:
+
+ind_id | cov1 | ... | covM | gene1
+
+FileN:
+
+ind_id | cov1 | ... | covM | geneN
 
 ### Variant selection (once per gene)
 
 Function name: _get_variants_to_test_.
 
-Hail query to filter object to relevant variants
+Hail query to filter object to relevant variants (for a specific gene)
 
 * for common variants, only genomic proximity (+/-100kb)
 * for rare variants, i) genomic proximity (+/-50kb), 2) regulatory consequences (vep), 3) open chromatin (any cell type)
@@ -62,10 +70,20 @@ Outputs:
 * plink files (.bed, .bim, .fam) for rare variants
 * group file for rare variants. For each region(=gene?)
   * row1: region1 | var    | 1:100010:A:C | 1:100016:A:C
-  * row2: region1 | anno   | promoter     | enhancer
+  * row2: region1 | anno   | promoter     | enhancer,promoter
   * row3: region1 | weight | 0.5          | 0.3
 
+Note: weights are not necessary, annotations can be multiple, separated by comma.
+
 ### Run association (for each gene, cell type combination)
+
+Function names: _build_fit_null_command_, _build_run_set_test_command_.
+
+This sets up R commands to actually run SAIGE-QTL, which is run in two steps.
+
+Step1 fits a null model for the gene of interest, given appropriate covariates, step2 runs associations for the variants provided.
+
+Step 2 comes in two flavours, testing either rare variants using a region-based test, or common variants using single-variant tests.
 
 For both step 1 and step2:
 
@@ -73,6 +91,8 @@ For both step 1 and step2:
   * Job to run command
 
 #### Step1: Fit null model
+
+Function name: _build_fit_null_command_.
 
 Inputs:
 
@@ -86,6 +106,8 @@ Outputs:
 * variance ratio estimate (.txt)
 
 #### Step2: Run association
+
+Function name: _build_run_set_test_command_.
 
 Inputs:
 
