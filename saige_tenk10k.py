@@ -106,7 +106,8 @@ def filter_variants(
     # densify
     mt = hl.experimental.densify(mt)
 
-    # filter out low quality variants and consider biallelic SNPs only (no multi-allelic, no ref-only, no indels)
+    # filter out low quality variants and consider biallelic SNPs only
+    # (no multi-allelic, no ref-only, no indels)
     mt = mt.filter_rows(  # check these filters!
         (hl.len(hl.or_else(mt.filters, hl.empty_set(hl.tstr))) == 0)  # QC
         & (hl.len(mt.alleles) == 2)  # remove hom-ref
@@ -146,7 +147,7 @@ def filter_variants(
     )
     cv_mt.write(output_cv_mt_path, overwrite=True)
     logging.info(
-        f'Number of common (freq>{cv_maf_threshold*100}%) and QCed biallelic SNPs: {cv_mt.count()[0]}'
+        f'No common (freq>{cv_maf_threshold*100}%), QCd biallelic SNPs: {cv_mt.count()[0]}'
     )
 
     # filter rare variants only (MAF < 5%)
@@ -156,7 +157,7 @@ def filter_variants(
     )
     mt.write(output_rv_mt_path, overwrite=True)
     logging.info(
-        f'Number of rare (freq<{rv_maf_threshold*100}%) and QCed biallelic SNPs: {mt.count()[0]}'
+        f'No rare (freq<{rv_maf_threshold*100}%), QCd biallelic SNPs: {mt.count()[0]}'
     )
 
 
@@ -362,7 +363,8 @@ def get_variants_to_test(
     )
     # add aditional filtering for all regions that are open
     # these flags will need to be different for each cell type
-    # but can be dealth with upon running (setting annotations in a way that only open regions for that chromatin are run)
+    # but can be dealth with upon running (setting annotations in a way
+    # that only open regions for that chromatin are run)
     rv_mt = rv_mt.filter_rows(rv_mt.open_chromatin > 0)
     anno_path = output_path(f'{gene_name}_open_promoter_variants.mt', 'tmp')
     rv_mt = rv_mt.checkpoint(anno_path, overwrite=True)  # checkpoint
