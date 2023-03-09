@@ -369,7 +369,7 @@ def get_variants_to_test(
     anno_path = output_path(f'{gene_name}_open_promoter_variants.mt', 'tmp')
     rv_mt = rv_mt.checkpoint(anno_path, overwrite=True)  # checkpoint
     logging.info(
-        f'Number of rare (freq<5%) QC-passing, biallelic SNPs in promoter and open regions: {rv_mt.count()[0]}'
+        f'No rare (freq<5%) QCd, biallelic SNPs in promoter and open regions: {rv_mt.count()[0]}'
     )
 
     # export this as a Hail table for downstream analysis
@@ -431,7 +431,7 @@ def build_fit_null_command(
     - pheno col: name of column specifying pheno (default: "y")
     - trait type: count = Poisson, count_nb = Negative Binomial
     - option to skip Variance Ratio estimation (discouraged)
-    - option to add an offset to the fixed covariates (or if there are no covariates add an intercept?)
+    - option to add an offset to the fixed covariates (or intercept?)
     - option to transform (scale?) covariates?
     - option to skip model fitting (discouraged)
     - genotype file to estimate variance ratio (plink format) - which variants?
@@ -496,7 +496,7 @@ def build_run_association_test_command(
     - GMMAT model file: null model fit from previous step (.rda)
     - Variance Ratio file: as estimated from previous step (.txt)
     - group annotation: select only specific annotations from group file (e.g., lof)
-    - group file: for each gene/set, one row specifying variants, one row specifying each variant's anno, one optional row with all weights
+    - group file: for each gene/set, rows specifying variants, annos, weights
     - allele order: specifying whether alt-first or ref-first in genotype files
     - min MAF: minimum variant minor allele frequency to include
     - min MAC: minimum variant minor allele count to include
@@ -893,7 +893,7 @@ def saige_pipeline(
                 pheno_file=pheno_cov_filename,
                 cov_col_list='PC1',  # define these when making cov file
                 sample_id_pheno='cpg_id',  # check
-                plink_path=vre_plink_path,  # for now this is just for variance ratio estimation
+                plink_path=vre_plink_path,  # for variance ratio estimation
                 output_prefix=output_path('output/saige_model'),
                 pheno_col=gene,
                 trait_type='count',  # to evaluate vs 'count_NB'
@@ -901,7 +901,7 @@ def saige_pipeline(
             # regular job submitting the Rscript command to bash
             fit_null_job.command(cmd)
 
-            # input: null model object, VR file, gene specific genotypes (w open chromatin flags)
+            # input: null model object, VR file, gene specific genotypes
             # output: summary stats
             run_association_job = batch.new_job(
                 f'Run gene set association for: {gene}, {celltype}'
