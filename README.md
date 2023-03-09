@@ -141,7 +141,6 @@ Output:
 * cell type-specific summary statistics across all genes (.txt)
 
 ### To run (this may need to be updated)
-### To run (this may need to be updated)
 
 ```bash
 analysis-runner \
