@@ -77,7 +77,7 @@ Note: weights are not necessary, annotations can be multiple, separated by comma
 
 ### Run association (for each gene, cell type combination)
 
-Function names: _build_fit_null_command_, _build_run_set_test_command_.
+Function names: _build_fit_null_command_, _build_run_association_test_command_.
 
 This sets up R commands to actually run SAIGE-QTL, which is run in two steps.
 
