@@ -19,7 +19,7 @@ import os
 import sys
 
 import logging
-from typing import Dict, List
+from typing import Dict
 
 from google.cloud import storage
 
@@ -891,7 +891,7 @@ def saige_pipeline(
                 pheno_file=pheno_cov_filename,
                 cov_col_list='PC1',  # define these when making cov file
                 sample_id_pheno='cpg_id',  # check
-                plink_path=vre_plink_path,  # this is just for variance ratio estimation?
+                plink_path=vre_plink_path,  # for now this is just for variance ratio estimation
                 output_prefix=output_path('output/saige_model'),
                 pheno_col=gene,
                 trait_type='count',  # to evaluate vs 'count_NB'
