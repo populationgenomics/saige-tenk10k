@@ -190,7 +190,7 @@ def prepare_pheno_cov_file(
         output_path(f'input/pheno_cov_files/{cell_type}_chr{chromosome}_allgenes.tsv')
     )
 
-    # this file will map different IDs (and OneK1K ID to CPG ID) as well as donors to cells
+    # this file will map different donor IDs as well as donors to cells
     #         CPG ID  | OneK1K ID |    cell barcode     | cell type
     # e.g.,   CPG7385 |  686_687  | AAACCTGCAACGATCT-1  |   CD4_T
     sample_mapping = pd.read_csv(
@@ -412,7 +412,7 @@ def build_fit_null_command(
     output_prefix: str,
     pheno_col: str = 'y',
     trait_type: str = 'count',
-    skip_vre: str = 'FALSE',  # this is a boolean but that's encoded differently between R and python
+    skip_vre: str = 'FALSE',  # boolean but encoded differently between R and python
     is_cov_offset: str = 'FALSE',
     is_cov_transform: str = 'FALSE',
     skip_model_fitting: str = 'FALSE',
@@ -485,8 +485,8 @@ def build_run_association_test_command(
 ):
     """Build SAIGE command for association test
 
-    If the test type is "set", this will run a set test using Burden, SKAT and SKAT-O.
-    If the test type is "single", this will run a single-variant test (using a score test).
+    If the test type is "set", runs a set test using Burden, SKAT and SKAT-O.
+    If the test type is "single", runs a single-variant test (using a score test).
 
     Input:
     - test_type: "single" or "set"
@@ -653,7 +653,7 @@ config = get_config()
 @click.option('--input-files-prefix', default='tob_wgs_genetics/saige_qtl/input')
 @click.option(
     '--sample-mapping-file-tsv',
-    default='scrna-seq/grch38_association_files/OneK1K_CPG_IDs.tsv',  # this needs to be updated
+    default='scrna-seq/grch38_association_files/OneK1K_CPG_IDs.tsv',  # to be updated
 )
 @click.option('--mt-path', default=DEFAULT_JOINT_CALL_MT)
 @click.option('--vep-anno-ht-path', default=VEP_ANNOTATION_HT)
