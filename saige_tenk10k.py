@@ -603,7 +603,7 @@ def make_gene_loc_dict(file) -> dict[str, dict]:
 
     gene_dict = {}
 
-    with open(to_path(file)) as handle:
+    with open(to_path(file), encoding='UTF-8') as handle:
         reader = DictReader(handle, delimiter='\t')
 
         for row in reader:
@@ -686,7 +686,9 @@ def saige_pipeline(
     window_size: int = 50000,
     max_gene_concurrency=100,
 ):
-
+    """
+    Run entire pipeline
+    """
     sb = hb.ServiceBackend(
         billing_project=get_config()['hail']['billing_project'],
         remote_tmpdir=remote_tmpdir(),
