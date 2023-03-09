@@ -147,7 +147,7 @@ def filter_variants(
     )
     cv_mt.write(output_cv_mt_path, overwrite=True)
     logging.info(
-        f'No common (freq>{cv_maf_threshold*100}%), QCd biallelic SNPs: {cv_mt.count()[0]}'
+        f'No common (freq>{cv_maf_threshold}), biallelic SNPs: {cv_mt.count()[0]}'
     )
 
     # filter rare variants only (MAF < 5%)
@@ -157,7 +157,7 @@ def filter_variants(
     )
     mt.write(output_rv_mt_path, overwrite=True)
     logging.info(
-        f'No rare (freq<{rv_maf_threshold*100}%), QCd biallelic SNPs: {mt.count()[0]}'
+        f'No rare (freq<{rv_maf_threshold}), biallelic SNPs: {mt.count()[0]}'
     )
 
 
@@ -369,7 +369,7 @@ def get_variants_to_test(
     anno_path = output_path(f'{gene_name}_open_promoter_variants.mt', 'tmp')
     rv_mt = rv_mt.checkpoint(anno_path, overwrite=True)  # checkpoint
     logging.info(
-        f'No rare (freq<5%) QCd, biallelic SNPs in promoter and open regions: {rv_mt.count()[0]}'
+        f'No rare biallelic SNPs in promoter and open regions: {rv_mt.count()[0]}'
     )
 
     # export this as a Hail table for downstream analysis
@@ -672,7 +672,8 @@ config = get_config()
     default=50,
     help=(
         'To avoid resource starvation, set this concurrency to limit horizontal scale. '
-        'Higher numbers have a better walltime, but risk jobs that are stuck (which are expensive)'
+        'Higher numbers have a better walltime, but risk jobs that are stuck '
+        '(which are expensive)'
     ),
 )
 def saige_pipeline(
