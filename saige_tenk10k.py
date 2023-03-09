@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# pylint: disable=broad-exception-raised,import-error,import-outside-toplevel,missing-module-docstring,no-value-for-parameter,too-many-arguments,too-many-branches,too-many-locals,wrong-import-order,wrong-import-position
+# pylint: disable=broad-exception-raised,import-error,import-outside-toplevel,missing-module-docstring,no-value-for-parameter,too-many-arguments,too-many-branches,too-many-locals,too-many-statements,wrong-import-order,wrong-import-position
 
 __author__ = 'annacuomo'
 
@@ -227,7 +227,7 @@ def prepare_pheno_cov_file(
 
     # delete large files to free up memory
     del mat
-    # del mat_df
+    del mat_df
 
     # read in covariate file (tsv)
     # this file is defined at cell level, as:
