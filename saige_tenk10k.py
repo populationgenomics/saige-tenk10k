@@ -844,7 +844,7 @@ def saige_pipeline(
             )
 
     for celltype in celltype_list:
-        gene_run_jobs = List['str']  # str??
+        gene_run_jobs = []
         # need to remind myself of what was happening here
         logging.info(f'before glob: result files for {celltype}')
         storage_client = storage.Client()
