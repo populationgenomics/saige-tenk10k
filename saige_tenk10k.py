@@ -34,7 +34,7 @@ import pandas as pd
 
 import hail as hl
 import hailtop.batch as hb
-from sample_metadata.apis SequenceApi
+from sample_metadata.apis import SequenceApi
 
 # use logging to print statements, display at info level
 logging.basicConfig(
@@ -70,12 +70,20 @@ def remove_sc_outliers(df, outliers=None):
     df = df[-df['OneK1K_ID'].isin(outliers)]
 
     return df
-    
+
+# extract bone marrow samples
+# it's a sequence metadata vs sample??
 def get_bone_marrow_samples():
     seqapi.get_samples(
         "seq_meta": {"Primary study":"Pilot/bone marrow"},
         "projects": ["tob-wgs"]
         )
+
+# remove duplicated samples based on TOB IDs
+# CPG4994, CPG67264 both TOB1282
+# CPG5066, CPG67504 both TOB1289
+# in both cases keep the latter which is the resequenced version
+# looking for better than manual extraction of these two
 
 # endregion SUBSET_SAMPLES
 
