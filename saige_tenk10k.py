@@ -61,6 +61,23 @@ HAIL_IMAGE = get_config()['workflow']['driver_image']
 SAIGE_QTL_IMAGE = 'australia-southeast1-docker.pkg.dev/cpg-common/images/saige-qtl'
 MULTIPY_IMAGE = 'australia-southeast1-docker.pkg.dev/cpg-common/images/multipy:0.16'
 
+
+# region SUBSET_SAMPLES
+
+def remove_sc_outliers(df, outliers=None):
+    """
+    Remove outlier samples, as identified by single-cell analysis
+    """
+    if outliers is None:
+        outliers = ['966_967', '88_88']
+    else:
+        outliers = outliers.extend(['966_967', '88_88'])
+    df = df[-df['OneK1K_ID'].isin(outliers)]
+
+    return df
+
+# endregion SUBSET_SAMPLES
+
 # region SUBSET_VARIANTS
 
 
@@ -164,6 +181,7 @@ def filter_variants(
 
 
 # endregion SUBSET_VARIANTS
+
 
 config = get_config()
 
