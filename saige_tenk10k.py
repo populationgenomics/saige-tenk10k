@@ -6,6 +6,7 @@ __author__ = 'annacuomo'
 """
 Hail Batch workflow for the rare-variant association analysis, including:
 
+- perform sample and variant QC
 - get relevant variants around a gene and export genotypes as plink files,
 - generate other input files for association tests (phenotype, covariates, groups),
 - run association tests.
@@ -47,17 +48,12 @@ logging.basicConfig(
 seqapi = SequenceApi()
 
 DEFAULT_JOINT_CALL_MT = dataset_path('mt/v7.mt')
-VEP_ANNOTATION_HT = dataset_path('tob_wgs_vep/104/vep104.3_GRCh38.ht')
-OC_ANNOTATION_HT = dataset_path(
-    'tob_wgs_rv/open_chromatin_annotation/open_chromatin_annotated.ht'
-)
 
 HAIL_IMAGE = get_config()['workflow']['driver_image']
-SAIGE_QTL_IMAGE = 'australia-southeast1-docker.pkg.dev/cpg-common/images/saige-qtl'
-MULTIPY_IMAGE = 'australia-southeast1-docker.pkg.dev/cpg-common/images/multipy:0.16'
 
 
 # region SUBSET_SAMPLES
+
 
 def remove_sc_outliers(df, outliers=None):
     """
@@ -71,19 +67,23 @@ def remove_sc_outliers(df, outliers=None):
 
     return df
 
+
 # extract bone marrow samples
 # it's a sequence metadata vs sample??
 def get_bone_marrow_samples():
     seqapi.get_samples(
         "seq_meta": {"Primary study":"Pilot/bone marrow"},
         "projects": ["tob-wgs"]
-        )
+    )
 
 # remove duplicated samples based on TOB IDs
 # CPG4994, CPG67264 both TOB1282
 # CPG5066, CPG67504 both TOB1289
 # in both cases keep the latter which is the resequenced version
 # looking for better than manual extraction of these two
+def get_duplicated_samples():
+    duplicated_samples = ['CPG4994', 'CPG5066']
+    return duplicated_samples
 
 # endregion SUBSET_SAMPLES
 
@@ -134,9 +134,10 @@ def filter_variants(
 
     # add column filters
     bm_samples = get_bone_marrow_samples()
-    # dup_samples = get_duplicated_samples()
+    dup_samples = get_duplicated_samples()
     # qc_samples = get_qced_out_samples()
     mt = mt.filter_cols(mt.s in bm_samples)
+    mt = mt.filter_cols(mt.s in dup_samples)  # merge with above?
 
     # filter out low quality variants and consider biallelic SNPs only
     # (no multi-allelic, no ref-only, no indels)
@@ -195,6 +196,7 @@ def filter_variants(
 
 
 config = get_config()
+
 
 @click.command()
 @click.option(
