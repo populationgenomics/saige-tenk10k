@@ -34,7 +34,7 @@ import pandas as pd
 
 import hail as hl
 import hailtop.batch as hb
-
+from sample_metadata.apis SequenceApi
 
 # use logging to print statements, display at info level
 logging.basicConfig(
@@ -43,6 +43,8 @@ logging.basicConfig(
     datefmt='%Y-%m-%d %H:%M:%S',
     stream=sys.stderr,
 )
+
+seqapi = SequenceApi()
 
 DEFAULT_JOINT_CALL_MT = dataset_path('mt/v7.mt')
 VEP_ANNOTATION_HT = dataset_path('tob_wgs_vep/104/vep104.3_GRCh38.ht')
@@ -68,6 +70,13 @@ def remove_sc_outliers(df, outliers=None):
     df = df[-df['OneK1K_ID'].isin(outliers)]
 
     return df
+    
+def get_bone_marrow_samples():
+    seqapi.get_samples(
+        body_get_samples={
+            'project_ids': [project],
+            'active': True,
+        }
 
 # endregion SUBSET_SAMPLES
 
