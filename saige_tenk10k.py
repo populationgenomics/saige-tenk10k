@@ -73,10 +73,9 @@ def remove_sc_outliers(df, outliers=None):
     
 def get_bone_marrow_samples():
     seqapi.get_samples(
-        body_get_samples={
-            'project_ids': [project],
-            'active': True,
-        }
+        "seq_meta": {"Primary study":"Pilot/bone marrow"},
+        "projects": ["tob-wgs"]
+        )
 
 # endregion SUBSET_SAMPLES
 
