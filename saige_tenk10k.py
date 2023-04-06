@@ -15,13 +15,9 @@ output files in tob_wgs_genetics/saige_qtl/output
 """
 
 # import python modules
-import os
 import sys
 
 import logging
-from typing import Dict
-
-from google.cloud import storage
 
 from cpg_utils import to_path
 from cpg_utils.hail_batch import (
@@ -34,10 +30,7 @@ from cpg_utils.hail_batch import (
 )
 
 import click
-import numpy as np
 import pandas as pd
-import scanpy as sc
-import xarray as xr
 
 import hail as hl
 import hailtop.batch as hb
