@@ -72,6 +72,9 @@ def remove_sc_outliers(df, outliers=None):
 # extract bone marrow samples
 # it's a sequence metadata vs sample??
 def get_bone_marrow_samples():
+    """
+    Extract TOB bone marrow samples (vs PBMCs)
+    """
     bm_samples = seqapi.get_samples(
         body_get_samples={
             'seq_meta': {'Primary study': 'Pilot/bone marrow'},
@@ -87,11 +90,17 @@ def get_bone_marrow_samples():
 # in both cases keep the latter which is the resequenced version
 # looking for better than manual extraction of these two
 def get_duplicated_samples():
+    """
+    Extract duplicated samples for same individual
+    """
     duplicated_samples = ['CPG4994', 'CPG5066']
     return duplicated_samples
 
 
 def get_non_tob_samples():
+    """
+    Extract outsider samples not from this cohort
+    """
     outsiders = ['NA12878', 'NA12891', 'NA12892', 'Syndip']
     return outsiders
 
