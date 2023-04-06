@@ -72,8 +72,10 @@ def remove_sc_outliers(df, outliers=None):
 # it's a sequence metadata vs sample??
 def get_bone_marrow_samples():
     seqapi.get_samples(
+        body_get_samples={
         "seq_meta": {"Primary study":"Pilot/bone marrow"},
         "projects": ["tob-wgs"]
+        }
     )
 
 # remove duplicated samples based on TOB IDs
