@@ -35,6 +35,7 @@ import pandas as pd
 
 import hail as hl
 import hailtop.batch as hb
+
 from sample_metadata.apis import SequenceApi
 
 # use logging to print statements, display at info level
@@ -71,12 +72,14 @@ def remove_sc_outliers(df, outliers=None):
 # extract bone marrow samples
 # it's a sequence metadata vs sample??
 def get_bone_marrow_samples():
-    seqapi.get_samples(
+    bm_samples = seqapi.get_samples(
         body_get_samples={
-        "seq_meta": {"Primary study":"Pilot/bone marrow"},
-        "projects": ["tob-wgs"]
+            'seq_meta': {'Primary study': 'Pilot/bone marrow'},
+            'projects': ['tob-wgs'],
         }
     )
+    return bm_samples
+
 
 # remove duplicated samples based on TOB IDs
 # CPG4994, CPG67264 both the same individual (TOB1282)
@@ -87,9 +90,11 @@ def get_duplicated_samples():
     duplicated_samples = ['CPG4994', 'CPG5066']
     return duplicated_samples
 
+
 def get_non_tob_samples():
     outsiders = ['NA12878', 'NA12891', 'NA12892', 'Syndip']
     return outsiders
+
 
 # endregion SUBSET_SAMPLES
 
