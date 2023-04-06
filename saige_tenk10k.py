@@ -133,8 +133,10 @@ def filter_variants(
     mt = hl.experimental.densify(mt)
 
     # add column filters
-    # filter out bone marrow samples
-    # filter out duplicated samples
+    bm_samples = get_bone_marrow_samples()
+    # dup_samples = get_duplicated_samples()
+    # qc_samples = get_qced_out_samples()
+    mt = mt.filter_cols(mt.s in bm_samples)
 
     # filter out low quality variants and consider biallelic SNPs only
     # (no multi-allelic, no ref-only, no indels)
