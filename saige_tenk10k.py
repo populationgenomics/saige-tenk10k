@@ -77,13 +77,17 @@ def get_bone_marrow_samples():
     )
 
 # remove duplicated samples based on TOB IDs
-# CPG4994, CPG67264 both TOB1282
+# CPG4994, CPG67264 both the same individual (TOB1282)
 # CPG5066, CPG67504 both TOB1289
 # in both cases keep the latter which is the resequenced version
 # looking for better than manual extraction of these two
 def get_duplicated_samples():
     duplicated_samples = ['CPG4994', 'CPG5066']
     return duplicated_samples
+
+def get_non_tob_samples():
+    outsiders = ['NA12878', 'NA12891', 'NA12892', 'Syndip']
+    return outsiders
 
 # endregion SUBSET_SAMPLES
 
@@ -135,9 +139,11 @@ def filter_variants(
     # add column filters
     bm_samples = get_bone_marrow_samples()
     dup_samples = get_duplicated_samples()
+    out_samples = get_non_tob_samples()
     # qc_samples = get_qced_out_samples()
     mt = mt.filter_cols(mt.s in bm_samples)
     mt = mt.filter_cols(mt.s in dup_samples)  # merge with above?
+    mt = mt.filter_cols(mt.s in out_samples)
 
     # filter out low quality variants and consider biallelic SNPs only
     # (no multi-allelic, no ref-only, no indels)
