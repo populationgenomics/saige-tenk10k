@@ -70,17 +70,18 @@ def remove_sc_outliers(df, outliers=None):
 
 
 # extract bone marrow samples
-# it's a sequence metadata vs sample??
 def get_bone_marrow_samples():
     """
     Extract TOB bone marrow samples (vs PBMCs)
     """
-    bm_samples = seqapi.get_samples(
-        body_get_samples={
+    sequences = seqapi.get_sequences_by_criteria(
+        active=True,
+        body_get_sequences_by_criteria={
             'seq_meta': {'Primary study': 'Pilot/bone marrow'},
             'projects': ['tob-wgs'],
-        }
+        },
     )
+    bm_samples = [sequence.get('sample_id') for sequence in sequences]
     return bm_samples
 
 
