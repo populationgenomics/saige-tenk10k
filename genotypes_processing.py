@@ -4,12 +4,13 @@
 __author__ = 'annacuomo'
 
 """
-Hail Batch workflow for the rare-variant association analysis, including:
+Hail Batch workflow to extract relevant variants to test.
+This script will:
 
-- perform sample and variant QC
-- get relevant variants around a gene and export genotypes as plink files,
-- generate other input files for association tests (phenotype, covariates, groups),
-- run association tests.
+- perform sample QC
+- perform variant QC
+- get relevant variants around a gene
+- export genotypes as plink files,
 
 More details in README
 output files in tob_wgs_genetics/saige_qtl/output
@@ -81,7 +82,9 @@ def get_bone_marrow_samples():
             'projects': ['tob-wgs'],
         },
     )
-    bm_samples = [sequence.get('sample_id') for sequence in sequences]
+    bm_samples = list()
+    for sequence in sequences:
+        bm_samples.append(sequence.get('sample_id'))
     return bm_samples
 
 
@@ -93,6 +96,7 @@ def get_bone_marrow_samples():
 def get_duplicated_samples():
     """
     Extract duplicated samples for same individual
+    i.e., keep "-PBMC" version
     """
     duplicated_samples = ['CPG4994', 'CPG5066']
     return duplicated_samples
@@ -101,6 +105,7 @@ def get_duplicated_samples():
 def get_non_tob_samples():
     """
     Extract outsider samples not from this cohort
+    (only included for comparison purpose)
     """
     outsiders = ['NA12878', 'NA12891', 'NA12892', 'Syndip']
     return outsiders
