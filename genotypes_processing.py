@@ -70,7 +70,6 @@ def remove_sc_outliers(df, outliers=None):
     return df
 
 
-# extract bone marrow samples
 def get_bone_marrow_samples():
     """
     Extract TOB bone marrow samples (vs PBMCs)
@@ -126,14 +125,16 @@ def get_low_qc_samples(
     meta = pd.read_csv(metadata_tsv_path, sep='\t')
     samples_contam = set(meta['r_contamination' > contam_rate, 's'])
     logging.info(
-        f'No samples with contamination rate > {contam_rate}: {len(samples_contam)}'
+        f'No. samples with contamination rate > {contam_rate}: {len(samples_contam)}'
     )
     samples_chim = set(meta['r_chimera' > chimera_rate, 's'])
-    logging.info(f'No samples with chimera rate > {chimera_rate}: {len(samples_chim)}')
+    logging.info(f'No. samples with chimera rate > {chimera_rate}: {len(samples_chim)}')
     samples_sex = set(meta['hard_filters' in ['ambiguous_sex', 'sex_aneuploidy']])
-    logging.info(f'No samples with sex aneuploidy or ambiguous sex: {len(samples_sex)}')
+    logging.info(
+        f'No. samples with sex aneuploidy or ambiguous sex: {len(samples_sex)}'
+    )
     samples_qc = set(meta[pd.notna('qc_metrics_filters')])
-    logging.info(f'No samples not passing WGS QC: {len(samples_qc)}')
+    logging.info(f'No. samples not passing WGS QC: {len(samples_qc)}')
     return [set().union(*[samples_contam, samples_chim, samples_sex, samples_qc])]
 
 
@@ -241,7 +242,7 @@ def genotypes_pipeline(
     mt_path: str,
 ):
     """
-    Run WGS filtering pipeline
+    Run one-off QC filtering pipeline
     """
     sb = hb.ServiceBackend(
         billing_project=get_config()['hail']['billing_project'],
