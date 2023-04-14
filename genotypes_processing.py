@@ -124,9 +124,16 @@ def get_low_qc_samples(
     """
     meta = pd.read_csv(metadata_tsv_path, sep='\t')
     samples_contam = meta['r_contamination' > contam_rate, 's']
+    logging.info(
+        f'No samples with contamination rate > {contam_rate}: {len(samples_contam)}'
+    )
     samples_chim = meta['r_chimera' > chimera_rate, 's']
+    logging.info(f'No samples with chimera rate > {chimera_rate}: {len(samples_chim)}')
     samples_sex = meta['hard_filters' in ["ambiguous_sex", "sex_aneuploidy"]]
-    return [set(samples_contam, samples_chim, samples_sex)]
+    logging.info(f'No samples with sex aneuploidy or ambiguous sex: {len(samples_sex)}')
+    samples_qc = meta[pd.notna('qc_metrics_filters')]
+    logging.info(f'No samples not passing WGS QC: {len(samples_qc)}')
+    return [set(samples_contam, samples_chim, samples_sex, samples_qc)]
 
 
 # endregion SUBSET_SAMPLES
