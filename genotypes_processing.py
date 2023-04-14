@@ -9,8 +9,8 @@ This script will:
 
 - perform sample QC
 - perform variant QC
-- get relevant variants around a gene
-- export genotypes as plink files,
+- export filtered matrix table
+- export genotype subset as plink files,
 
 More details in README
 output files in tob_wgs_genetics/saige_qtl/input
@@ -241,7 +241,7 @@ def genotypes_pipeline(
     mt_path: str,
 ):
     """
-    Run entire pipeline
+    Run WGS filtering pipeline
     """
     sb = hb.ServiceBackend(
         billing_project=get_config()['hail']['billing_project'],
