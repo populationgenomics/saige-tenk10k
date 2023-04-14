@@ -146,11 +146,8 @@ def get_low_qc_samples(
 def filter_variants(
     mt_path: str,  # 'mt/v7.mt'
     samples: list[str],
-    output_rv_mt_path: str,  # 'tob_wgs/densified_rv_only.mt'
-    output_cv_mt_path: str,  # 'tob_wgs/densified_cv_only.mt'
+    output_mt_path: str,  # 'tob_wgs/filtered.mt'
     vre_plink_path: str,  # 'tob_wgs/vr_plink_2000_variants
-    cv_maf_threshold: float = 0.01,
-    rv_maf_threshold: float = 0.05,
     vre_mac_threshold: int = 20,
     vre_n_markers: int = 2000,
 ):
@@ -160,18 +157,15 @@ def filter_variants(
     - joint call hail matrix table
     - set of samples for which we have scRNA-seq data
     - file paths for outputs
-    - MAF thresholds to define common / rare variants
 
-    Output 1&2:
+    Output 1:
     subset hail matrix table, containing only variants that:
     i) are not ref-only, ii) biallelic, iii) meet QC filters,
     and samples that are contained in sc sample list + QC passing.
 
-    Then, in output1 variants are also rare (freq < rv_maf_threshold)
-    and in output2 they are common (freq > cv_maf_threshold)
-
-    Output 3:
+    Output 2:
     plink file containing a random subset of 2,000 variants that satisfy i),ii),iii)
+    and also post sample QC
     that are additionally sufficiently common (MAC>20) and not in LD
     """
     # read hail matrix table object (WGS data)
@@ -203,6 +197,9 @@ def filter_variants(
 
     mt = hl.variant_qc(mt)
 
+    mt.write(output_mt_path, overwrite=True)
+    logging.info(f'No QC-passingm, biallelic SNPs: {mt.count()[0]}')
+
     # subset variants for variance ratio estimation
     # minor allele count (MAC) > 20
     tot_counts = mt.variant_qc.AC.sum()
@@ -225,24 +222,6 @@ def filter_variants(
     from hail.methods import export_plink
 
     export_plink(vre_mt, vre_plink_path, ind_id=vre_mt.s)
-
-    # filter common variants for single-variant association
-    cv_mt = mt.filter_rows(
-        (mt.variant_qc.AF[1] > cv_maf_threshold) & (mt.variant_qc.AF[1] < 1)
-        | (mt.variant_qc.AF[1] < (1 - cv_maf_threshold)) & (mt.variant_qc.AF[1] > 0)
-    )
-    cv_mt.write(output_cv_mt_path, overwrite=True)
-    logging.info(
-        f'No common (freq>{cv_maf_threshold}), biallelic SNPs: {cv_mt.count()[0]}'
-    )
-
-    # filter rare variants only (MAF < 5%)
-    mt = mt.filter_rows(
-        (mt.variant_qc.AF[1] < rv_maf_threshold) & (mt.variant_qc.AF[1] > 0)
-        | (mt.variant_qc.AF[1] > (1 - rv_maf_threshold)) & (mt.variant_qc.AF[1] < 1)
-    )
-    mt.write(output_rv_mt_path, overwrite=True)
-    logging.info(f'No rare (freq<{rv_maf_threshold}), biallelic SNPs: {mt.count()[0]}')
 
 
 # endregion SUBSET_VARIANTS
@@ -277,11 +256,10 @@ def genotypes_pipeline(
     # check column names - CPG_ID would be better?
     sc_samples = sample_mapping_file['InternalID'].unique()
 
-    # filter to QC-passing, rare, biallelic variants
-    output_rv_mt_path = output_path('densified_rv_only.mt')
-    output_cv_mt_path = output_path('densified_cv_only.mt')
+    # filter to QC-passing, biallelic SNPs
+    output_mt_path = output_path('qc_filtered.mt')
     vre_plink_path = output_path('vr_plink_20k_variants')
-    if not to_path(output_rv_mt_path).exists():
+    if not to_path(output_mt_path).exists():
 
         filter_job = batch.new_python_job(name='MT filter job')
         copy_common_env(filter_job)
@@ -290,8 +268,7 @@ def genotypes_pipeline(
             filter_variants,
             mt_path=mt_path,
             samples=list(sc_samples),
-            output_rv_mt_path=output_rv_mt_path,
-            output_cv_mt_path=output_cv_mt_path,
+            output_mt_path=output_mt_path,
             vre_plink_path=vre_plink_path,
         )
 
