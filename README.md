@@ -10,13 +10,8 @@ The pipeline is split into four parts, to make for more flexible usage:
 * Input files check and preparation: this involves combining data from above and cross-check for consistency prior to running SAIGE-QTL
 * Association testing: prepare and run SAIGE-QTL commands for association mapping
 
-<!-- * **Plan A**: at present, just adapting our [CellRegMap Hail batch pipeline](https://github.com/populationgenomics/cellregmap-pipeline/blob/main/batch.py) hoping it can run R / external code smoothly.
-* **Plan A**: at present, just adapting our [CellRegMap Hail batch pipeline](https://github.com/populationgenomics/cellregmap-pipeline/blob/main/batch.py) hoping it can run R / external code smoothly.
-* **Plan B**: if that fails, we may need to adapt [Konrad K's UKBB exomes analysis github](https://github.com/Nealelab/ukb_exomes), underlying [this paper](https://www.sciencedirect.com/science/article/pii/S2666979X22001100), or at least using [these python wrappers for SAIGE](https://github.com/Nealelab/ukb_common/blob/master/utils/saige_pipeline.py).
 
-## Plan A -->
-
-## Genotypes preprocessing (once per cohort)
+## Genotypes preprocessing (once per cohort, e.g. TOB)
 
 Function name: filter_variants.
 
@@ -33,7 +28,7 @@ It outputs three objects:
 
 consider ouputting one single MT object instead.
 
-### To run (this may need to be updated)
+### To run
 
 ```bash
 analysis-runner \
@@ -47,7 +42,7 @@ analysis-runner \
       --sample-mapping-file-tsv 'tob_wgs_genetics/saige_qtl/input/smf.tsv'
 ```
 
-# Data
+## Data
 
 TenK10K is matched single-cell RNA-seq (scRNA-seq) and whole-genome sequencing (WGS) data from up to 10,000 individuals:
 
