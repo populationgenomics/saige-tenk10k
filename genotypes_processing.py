@@ -120,13 +120,13 @@ def get_low_qc_samples(
     Extract samples that did not pass QC
     - high contamination rate
     - high chimera rate
-    - ambiguous sex
-    - other?
+    - ambiguous sex or sex aneuploidy
     """
     meta = pd.read_csv(metadata_tsv_path, sep='\t')
     samples_contam = meta['r_contamination' > contam_rate, 's']
     samples_chim = meta['r_chimera' > chimera_rate, 's']
-    return [set(samples_contam, samples_chim)]
+    samples_sex = meta['hard_filters' in ["ambiguous_sex", "sex_aneuploidy"]]
+    return [set(samples_contam, samples_chim, samples_sex)]
 
 
 # endregion SUBSET_SAMPLES
