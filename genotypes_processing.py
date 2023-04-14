@@ -111,6 +111,20 @@ def get_non_tob_samples():
     return outsiders
 
 
+def get_low_qc_samples(metadata_csv, contam_rate=0.05, chimera_rate=0.05):
+    """
+    Extract samples that did not pass QC
+    - high contamination rate
+    - high chimera rate
+    - ambiguous sex
+    - other?
+    """
+    meta = pd.read_csv(metadata_csv)
+    samples_contam = meta['contam' > contam_rate, 'InternalID']
+    samples_chim = meta['chim' > chimera_rate, 'InternalID']
+    return [set(samples_contam, samples_chim)]
+
+
 # endregion SUBSET_SAMPLES
 
 # region SUBSET_VARIANTS
