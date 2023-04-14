@@ -85,7 +85,7 @@ def get_bone_marrow_samples():
     bm_samples = []
     for sequence in sequences:
         bm_samples.append(sequence.get('sample_id'))
-    return bm_samples
+    return set(bm_samples)
 
 
 # remove duplicated samples based on TOB IDs
@@ -99,7 +99,7 @@ def get_duplicated_samples():
     i.e., keep "-PBMC" version
     """
     duplicated_samples = ['CPG4994', 'CPG5066']
-    return duplicated_samples
+    return set(duplicated_samples)
 
 
 def get_non_tob_samples():
@@ -108,7 +108,7 @@ def get_non_tob_samples():
     (only included for comparison purpose)
     """
     outsiders = ['NA12878', 'NA12891', 'NA12892', 'Syndip']
-    return outsiders
+    return set(outsiders)
 
 
 def get_low_qc_samples(
@@ -189,7 +189,7 @@ def filter_variants(
     dup_samples = get_duplicated_samples()
     out_samples = get_non_tob_samples()
     qc_samples = get_low_qc_samples()
-    filter_samples = set(bm_samples, dup_samples, out_samples, qc_samples)
+    filter_samples = set().union(*[bm_samples, dup_samples, out_samples, qc_samples])
     mt = mt.filter_cols(mt.s in filter_samples)
 
     # filter out low quality variants and consider biallelic SNPs only
