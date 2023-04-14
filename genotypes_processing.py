@@ -165,7 +165,7 @@ def filter_variants(
     Output 1&2:
     subset hail matrix table, containing only variants that:
     i) are not ref-only, ii) biallelic, iii) meet QC filters,
-    and samples that are contained in sc sample list.
+    and samples that are contained in sc sample list + QC passing.
 
     Then, in output1 variants are also rare (freq < rv_maf_threshold)
     and in output2 they are common (freq > cv_maf_threshold)
@@ -184,14 +184,13 @@ def filter_variants(
     # densify
     mt = hl.experimental.densify(mt)
 
-    # add column filters
+    # add sample filters
     bm_samples = get_bone_marrow_samples()
     dup_samples = get_duplicated_samples()
     out_samples = get_non_tob_samples()
-    # qc_samples = get_qced_out_samples()
-    mt = mt.filter_cols(mt.s in bm_samples)
-    mt = mt.filter_cols(mt.s in dup_samples)  # merge with above?
-    mt = mt.filter_cols(mt.s in out_samples)
+    qc_samples = get_low_qc_samples()
+    filter_samples = set(bm_samples, dup_samples, out_samples, qc_samples)
+    mt = mt.filter_cols(mt.s in filter_samples)
 
     # filter out low quality variants and consider biallelic SNPs only
     # (no multi-allelic, no ref-only, no indels)
@@ -258,7 +257,7 @@ config = get_config()
     default='scrna-seq/grch38_association_files/OneK1K_CPG_IDs.tsv',  # to be updated
 )
 @click.option('--mt-path', default=DEFAULT_JOINT_CALL_MT)
-def saige_pipeline(
+def genotypes_pipeline(
     sample_mapping_file_tsv: str,
     mt_path: str,
 ):
@@ -305,4 +304,4 @@ def saige_pipeline(
 
 
 if __name__ == '__main__':
-    saige_pipeline()
+    genotypes_pipeline()
