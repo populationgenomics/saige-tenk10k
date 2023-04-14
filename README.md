@@ -3,18 +3,26 @@
 This is a hail batch pipeline to run the new [QTL version of SAIGE](https://github.com/weizhou0/qtl) on CPG's GCP, to map associations between common and rare genetic variants and single-cell gene expression from blood.
 First, this will be run on the TOB and then BioHEART datasets as part of the TenK10K project (see *Data* below), but in the future all datasets within OurDNA (with scRNA-seq + WGS data) will go through this pipeline as well.
 
-* **Plan A**: at present, just adapting our [CellRegMap Hail batch pipeline](https://github.com/populationgenomics/cellregmap-pipeline/blob/main/batch.py) hoping it can run R / external code smoothly.
+The pipeline is split into four parts, to make for more flexible usage:
+
+* Genotype processing (RV): this involves sample and variant QC of the WGS data, and genotype file preparation specifically for rare variants
+* Expression (phenotype) processing: this involves processing of the scRNA-seq data, and preparation of the pheno_cov file
+* Input files check and preparation: this involves combining data from above and cross-check for consistency prior to running SAIGE-QTL
+* Association testing: prepare and run SAIGE-QTL commands for association mapping
+
+<!-- * **Plan A**: at present, just adapting our [CellRegMap Hail batch pipeline](https://github.com/populationgenomics/cellregmap-pipeline/blob/main/batch.py) hoping it can run R / external code smoothly.
 * **Plan A**: at present, just adapting our [CellRegMap Hail batch pipeline](https://github.com/populationgenomics/cellregmap-pipeline/blob/main/batch.py) hoping it can run R / external code smoothly.
 * **Plan B**: if that fails, we may need to adapt [Konrad K's UKBB exomes analysis github](https://github.com/Nealelab/ukb_exomes), underlying [this paper](https://www.sciencedirect.com/science/article/pii/S2666979X22001100), or at least using [these python wrappers for SAIGE](https://github.com/Nealelab/ukb_common/blob/master/utils/saige_pipeline.py).
 
-## Plan A
+## Plan A -->
 
 ### Genotypes preprocessing (once per cohort)
 
 Function name: filter_variants.
 
-Hail query to filter WGS object to i) QC-passing, ii) non ref-ref variants, and considering only samples with scRNA-seq data.
-At present, this also filters out indels and multi-allelic SNPs, which we may want to relax.
+Hail query to filter WGS object to
+* samples that are: i) QC-passing, ii) present in the scRNA-seq dataset
+* variants that re: i) QC-passing, ii) non ref-ref variants, and iii) (for now) indels and multi-allelic SNPs.
 
 It outputs three objects:
 
@@ -22,6 +30,7 @@ It outputs three objects:
 * MT object, common (freq>1%) variants
 * plink object for only 2,000 variants (MAC>20), after LD pruning - this is for the estimation of the variance ratio (VR plinks)
 
+consider ouputting one single MT object instead.
 <!-- # skip for now - unrelated individuals
 * SAIGE R script to create sparse GRM
   * just once for all individuals, all variants after LD-pruning, and MAF>1% -->

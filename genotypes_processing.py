@@ -13,7 +13,7 @@ This script will:
 - export genotypes as plink files,
 
 More details in README
-output files in tob_wgs_genetics/saige_qtl/output
+output files in tob_wgs_genetics/saige_qtl/input
 """
 
 # import python modules
@@ -121,6 +121,7 @@ def get_low_qc_samples(
     - high contamination rate
     - high chimera rate
     - ambiguous sex or sex aneuploidy
+    - WGS-based QC
     """
     meta = pd.read_csv(metadata_tsv_path, sep='\t')
     samples_contam = meta['r_contamination' > contam_rate, 's']
@@ -141,7 +142,7 @@ def get_low_qc_samples(
 # region SUBSET_VARIANTS
 
 
-# only needs to be run once for a given cohort (e.g., OneK1K)
+# only needs to be run once for a given cohort (e.g., OneK1K / TOB)
 def filter_variants(
     mt_path: str,  # 'mt/v7.mt'
     samples: list[str],
