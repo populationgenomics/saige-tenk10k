@@ -82,7 +82,7 @@ def get_bone_marrow_samples():
             'projects': ['tob-wgs'],
         },
     )
-    bm_samples = list()
+    bm_samples = []
     for sequence in sequences:
         bm_samples.append(sequence.get('sample_id'))
     return bm_samples
@@ -124,17 +124,17 @@ def get_low_qc_samples(
     - WGS-based QC
     """
     meta = pd.read_csv(metadata_tsv_path, sep='\t')
-    samples_contam = meta['r_contamination' > contam_rate, 's']
+    samples_contam = set(meta['r_contamination' > contam_rate, 's'])
     logging.info(
         f'No samples with contamination rate > {contam_rate}: {len(samples_contam)}'
     )
-    samples_chim = meta['r_chimera' > chimera_rate, 's']
+    samples_chim = set(meta['r_chimera' > chimera_rate, 's'])
     logging.info(f'No samples with chimera rate > {chimera_rate}: {len(samples_chim)}')
-    samples_sex = meta['hard_filters' in ["ambiguous_sex", "sex_aneuploidy"]]
+    samples_sex = set(meta['hard_filters' in ['ambiguous_sex', 'sex_aneuploidy']])
     logging.info(f'No samples with sex aneuploidy or ambiguous sex: {len(samples_sex)}')
-    samples_qc = meta[pd.notna('qc_metrics_filters')]
+    samples_qc = set(meta[pd.notna('qc_metrics_filters')])
     logging.info(f'No samples not passing WGS QC: {len(samples_qc)}')
-    return [set(samples_contam, samples_chim, samples_sex, samples_qc)]
+    return [set().union(*[samples_contam, samples_chim, samples_sex, samples_qc])]
 
 
 # endregion SUBSET_SAMPLES

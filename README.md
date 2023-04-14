@@ -21,6 +21,7 @@ The pipeline is split into four parts, to make for more flexible usage:
 Function name: filter_variants.
 
 Hail query to filter WGS object to
+
 * samples that are: i) QC-passing, ii) present in the scRNA-seq dataset
 * variants that re: i) QC-passing, ii) non ref-ref variants, and iii) (for now) indels and multi-allelic SNPs.
 
