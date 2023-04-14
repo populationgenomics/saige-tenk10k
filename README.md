@@ -16,7 +16,7 @@ The pipeline is split into four parts, to make for more flexible usage:
 
 ## Plan A -->
 
-### Genotypes preprocessing (once per cohort)
+## Genotypes preprocessing (once per cohort)
 
 Function name: filter_variants.
 
@@ -36,7 +36,7 @@ consider ouputting one single MT object instead.
 * SAIGE R script to create sparse GRM
   * just once for all individuals, all variants after LD-pruning, and MAF>1% -->
 
-### Expression preprocessing (once per cell type, chromosome)
+## Expression preprocessing (once per cell type, chromosome)
 
 Function name: prepare_pheno_cov_file.
 
@@ -66,7 +66,7 @@ FileN:
 
 ind_id | cov1 | ... | covM | geneN
 
-### Variant selection (once per gene)
+## Variant selection (once per gene)
 
 Function name: get_variants_to_test.
 
@@ -86,7 +86,7 @@ Outputs:
 
 Note: weights are not necessary, annotations can be multiple, separated by comma.
 
-### Run association (for each gene, cell type combination)
+## Run association (for each gene, cell type combination)
 
 Function names: build_fit_null_command, build_run_association_test_command.
 
@@ -101,7 +101,7 @@ As such, for both steps 1 and 2, we consider,
   * Python function to build command (which just adds to a string, i.e., "Rscript myscript.R --arg1 par1 --arg2 par2..")
   * Job to actually run the command with the appropriate arguments
 
-#### Step1: Fit null model
+### Step1: Fit null model
 
 Function name: build_fit_null_command.
 
@@ -117,7 +117,7 @@ Outputs:
 * variance ratio estimate (.txt)
 * optional: log
 
-#### Step2: Run association
+### Step2: Run association
 
 Function name: build_run_set_test_command.
 
@@ -133,7 +133,7 @@ Output:
 * txt file with all results
 * optional: log
 
-### Results aggregation (once per cell type)
+## Results aggregation (once per cell type)
 
 Function name: summarise_association_results
 
@@ -150,7 +150,7 @@ Output:
 
 * cell type-specific summary statistics across all genes (.txt)
 
-### To run (this may need to be updated)
+## To run (this may need to be updated)
 
 ```bash
 analysis-runner \
