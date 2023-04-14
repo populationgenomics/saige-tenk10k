@@ -124,8 +124,8 @@ def get_low_qc_samples(
     - other?
     """
     meta = pd.read_csv(metadata_tsv_path, sep='\t')
-    samples_contam = meta['contam' > contam_rate, 'InternalID']
-    samples_chim = meta['chim' > chimera_rate, 'InternalID']
+    samples_contam = meta['r_contamination' > contam_rate, 's']
+    samples_chim = meta['r_chimera' > chimera_rate, 's']
     return [set(samples_contam, samples_chim)]
 
 
