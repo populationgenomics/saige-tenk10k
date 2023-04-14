@@ -111,7 +111,11 @@ def get_non_tob_samples():
     return outsiders
 
 
-def get_low_qc_samples(metadata_csv, contam_rate=0.05, chimera_rate=0.05):
+def get_low_qc_samples(
+    metadata_tsv_path='cpg-tob-wgs-main-analysis/joint-calling/v7/meta.tsv',
+    contam_rate=0.05,
+    chimera_rate=0.05,
+):
     """
     Extract samples that did not pass QC
     - high contamination rate
@@ -119,7 +123,7 @@ def get_low_qc_samples(metadata_csv, contam_rate=0.05, chimera_rate=0.05):
     - ambiguous sex
     - other?
     """
-    meta = pd.read_csv(metadata_csv)
+    meta = pd.read_csv(metadata_tsv_path, sep='\t')
     samples_contam = meta['contam' > contam_rate, 'InternalID']
     samples_chim = meta['chim' > chimera_rate, 'InternalID']
     return [set(samples_contam, samples_chim)]
