@@ -22,8 +22,7 @@ Hail query to filter WGS object to
 
 It outputs three objects:
 
-* MT object, rare (freq<5%) variants
-* MT object, common (freq>1%) variants
+* MT object, all retained samples and variants
 * plink object for only 2,000 variants (MAC>20), after LD pruning - this is for the estimation of the variance ratio (VR plinks)
 
 consider ouputting one single MT object instead.
