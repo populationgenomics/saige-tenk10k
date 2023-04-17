@@ -182,7 +182,8 @@ def filter_variants(
     dup_samples = get_duplicated_samples()
     out_samples = get_non_tob_samples()
     qc_samples = get_low_qc_samples()
-    filter_samples = set().union(*[bm_samples, dup_samples, out_samples, qc_samples])
+    filter_samples = {*bm_samples, *dup_samples, *out_samples, *qc_samples}
+    # will this work with a set or should it be a list?
     mt = mt.filter_cols(mt.s in filter_samples)
 
     # filter out low quality variants and consider biallelic SNPs only
