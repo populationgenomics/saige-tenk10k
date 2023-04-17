@@ -258,22 +258,20 @@ def genotypes_pipeline(
     # filter to QC-passing, biallelic SNPs
     output_mt_path = output_path('qc_filtered.mt')
     vre_plink_path = output_path('vr_plink_20k_variants')
-    if not to_path(output_mt_path).exists():
-
-        filter_job = batch.new_python_job(name='MT filter job')
-        copy_common_env(filter_job)
-        filter_job.image(HAIL_IMAGE)
-        filter_job.call(
-            filter_variants,
-            mt_path=mt_path,
-            samples=list(sc_samples),
-            output_mt_path=output_mt_path,
-            vre_plink_path=vre_plink_path,
-        )
-
-    else:
+    if to_path(output_mt_path).exists():
         logging.info('File already exists no need to filter')
-        filter_job = None
+        return
+
+    filter_job = batch.new_python_job(name='MT filter job')
+    copy_common_env(filter_job)
+    filter_job.image(HAIL_IMAGE)
+    filter_job.call(
+        filter_variants,
+        mt_path=mt_path,
+        samples=list(sc_samples),
+        output_mt_path=output_mt_path,
+        vre_plink_path=vre_plink_path,
+    )
 
     # set jobs running
     batch.run(wait=False)
