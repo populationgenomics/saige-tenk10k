@@ -95,7 +95,7 @@ def get_bone_marrow_samples():
 # CPG5066, CPG67504 both TOB1289
 # in both cases keep the latter which is the resequenced version
 # looking for better than manual extraction of these two
-def get_duplicated_samples():
+def get_duplicated_samples(mt: hl.MatrixTable) -> set:
     """
     Extract duplicated samples for same individual
     i.e., keep "-PBMC" version (now keeping most recent)
@@ -103,6 +103,7 @@ def get_duplicated_samples():
     sams = ParticipantApi.get_external_participant_id_to_internal_sample_id(
         project='tob-wgs'
     )
+    # keeps the most recent
     keep = set({k: v for (k, v) in sams}.values())
     matrix_samples = set(mt.s.collect())
     dup_samples = matrix_samples not in keep
