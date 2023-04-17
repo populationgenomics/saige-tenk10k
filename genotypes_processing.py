@@ -198,7 +198,7 @@ def filter_variants(
     mt = hl.variant_qc(mt)
 
     mt.write(output_mt_path, overwrite=True)
-    logging.info(f'No QC-passingm, biallelic SNPs: {mt.count()[0]}')
+    logging.info(f'No QC-passing, biallelic SNPs: {mt.count()[0]}')
 
     # subset variants for variance ratio estimation
     # minor allele count (MAC) > 20
