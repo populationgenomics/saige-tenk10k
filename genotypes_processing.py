@@ -105,8 +105,7 @@ def get_non_tob_samples():
     Extract outsider samples not from this cohort
     (only included for comparison purpose)
     """
-    outsiders = ['NA12878', 'NA12891', 'NA12892', 'Syndip']
-    return set(outsiders)
+    return {'NA12878', 'NA12891', 'NA12892', 'Syndip'}
 
 
 def get_low_qc_samples(
