@@ -133,7 +133,7 @@ def get_low_qc_samples(
     )
     samples_qc = set(meta[pd.notna('qc_metrics_filters')])
     logging.info(f'No. samples not passing WGS QC: {len(samples_qc)}')
-    return [set().union(*[samples_contam, samples_chim, samples_sex, samples_qc])]
+    return {*samples_contam, *samples_chim, *samples_sex, *samples_qc}
 
 
 # endregion SUBSET_SAMPLES
