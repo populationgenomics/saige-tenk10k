@@ -39,7 +39,7 @@ import pandas as pd
 import hail as hl
 import hailtop.batch as hb
 
-from sample_metadata.apis import SequenceApi
+from sample_metadata.apis import SampleApi, SequenceApi
 
 # use logging to print statements, display at info level
 logging.basicConfig(
@@ -49,6 +49,7 @@ logging.basicConfig(
     stream=sys.stderr,
 )
 
+sapi = SampleApi()
 seqapi = SequenceApi()
 
 DEFAULT_JOINT_CALL_MT = dataset_path('mt/v7.mt')
@@ -102,12 +103,21 @@ def get_duplicated_samples():
     return {'CPG4994', 'CPG5066'}
 
 
-def get_non_tob_samples():
+def get_non_tob_samples(mt: hl.MatrixTable) -> set:
     """
     Extract outsider samples not from this cohort
     (only included for comparison purpose)
     """
-    return {'NA12878', 'NA12891', 'NA12892', 'Syndip'}
+    tob_samples = sapi.get_samples(
+        active=True,
+        body_get_samples={'projects': ['tob-wgs']}
+    )
+    matrix_samples = set(mt.s.collect())
+    common_samples = set(tob_samples).intersection(matrix_samples)
+    if common_samples == matrix_samples:
+        return {}  # empty set?
+    # return {'NA12878', 'NA12891', 'NA12892', 'Syndip'}
+    return {hl.literal(common_samples).contains(mt.s)}
 
 
 def get_low_qc_samples(
