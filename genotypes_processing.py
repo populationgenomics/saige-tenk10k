@@ -97,8 +97,7 @@ def get_duplicated_samples():
     Extract duplicated samples for same individual
     i.e., keep "-PBMC" version
     """
-    duplicated_samples = ['CPG4994', 'CPG5066']
-    return set(duplicated_samples)
+    return {'CPG4994', 'CPG5066'}
 
 
 def get_non_tob_samples():
