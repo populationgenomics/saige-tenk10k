@@ -39,7 +39,7 @@ import pandas as pd
 import hail as hl
 import hailtop.batch as hb
 
-from sample_metadata.apis import SampleApi, SequenceApi
+from sample_metadata.apis import ParticipantApi, SampleApi, SequenceApi
 
 # use logging to print statements, display at info level
 logging.basicConfig(
@@ -98,9 +98,16 @@ def get_bone_marrow_samples():
 def get_duplicated_samples():
     """
     Extract duplicated samples for same individual
-    i.e., keep "-PBMC" version
+    i.e., keep "-PBMC" version (now keeping most recent)
     """
-    return {'CPG4994', 'CPG5066'}
+    sams = ParticipantApi.get_external_participant_id_to_internal_sample_id(
+        project='tob-wgs'
+    )
+    keep = set({k: v for (k, v) in sams}.values())
+    matrix_samples = set(mt.s.collect())
+    dup_samples = matrix_samples not in keep
+    # return {'CPG4994', 'CPG5066'}
+    return dup_samples
 
 
 def get_non_tob_samples(mt: hl.MatrixTable) -> set:
@@ -109,15 +116,15 @@ def get_non_tob_samples(mt: hl.MatrixTable) -> set:
     (only included for comparison purpose)
     """
     tob_samples = sapi.get_samples(
-        active=True,
-        body_get_samples={'projects': ['tob-wgs']}
+        active=True, body_get_samples={'projects': ['tob-wgs']}
     )
     matrix_samples = set(mt.s.collect())
     common_samples = set(tob_samples).intersection(matrix_samples)
     if common_samples == matrix_samples:
         return {}  # empty set?
+    non_tob_samples = matrix_samples not in common_samples
     # return {'NA12878', 'NA12891', 'NA12892', 'Syndip'}
-    return {hl.literal(common_samples).contains(mt.s)}
+    return {non_tob_samples}
 
 
 def get_low_qc_samples(
