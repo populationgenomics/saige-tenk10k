@@ -34,7 +34,7 @@ analysis-runner \
     --dataset tob-wgs \
     --access-level standard \
     --output-dir 'tob_wgs_genetics/saige_qtl/input' \
-    --image ? \
+    --image australia-southeast1-docker.pkg.dev/cpg-common/images/cellregmap:dev \
     --description 'WGS processing batch job' \
     python3 genotypes_processing.py \
       --mt-path 'mt/v7.mt' \
