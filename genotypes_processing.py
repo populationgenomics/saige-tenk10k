@@ -49,6 +49,7 @@ logging.basicConfig(
     stream=sys.stderr,
 )
 
+papi = ParticipantApi()
 sapi = SampleApi()
 seqapi = SequenceApi()
 
@@ -100,7 +101,7 @@ def get_duplicated_samples(mt: hl.MatrixTable) -> set:
     Extract duplicated samples for same individual
     i.e., keep "-PBMC" version (now keeping most recent)
     """
-    sams = ParticipantApi.get_external_participant_id_to_internal_sample_id(
+    sams = papi.get_external_participant_id_to_internal_sample_id(
         project='tob-wgs'
     )
     # keeps the most recent
