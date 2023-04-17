@@ -207,8 +207,10 @@ def filter_variants(
     tot_counts = mt.variant_qc.AC.sum()
     vre_mt = mt.filter_rows(
         ((mt.variant_qc.AC[1] > vre_mac_threshold) & (mt.variant_qc.AC[1] < tot_counts))
-        | ((mt.variant_qc.AC[1] < (tot_counts - vre_mac_threshold))
-        & (mt.variant_qc.AC[1] > 0))
+        | (
+            (mt.variant_qc.AC[1] < (tot_counts - vre_mac_threshold))
+            & (mt.variant_qc.AC[1] > 0)
+        )
     )
     # perform LD pruning
     vre_mt = vre_mt.sample_rows(
