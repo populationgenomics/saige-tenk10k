@@ -101,15 +101,13 @@ def get_duplicated_samples(mt: hl.MatrixTable) -> set:
     Extract duplicated samples for same individual
     i.e., keep "-PBMC" version (now keeping most recent)
     """
-    sams = papi.get_external_participant_id_to_internal_sample_id(
-        project='tob-wgs'
-    )
+    sams = papi.get_external_participant_id_to_internal_sample_id(project='tob-wgs')
     # keeps the most recent
     keep = set({k: v for (k, v) in sams}.values())
     matrix_samples = set(mt.s.collect())
-    dup_samples = matrix_samples not in keep
+    dup_samples = matrix_samples[matrix_samples not in keep]
     # return {'CPG4994', 'CPG5066'}
-    return dup_samples
+    return {dup_samples}
 
 
 def get_non_tob_samples(mt: hl.MatrixTable) -> set:
@@ -123,7 +121,7 @@ def get_non_tob_samples(mt: hl.MatrixTable) -> set:
     matrix_samples = set(mt.s.collect())
     common_samples = set(tob_samples).intersection(matrix_samples)
     if common_samples == matrix_samples:
-        return {}  # empty set?
+        return None
     non_tob_samples = matrix_samples not in common_samples
     # return {'NA12878', 'NA12891', 'NA12892', 'Syndip'}
     return {non_tob_samples}
@@ -200,8 +198,8 @@ def filter_variants(
 
     # add sample filters
     bm_samples = get_bone_marrow_samples()
-    dup_samples = get_duplicated_samples()
-    out_samples = get_non_tob_samples()
+    dup_samples = get_duplicated_samples(mt=DEFAULT_JOINT_CALL_MT)
+    out_samples = get_non_tob_samples(mt=DEFAULT_JOINT_CALL_MT)
     qc_samples = get_low_qc_samples()
     filter_samples = {*bm_samples, *dup_samples, *out_samples, *qc_samples}
     # will this work with a set or should it be a list?
