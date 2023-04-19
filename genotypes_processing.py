@@ -103,11 +103,11 @@ def get_duplicated_samples(mt: hl.MatrixTable) -> set:
     """
     sams = papi.get_external_participant_id_to_internal_sample_id(project='tob-wgs')
     # keeps the most recent
-    keep = set({k: v for (k, v) in sams}.values())
-    matrix_samples = set(mt.s.collect())
+    keep = set(dict(sams).values())
+    matrix_samples = mt.s.collect()
     dup_samples = matrix_samples[matrix_samples not in keep]
     # return {'CPG4994', 'CPG5066'}
-    return {dup_samples}
+    return set(dup_samples)
 
 
 def get_non_tob_samples(mt: hl.MatrixTable) -> set:
