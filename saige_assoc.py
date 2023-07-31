@@ -18,6 +18,8 @@ import click
 import hailtop.batch as hb
 from cpg_utils.hail_batch import get_config, remote_tmpdir
 
+SAIGE_QTL_IMAGE = 'australia-southeast1-docker.pkg.dev/cpg-common/images/saige-qtl'
+
 # Fit null model
 def build_fit_null_command(
     pheno_file: str,
@@ -233,6 +235,8 @@ def association_pipeline(
     )
     batch = hb.Batch('SAIGE-QTL pipeline', backend=sb)
 
+    fit_null_job = batch.new_job(name='fit null')
+    fit_null_job.image(SAIGE_QTL_IMAGE)
     cmd = build_fit_null_command(
         pheno_file=pheno_cov_filename_tsv,
         cov_col_list=covs_list,
@@ -241,9 +245,7 @@ def association_pipeline(
         plink_path=plink_path,
         pheno_col=pheno_col,
     )
-    # this probably does not need to be a python job?
-    run_association_job = batch.new_python_job(name='assoc job')
-    run_association_job.call(cmd)
+    fit_null_job.command(cmd)
 
     # set jobs running
     batch.run(wait=False)
