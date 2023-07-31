@@ -14,12 +14,9 @@ Hail Batch workflow to perform association tests using SAIGE-QTL
 
 """
 
-from cpg_utils.hail_batch import get_config, remote_tmpdir
-
 import click
-
 import hailtop.batch as hb
-
+from cpg_utils.hail_batch import get_config, remote_tmpdir
 
 # Fit null model
 def build_fit_null_command(
@@ -215,8 +212,17 @@ config = get_config()
 
 @click.command()
 @click.option('--vcf-file-path', default='myVCF')
-@click.option('--pheno_cov_filename', default='myPhenoCov')
-def association_pipeline():
+@click.option('--pheno-cov-filename', default='myPhenoCov')
+@click.option('--covs-list', default='age,sex')
+def association_pipeline(
+    pheno_cov_filename_tsv: str,
+    vcf_file_path: str,
+    covs_list: str,
+    sample_id: str,
+    output_path: str,
+    plink_path: str,
+    pheno_col: str,
+):
     """
     Run association for one gene
     """
@@ -227,12 +233,19 @@ def association_pipeline():
     )
     batch = hb.Batch('SAIGE-QTL pipeline', backend=sb)
 
-    cmd = build_fit_null_command()
+    cmd = build_fit_null_command(
+        pheno_file=pheno_cov_filename_tsv,
+        cov_col_list=covs_list,
+        sample_id_pheno=sample_id,
+        output_prefix=output_path,
+        plink_path=plink_path,
+        pheno_col=pheno_col,
+    )
     # this probably does not need to be a python job?
     run_association_job = batch.new_python_job(name='assoc job')
     run_association_job.call(cmd)
 
-        # set jobs running
+    # set jobs running
     batch.run(wait=False)
 
 
