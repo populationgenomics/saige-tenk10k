@@ -14,6 +14,12 @@ Hail Batch workflow to perform association tests using SAIGE-QTL
 
 """
 
+from cpg_utils.hail_batch import get_config, remote_tmpdir
+
+import click
+
+import hailtop.batch as hb
+
 
 # Fit null model
 def build_fit_null_command(
@@ -202,3 +208,33 @@ def build_run_set_test_command(
     saige_command_step2 += f' --maxMAF_in_groupTest={max_maf_group}'
     saige_command_step2 += f' --groupFile={group_file}'
     return saige_command_step2
+
+
+config = get_config()
+
+
+@click.command()
+@click.option('--vcf-file-path', default='myVCF')
+@click.option('--pheno_cov_filename', default='myPhenoCov')
+def association_pipeline():
+    """
+    Run association for one gene
+    """
+
+    sb = hb.ServiceBackend(
+        billing_project=get_config()['hail']['billing_project'],
+        remote_tmpdir=remote_tmpdir(),
+    )
+    batch = hb.Batch('SAIGE-QTL pipeline', backend=sb)
+
+    cmd = build_fit_null_command()
+    # this probably does not need to be a python job?
+    run_association_job = batch.new_python_job(name='assoc job')
+    run_association_job.call(cmd)
+
+        # set jobs running
+    batch.run(wait=False)
+
+
+if __name__ == '__main__':
+    association_pipeline()
