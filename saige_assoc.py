@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# pylint: disable=line-too-long,too-many-arguments
+# pylint: disable=no-value-for-parameter
 
 __author__ = 'annacuomo'
 
