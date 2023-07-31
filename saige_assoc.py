@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# pylint: disable=too-many-arguments
+# pylint: disable=line-too-long,too-many-arguments
 
 __author__ = 'annacuomo'
 
@@ -8,8 +8,9 @@ Hail Batch workflow to perform association tests using SAIGE-QTL
 
 - given all input files already generated
     - pheno_cov filename, genotypes with annotations
-- builds and runs saige commands
-- summarise results
+- builds saige commands (just add to str)
+- run saige commands (execute Rscript from command line)
+- aggregate & summarise results
 
 """
 
@@ -38,17 +39,17 @@ def build_fit_null_command(
 
     Input:
     - Phenotype / covariate file - rows: samples, cols: pheno (y), cov1, cov2 etc
-    - List of columns from previous file that should be used as covariates
-    - Column name of sample column (e.g., IND_ID, or CPG_ID etc)
-    - Plink path: path to plink file
+    - Comma separated str of column mnames from previous file to be used as covariates
+    - Column name specifying sample / individual (e.g., IND_ID, or CPG_ID etc)
+    - Plink path: path to plink file (subset of ~2,000 markers for VRE)
     - output prefix: where to save the fitted model (.rda)
     - pheno col: name of column specifying pheno (default: "y")
     - trait type: count = Poisson, count_nb = Negative Binomial
     - option to skip Variance Ratio estimation (discouraged)
-    - option to add an offset to the fixed covariates (or if there are no covariates add an intercept?)
+    - option to add an offset to the fixed covariates (???)
     - option to transform (scale?) covariates?
     - option to skip model fitting (discouraged)
-    - genotype file to estimate variance ratio (plink format) - which variants?
+    - tolerance for convergence
     - overwrite variance ratio file (estimated here)
 
     Output:
@@ -72,6 +73,7 @@ def build_fit_null_command(
     saige_command_step1 += f' --plinkFile={plink_path}'
     saige_command_step1 += f' --IsOverwriteVarianceRatioFile={is_overwrite_vre_file}'
     return saige_command_step1
+
 
 # Run single variant association
 def build_run_single_variant_test_command(
@@ -134,6 +136,7 @@ def build_run_single_variant_test_command(
     saige_command_step2_sv += f' --SPAcutoff={spa_cutoff}'
     # saige_command_step2_sv += f' --is_EmpSPA={is_emp_spa}'
     return saige_command_step2_sv
+
 
 # Run gene set association
 def build_run_set_test_command(
