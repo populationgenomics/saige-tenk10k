@@ -18,14 +18,13 @@ Function name: filter_variants.
 Hail query to filter WGS object to
 
 * samples that are: i) QC-passing, ii) present in the scRNA-seq dataset
-* variants that re: i) QC-passing, ii) non ref-ref variants, and iii) (for now) indels and multi-allelic SNPs.
+* variants that are: i) QC-passing, ii) non ref-ref variants, and iii) (for now) indels and multi-allelic SNPs.
 
-It outputs three objects:
+It outputs two objects:
 
-* MT object, all retained samples and variants
+* MT object, all retained samples and variants (common & rare at this stage)
 * plink object for only 2,000 variants (MAC>20), after LD pruning - this is for the estimation of the variance ratio (VR plinks)
 
-consider ouputting one single MT object instead.
 
 ### To run
 
