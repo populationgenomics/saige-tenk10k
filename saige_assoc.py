@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# pylint: disable=no-value-for-parameter,too-many-arguments
+# pylint: disable=no-value-for-parameter,too-many-arguments,wrong-import-position
 
 __author__ = 'annacuomo'
 
@@ -190,7 +190,7 @@ def build_run_set_test_command(
     saige_command_step2 = 'Rscript step2_tests_qtl.R'
     saige_command_step2 += f' --vcfFile={vcf_file}'
     saige_command_step2 += f' --vcfFileIndex={vcf_file_index}'
-    saige_command_step2 += f' --AlleleOrder={allele_order}'
+    # saige_command_step2 += f' --AlleleOrder={allele_order}'
     saige_command_step2 += f' --SAIGEOutputFile={saige_output_file}'
     saige_command_step2 += f' --chrom={chrom}'
     saige_command_step2 += f' --minMAF={min_maf}'
@@ -198,12 +198,12 @@ def build_run_set_test_command(
     saige_command_step2 += f' --LOCO={loco_bool}'
     saige_command_step2 += f' --GMMATmodelFile={gmmat_model_path}'
     saige_command_step2 += f' --varianceRatioFile={variance_ratio_path}'
-    saige_command_step2 += f' --is_noadjCov={is_no_adj_cov}'
-    saige_command_step2 += f' --is_sparseGRM={is_sparse_grm}'
+    # saige_command_step2 += f' --is_noadjCov={is_no_adj_cov}'
+    # saige_command_step2 += f' --is_sparseGRM={is_sparse_grm}'
     saige_command_step2 += f' --markers_per_chunk={n_markers}'
     saige_command_step2 += f' --pval_cutoff_for_fastTest={pval_cutoff}'
     saige_command_step2 += f' --SPAcutoff={spa_cutoff}'
-    saige_command_step2 += f' --is_EmpSPA={is_emp_spa}'
+    # saige_command_step2 += f' --is_EmpSPA={is_emp_spa}'
     saige_command_step2 += f' --annotation_in_groupTest={group_annotation}'
     saige_command_step2 += f' --maxMAF_in_groupTest={max_maf_group}'
     saige_command_step2 += f' --groupFile={group_file}'
@@ -217,6 +217,7 @@ config = get_config()
 @click.option('--vcf-file-path', default='myVCF')
 @click.option('--pheno-cov-filename', default='myPhenoCov')
 @click.option('--covs-list', default='age,sex')
+@click.option('--saige-output-path')
 def association_pipeline(
     pheno_cov_filename_tsv: str,
     vcf_file_path: str,
@@ -250,17 +251,21 @@ def association_pipeline(
 
     run_sv_assoc_job = batch.new_job(name='single variant test')
     run_sv_assoc_job.image(SAIGE_QTL_IMAGE)
+    run_sv_assoc_job.depends_on(fit_null_job)
     cmd = build_run_single_variant_test_command(
         vcf_file=vcf_file_path,
         vcf_file_index=f'{vcf_file_path}.tbi',
+        saige_output_file=output_path,
     )
     run_sv_assoc_job.command(cmd)
 
     run_set_assoc_job = batch.new_job(name='settest')
     run_set_assoc_job.image(SAIGE_QTL_IMAGE)
+    run_set_assoc_job.depends_on(fit_null_job)
     cmd = build_run_set_test_command(
         vcf_file=vcf_file_path,
         vcf_file_index=f'{vcf_file_path}.tbi',
+        saige_output_file=output_path,
     )
     run_set_assoc_job.command(cmd)
 
