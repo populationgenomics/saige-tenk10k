@@ -72,11 +72,13 @@ def remove_sc_outliers(df, outliers=None):
 
     return df
 
+
 # for the 3 functions below, not very confident on the use of
 # sample metadata, so I have retained the manual selection of
 # specific samples commented out
 # as a note: all of this should be done within the processing
 # pipeline at some stage, so perhaps does not need to be perfect
+
 
 def get_bone_marrow_samples():
     """

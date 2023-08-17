@@ -10,6 +10,7 @@ The pipeline is split into four parts, to make for more flexible usage:
 * Input files check and preparation: this involves combining data from above and cross-check for consistency prior to running SAIGE-QTL
 * Association testing: prepare and run SAIGE-QTL commands for association mapping
 
+Only the first part is ready for now.
 
 ## Genotypes preprocessing (once per cohort, e.g. TOB)
 
