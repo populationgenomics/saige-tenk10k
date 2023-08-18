@@ -39,7 +39,26 @@ import pandas as pd
 import hail as hl
 import hailtop.batch as hb
 
-from sample_metadata.apis import ParticipantApi, SampleApi, SequenceApi
+# from sample_metadata.apis import ParticipantApi, SampleApi, SequenceApi
+from metamist.apis import SequencingGroupApi
+from metamist.graphql import gql, query
+
+_query = gql(
+    """
+    query MyQuery {
+        project(name: "tob-wgs") {
+            sequencingGroups {
+                id
+                meta
+                assays {
+                    id
+                    meta
+                }
+            }
+        }
+    }
+    """
+)
 
 # use logging to print statements, display at info level
 logging.basicConfig(
@@ -49,9 +68,10 @@ logging.basicConfig(
     stream=sys.stderr,
 )
 
-papi = ParticipantApi()
-sapi = SampleApi()
-seqapi = SequenceApi()
+# papi = ParticipantApi()
+# sapi = SampleApi()
+# seqapi = SequenceApi()
+sgapi = SequencingGroupApi()
 
 DEFAULT_JOINT_CALL_MT = dataset_path('mt/v7.mt')
 HAIL_IMAGE = get_config()['workflow']['driver_image']
@@ -80,21 +100,27 @@ def remove_sc_outliers(df, outliers=None):
 # pipeline at some stage, so perhaps does not need to be perfect
 
 
-def get_bone_marrow_samples():
+def get_bone_marrow_sequencing_groups():
     """
     Extract TOB bone marrow samples (vs PBMCs)
     """
-    sequences = seqapi.get_sequences_by_criteria(
-        active=True,
-        body_get_sequences_by_criteria={
-            'seq_meta': {'Primary study': 'Pilot/bone marrow'},
-            'projects': ['tob-wgs'],
-        },
-    )
-    bm_samples = []
-    for sequence in sequences:
-        bm_samples.append(sequence.get('sample_id'))
-    return set(bm_samples)
+    sequencing_groups = query(_query)['project']['sequencingGroups']
+
+    bm_sequencing_groups = []
+    for sg in sequencing_groups:
+        sg_id = sg['id']
+        for assay in sg['assays']:
+            if assay['meta'].get('Primary study') == 'Pilot/bone marrow':
+                bm_sequencing_groups.append(sg_id)
+                continue
+    return set(bm_sequencing_groups)
+
+
+# Return Sample IDs mapped to seq type, sequencing group ID (e.g. {'XPG123': {'genome' : ['CPG123']}, {'XPG456': {'exome':['CPG456']}})
+sample_sg_map = sgapi.get_all_sequencing_group_ids_by_sample_by_type(project='tob-wgs')
+
+sgs = [list(sg.values())[0] for sg in sample_sg_map.values()]
+sgs = [sublist for list in sgs for sublist in list]  ## ????
 
 
 # remove duplicated samples based on TOB IDs
@@ -109,7 +135,8 @@ def get_duplicated_samples(mt: hl.MatrixTable) -> set:
     """
     sams = papi.get_external_participant_id_to_internal_sample_id(project='tob-wgs')
     # keeps the most recent
-    keep = set(dict(sams).values())
+    # keep = set(dict(sams).values())
+    keep = sgs
     matrix_samples = mt.s.collect()
     dup_samples = matrix_samples[matrix_samples not in keep]
     # return {'CPG4994', 'CPG5066'}
@@ -121,9 +148,10 @@ def get_non_tob_samples(mt: hl.MatrixTable) -> set:
     Extract outsider samples not from this cohort
     (only included for comparison purpose)
     """
-    tob_samples = sapi.get_samples(
-        active=True, body_get_samples={'projects': ['tob-wgs']}
-    )
+    # tob_samples = sapi.get_samples(
+    #     active=True, body_get_samples={'projects': ['tob-wgs']}
+    # )
+    tob_samples = sgs
     matrix_samples = set(mt.s.collect())
     common_samples = set(tob_samples).intersection(matrix_samples)
     if common_samples == matrix_samples:
