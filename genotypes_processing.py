@@ -133,7 +133,7 @@ def get_duplicated_samples(mt: hl.MatrixTable) -> set:
     Extract duplicated samples for same individual
     i.e., keep "-PBMC" version (now keeping most recent)
     """
-    sams = papi.get_external_participant_id_to_internal_sample_id(project='tob-wgs')
+    # sams = papi.get_external_participant_id_to_internal_sample_id(project='tob-wgs')
     # keeps the most recent
     # keep = set(dict(sams).values())
     keep = sgs
@@ -231,7 +231,8 @@ def filter_variants(
     mt = hl.experimental.densify(mt)
 
     # add sample filters
-    bm_samples = get_bone_marrow_samples()
+    # bm_samples = get_bone_marrow_samples()
+    bm_samples = get_bone_marrow_sequencing_groups()
     dup_samples = get_duplicated_samples(mt=DEFAULT_JOINT_CALL_MT)
     out_samples = get_non_tob_samples(mt=DEFAULT_JOINT_CALL_MT)
     qc_samples = get_low_qc_samples()
