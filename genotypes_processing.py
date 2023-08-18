@@ -120,7 +120,7 @@ def get_bone_marrow_sequencing_groups():
 sample_sg_map = sgapi.get_all_sequencing_group_ids_by_sample_by_type(project='tob-wgs')
 
 sgs = [list(sg.values())[0] for sg in sample_sg_map.values()]
-sgs = [sublist for list in sgs for sublist in list]  ## ????
+sgs = [sublist for list in sgs for sublist in list]  # ????
 
 
 # remove duplicated samples based on TOB IDs
