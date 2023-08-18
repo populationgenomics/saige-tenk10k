@@ -163,7 +163,8 @@ def get_non_tob_samples(mt: hl.MatrixTable) -> set:
     Extract outsider samples not from this cohort
     (only included for comparison purpose)
     """
-    # Return Sample IDs mapped to seq type, sequencing group ID (e.g. {'XPG123': {'genome' : ['CPG123']}, {'XPG456': {'exome':['CPG456']}})
+    # Return Sample IDs mapped to seq type, sequencing group ID
+    # (e.g. {'XPG123': {'genome' : ['CPG123']}, {'XPG456': {'exome':['CPG456']}})
     sample_sg_map = sgapi.get_all_sequencing_group_ids_by_sample_by_type(
         project='tob-wgs'
     )
