@@ -169,10 +169,8 @@ def get_non_tob_samples(mt: hl.MatrixTable) -> set:
         project='tob-wgs'
     )
     sgs = [list(sg.values())[0] for sg in sample_sg_map.values()]
-    tob_samples = [sublist for list in sgs for sublist in list]  # ????
-    # tob_samples = sapi.get_samples(
-    #     active=True, body_get_samples={'projects': ['tob-wgs']}
-    # )
+    # double-layered list comprehension to flatten
+    tob_samples = [sublist for list in sgs for sublist in list]
     matrix_samples = set(mt.s.collect())
     common_samples = set(tob_samples).intersection(matrix_samples)
     if common_samples == matrix_samples:
