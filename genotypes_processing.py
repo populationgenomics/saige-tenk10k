@@ -40,7 +40,7 @@ import hail as hl
 import hailtop.batch as hb
 
 # from sample_metadata.apis import ParticipantApi, SampleApi, SequenceApi
-from metamist.apis import SequencingGroupApi
+from metamist.apis import ParticipantApi, SequencingGroupApi
 from metamist.graphql import gql, query
 
 _query = gql(
@@ -68,7 +68,7 @@ logging.basicConfig(
     stream=sys.stderr,
 )
 
-# papi = ParticipantApi()
+papi = ParticipantApi()
 # sapi = SampleApi()
 # seqapi = SequenceApi()
 sgapi = SequencingGroupApi()
@@ -116,30 +116,45 @@ def get_bone_marrow_sequencing_groups():
     return set(bm_sequencing_groups)
 
 
-# Return Sample IDs mapped to seq type, sequencing group ID (e.g. {'XPG123': {'genome' : ['CPG123']}, {'XPG456': {'exome':['CPG456']}})
-sample_sg_map = sgapi.get_all_sequencing_group_ids_by_sample_by_type(project='tob-wgs')
-
-sgs = [list(sg.values())[0] for sg in sample_sg_map.values()]
-sgs = [sublist for list in sgs for sublist in list]  # ????
-
-
 # remove duplicated samples based on TOB IDs
 # CPG4994, CPG67264 both the same individual (TOB1282)
 # CPG5066, CPG67504 both TOB1289
 # in both cases keep the latter which is the resequenced version
 # looking for better than manual extraction of these two
+# def get_duplicated_samples(mt: hl.MatrixTable) -> set:
+#     """
+#     Extract duplicated samples for same individual
+#     i.e., keep "-PBMC" version (now keeping most recent)
+#     """
+#     # sams = papi.get_external_participant_id_to_internal_sample_id(project='tob-wgs')
+#     # keeps the most recent
+#     # keep = set(dict(sams).values())
+#     keep = sgs
+#     matrix_samples = mt.s.collect()
+#     dup_samples = matrix_samples[matrix_samples not in keep]
+#     # return {'CPG4994', 'CPG5066'}
+#     return set(dup_samples)
+
+
 def get_duplicated_samples(mt: hl.MatrixTable) -> set:
     """
     Extract duplicated samples for same individual
     i.e., keep "-PBMC" version (now keeping most recent)
     """
-    # sams = papi.get_external_participant_id_to_internal_sample_id(project='tob-wgs')
-    # keeps the most recent
-    # keep = set(dict(sams).values())
-    keep = sgs
+    sample_sg_map = sgapi.get_all_sequencing_group_ids_by_sample_by_type(
+        project='tob-wgs'
+    )
+    sams = papi.get_external_participant_id_to_internal_sample_id(project='tob-wgs')
+    # Keep the most recent sample for each participant in the project
+    latest_samples = set(dict(sams).values())
+
+    # Get the SG ID associated with each of the most recent samples
+    keep = [sample_sg_map[sample_id] for sample_id in latest_samples]
+    keep = [list(sg.values())[0] for sg in keep]
+    keep = [sublist for list in keep for sublist in list]
+
     matrix_samples = mt.s.collect()
     dup_samples = matrix_samples[matrix_samples not in keep]
-    # return {'CPG4994', 'CPG5066'}
     return set(dup_samples)
 
 
@@ -148,10 +163,15 @@ def get_non_tob_samples(mt: hl.MatrixTable) -> set:
     Extract outsider samples not from this cohort
     (only included for comparison purpose)
     """
+    # Return Sample IDs mapped to seq type, sequencing group ID (e.g. {'XPG123': {'genome' : ['CPG123']}, {'XPG456': {'exome':['CPG456']}})
+    sample_sg_map = sgapi.get_all_sequencing_group_ids_by_sample_by_type(
+        project='tob-wgs'
+    )
+    sgs = [list(sg.values())[0] for sg in sample_sg_map.values()]
+    tob_samples = [sublist for list in sgs for sublist in list]  # ????
     # tob_samples = sapi.get_samples(
     #     active=True, body_get_samples={'projects': ['tob-wgs']}
     # )
-    tob_samples = sgs
     matrix_samples = set(mt.s.collect())
     common_samples = set(tob_samples).intersection(matrix_samples)
     if common_samples == matrix_samples:
