@@ -1,7 +1,7 @@
 # Hail batch workflow to run SAIGE-QTL on TenK10K data
 
-This is a hail batch pipeline to run the new [QTL version of SAIGE](https://github.com/weizhou0/qtl) on CPG's GCP, to map associations between common and rare genetic variants and single-cell gene expression from blood.
-First, this will be run on the TOB (AKA OneK1K) and then BioHEART datasets as part of the TenK10K project (see *Data* below), but in the future all datasets within OurDNA (with scRNA-seq + WGS data) will go through this pipeline as well.
+This is a hail batch pipeline to run the new [QTL version of SAIGE](https://github.com/weizhou0/qtl) on CPG's GCP, to map associations between both common and rare genetic variants and single-cell gene expression from blood.
+First, this will be run on the TOB (AKA OneK1K) and then BioHEART datasets as part of phase 1 of the TenK10K project (see *Data* below), but in the future all datasets within OurDNA (with scRNA-seq + WGS data) will go through this pipeline as well.
 
 The pipeline is split into four parts, to make for more flexible usage:
 
@@ -12,7 +12,7 @@ The pipeline is split into four parts, to make for more flexible usage:
 
 Only the first part is ready for now.
 
-## Genotypes preprocessing (once per cohort, e.g. TOB)
+## Genotypes preprocessing (once per cohort, e.g., TOB)
 
 Function name: filter_variants.
 
@@ -23,8 +23,8 @@ Hail query to filter WGS object to
 
 It outputs two objects:
 
-* MT object, all retained samples and variants (common & rare at this stage)
-* plink object for only 2,000 variants (MAC>20), after LD pruning - this is for the estimation of the variance ratio (VR plinks)
+* MT object, all retained samples and variants (both common & rare at this stage)
+* plink object for only 2,000 variants (minor allele count>20), after LD pruning - this is for the estimation of the variance ratio (VR plinks)
 
 
 ### To run
@@ -45,4 +45,4 @@ TenK10K is matched single-cell RNA-seq (scRNA-seq) and whole-genome sequencing (
 
 * Phase 0: OneK1K data only (1,000 individuals) - already generated (both WGS and scRNA-seq, though with an older technology)
 * Phase 1: OneK1K + BioHEART (2,000 individuals) - WGS done, scRNA-seq in progress (new kit, which should result in many more cells per individual)
-* Phase 2/final: aim is ~ 10,000 individuals from the (extended) TOB/OneK1K, BioHEART, ADAPT, LBIO and AIM cohorts (nothing generated besides current stage of Phase1)
+* Phase 2/final: aim is ~ 10,000 individuals from the (extended) TOB/OneK1K, BioHEART, ADAPT, LBIO and AIM cohorts (nothing generated besides current stage of Phase 1)
