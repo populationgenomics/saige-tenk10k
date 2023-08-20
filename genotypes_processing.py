@@ -39,7 +39,6 @@ import pandas as pd
 import hail as hl
 import hailtop.batch as hb
 
-# from sample_metadata.apis import ParticipantApi, SampleApi, SequenceApi
 from metamist.apis import ParticipantApi, SequencingGroupApi
 from metamist.graphql import gql, query
 
@@ -69,8 +68,6 @@ logging.basicConfig(
 )
 
 papi = ParticipantApi()
-# sapi = SampleApi()
-# seqapi = SequenceApi()
 sgapi = SequencingGroupApi()
 
 DEFAULT_JOINT_CALL_MT = dataset_path('mt/v7.mt')
@@ -94,8 +91,8 @@ def remove_sc_outliers(df, outliers=None):
 
 
 # for the 3 functions below, not very confident on the use of
-# sample metadata, so I have retained the manual selection of
-# specific samples commented out
+# metamist, so I have retained the manual selection of
+# specific samples (commented out)
 # as a note: all of this should be done within the processing
 # pipeline at some stage, so perhaps does not need to be perfect
 
@@ -120,22 +117,6 @@ def get_bone_marrow_sequencing_groups():
 # CPG4994, CPG67264 both the same individual (TOB1282)
 # CPG5066, CPG67504 both TOB1289
 # in both cases keep the latter which is the resequenced version
-# looking for better than manual extraction of these two
-# def get_duplicated_samples(mt: hl.MatrixTable) -> set:
-#     """
-#     Extract duplicated samples for same individual
-#     i.e., keep "-PBMC" version (now keeping most recent)
-#     """
-#     # sams = papi.get_external_participant_id_to_internal_sample_id(project='tob-wgs')
-#     # keeps the most recent
-#     # keep = set(dict(sams).values())
-#     keep = sgs
-#     matrix_samples = mt.s.collect()
-#     dup_samples = matrix_samples[matrix_samples not in keep]
-#     # return {'CPG4994', 'CPG5066'}
-#     return set(dup_samples)
-
-
 def get_duplicated_samples(mt: hl.MatrixTable) -> set:
     """
     Extract duplicated samples for same individual
@@ -155,6 +136,7 @@ def get_duplicated_samples(mt: hl.MatrixTable) -> set:
 
     matrix_samples = mt.s.collect()
     dup_samples = matrix_samples[matrix_samples not in keep]
+    # return {'CPG4994', 'CPG5066'}
     return set(dup_samples)
 
 
@@ -250,7 +232,6 @@ def filter_variants(
     mt = hl.experimental.densify(mt)
 
     # add sample filters
-    # bm_samples = get_bone_marrow_samples()
     bm_samples = get_bone_marrow_sequencing_groups()
     dup_samples = get_duplicated_samples(mt=DEFAULT_JOINT_CALL_MT)
     out_samples = get_non_tob_samples(mt=DEFAULT_JOINT_CALL_MT)
