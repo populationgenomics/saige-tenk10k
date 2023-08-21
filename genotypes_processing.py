@@ -167,7 +167,7 @@ def get_non_tob_samples(mt: hl.MatrixTable) -> set:
 
 
 def get_low_qc_samples(
-    metadata_tsv_path='cpg-tob-wgs-main-analysis/joint-calling/v7/meta.tsv',
+    metadata_tsv_path='gs://cpg-tob-wgs-main-analysis/joint-calling/v7/meta.tsv',
     contam_rate=0.05,
     chimera_rate=0.05,
 ):
@@ -238,8 +238,8 @@ def filter_variants(
 
     # add sample filters
     bm_samples = get_bone_marrow_sequencing_groups()
-    dup_samples = get_duplicated_samples(mt=DEFAULT_JOINT_CALL_MT)
-    out_samples = get_non_tob_samples(mt=DEFAULT_JOINT_CALL_MT)
+    dup_samples = get_duplicated_samples(mt=mt)
+    out_samples = get_non_tob_samples(mt=mt)
     qc_samples = get_low_qc_samples()
     filter_samples = {*bm_samples, *dup_samples, *out_samples, *qc_samples}
     # will this work with a set or should it be a list?
@@ -305,11 +305,11 @@ def genotypes_pipeline(
     """
     Run one-off QC filtering pipeline
     """
-    sb = hb.ServiceBackend(
-        billing_project=get_config()['hail']['billing_project'],
-        remote_tmpdir=remote_tmpdir(),
-    )
-    batch = hb.Batch('SAIGE-QTL pipeline', backend=sb)
+    # sb = hb.ServiceBackend(
+    #     billing_project=get_config()['hail']['billing_project'],
+    #     remote_tmpdir=remote_tmpdir(),
+    # )
+    # batch = hb.Batch('SAIGE-QTL pipeline', backend=sb)
 
     # extract individuals for which we have single-cell (sc) data
     sample_mapping_file = pd.read_csv(dataset_path(sample_mapping_file_tsv), sep='\t')
@@ -325,23 +325,22 @@ def genotypes_pipeline(
         logging.info('File already exists no need to filter')
         return
 
-    filter_job = batch.new_python_job(name='MT filter job')
-    copy_common_env(filter_job)
-    filter_job.image(HAIL_IMAGE)
-    print(mt_path)
-    print(sc_samples)
-    print(output_mt_path)
-    print(vre_plink_path)
-    filter_job.call(
-        filter_variants,
+    # filter_job = batch.new_python_job(name='MT filter job')
+    # copy_common_env(filter_job)
+    # filter_job.image(HAIL_IMAGE)
+    # print(type(mt_path), mt_path)
+    # print(type(sc_samples), sc_samples)
+    # print(type(output_mt_path), output_mt_path)
+    # print(type(vre_plink_path), vre_plink_path)
+    filter_variants(
         mt_path=mt_path,
         samples_str=sc_samples,
         output_mt_path=output_mt_path,
         vre_plink_path=vre_plink_path,
     )
 
-    # set jobs running
-    batch.run(wait=False)
+    # # set jobs running
+    # batch.run(wait=False)
 
 
 if __name__ == '__main__':
