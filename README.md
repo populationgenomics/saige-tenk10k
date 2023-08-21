@@ -36,7 +36,8 @@ analysis-runner \
     --output-dir 'tob_wgs_genetics/saige_qtl/input' \
     --description 'WGS processing batch job' \
     python3 genotypes_processing.py \
-      --sample-mapping-file-tsv 'tob_wgs_genetics/saige_qtl/input/smf.tsv'
+      --mt-path 'mt/v7.mt' \
+      --sample-mapping-file-tsv 'scrna-seq/grch38_association_files/OneK1K_CPG_IDs.tsv'
 ```
 
 ## Data
