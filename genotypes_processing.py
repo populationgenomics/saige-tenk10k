@@ -190,7 +190,7 @@ def get_low_qc_samples(
     logging.info(
         f'No. samples with sex aneuploidy or ambiguous sex: {len(samples_sex)}'
     )
-    samples_qc = set(meta[meta['qc_metrics_filters'].isnull() is False]['s'])
+    samples_qc = set(meta[meta['qc_metrics_filters'].isnull() == False]['s'])
     logging.info(f'No. samples not passing WGS QC: {len(samples_qc)}')
     return {*samples_contam, *samples_chim, *samples_sex, *samples_qc}
 
@@ -317,7 +317,8 @@ def genotypes_pipeline(
     # filter to QC-passing, biallelic SNPs
     output_mt_path = output_path('qc_filtered.mt')
     vre_plink_path = output_path('vr_plink_20k_variants')
-    if to_path(output_mt_path).exists():
+    # only exit if both files exist
+    if all(to_path(output).exists() for output in [output_mt_path, vre_plink_path]):
         logging.info('File already exists no need to filter')
         return
 
