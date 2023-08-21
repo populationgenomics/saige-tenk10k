@@ -174,6 +174,8 @@ def get_low_qc_samples(
     - ambiguous sex or sex aneuploidy
     - WGS-based QC
     """
+    import pandas as pd
+
     meta = pd.read_csv(metadata_tsv_path, sep='\t')
     samples_contam = set(meta['r_contamination' > contam_rate, 's'])
     logging.info(
