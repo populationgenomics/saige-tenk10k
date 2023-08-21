@@ -167,7 +167,7 @@ def get_non_tob_samples(mt: hl.MatrixTable) -> set:
 
 
 def get_low_qc_samples(
-    metadata_tsv_path='gs://cpg-tob-wgs-main-analysis/joint-calling/v7/meta.tsv',
+    metadata_tsv_path='gs://cpg-tob-wgs-test-analysis/joint-calling/v7/meta.tsv',
     contam_rate=0.05,
     chimera_rate=0.05,
 ):
