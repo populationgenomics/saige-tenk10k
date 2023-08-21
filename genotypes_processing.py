@@ -327,6 +327,10 @@ def genotypes_pipeline(
     filter_job = batch.new_python_job(name='MT filter job')
     copy_common_env(filter_job)
     filter_job.image(HAIL_IMAGE)
+    print(mt_path)
+    print(sc_samples)
+    print(output_mt_path)
+    print(vre_plink_path)
     filter_job.call(
         filter_variants,
         mt_path=mt_path,
