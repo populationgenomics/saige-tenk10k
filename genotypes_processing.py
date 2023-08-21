@@ -85,8 +85,9 @@ def get_bone_marrow_sequencing_groups():
     Extract TOB bone marrow samples (vs PBMCs)
     """
     from metamist.graphql import gql, query
+
     _query = gql(
-    """
+        """
     query MyQuery {
         project(name: "tob-wgs") {
             sequencingGroups {
@@ -100,7 +101,7 @@ def get_bone_marrow_sequencing_groups():
         }
     }
     """
-)
+    )
 
     sequencing_groups = query(_query)['project']['sequencingGroups']
 
