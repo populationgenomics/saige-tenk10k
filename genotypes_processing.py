@@ -200,7 +200,7 @@ def get_low_qc_samples(
 # only needs to be run once for a given cohort (e.g., OneK1K / TOB)
 def filter_variants(
     mt_path: str,  # 'mt/v7.mt'
-    samples: list[str],
+    samples: str,
     output_mt_path: str,  # 'tob_wgs/filtered.mt'
     vre_plink_path: str,  # 'tob_wgs/vr_plink_2000_variants
     vre_mac_threshold: int = 20,
@@ -223,6 +223,7 @@ def filter_variants(
     and also post sample QC
     that are additionally sufficiently common (MAC>20) and not in LD
     """
+    samples = samples.split(',')
     # read hail matrix table object (WGS data)
     init_batch()
     mt = hl.read_matrix_table(mt_path)
@@ -313,7 +314,7 @@ def genotypes_pipeline(
     # we may want to exclude these from the smf directly
     sample_mapping_file = remove_sc_outliers(sample_mapping_file)
     # check column names - CPG_ID would be better?
-    sc_samples = sample_mapping_file['InternalID'].unique()
+    sc_samples = ','.join(sample_mapping_file['InternalID'].unique())
 
     # filter to QC-passing, biallelic SNPs
     output_mt_path = output_path('qc_filtered.mt')
