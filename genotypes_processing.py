@@ -85,7 +85,6 @@ def get_bone_marrow_sequencing_groups():
     Extract TOB bone marrow samples (vs PBMCs)
     """
     from metamist.graphql import gql, query
-    sgapi = SequencingGroupApi()
     _query = gql(
     """
     query MyQuery {
@@ -124,6 +123,7 @@ def get_duplicated_samples(mt: hl.MatrixTable) -> set:
     Extract duplicated samples for same individual
     i.e., keep "-PBMC" version (now keeping most recent)
     """
+    sgapi = SequencingGroupApi()
     sample_sg_map = sgapi.get_all_sequencing_group_ids_by_sample_by_type(
         project='tob-wgs'
     )
