@@ -40,24 +40,7 @@ import hail as hl
 import hailtop.batch as hb
 
 from metamist.apis import ParticipantApi, SequencingGroupApi
-from metamist.graphql import gql, query
 
-_query = gql(
-    """
-    query MyQuery {
-        project(name: "tob-wgs") {
-            sequencingGroups {
-                id
-                meta
-                assays {
-                    id
-                    meta
-                }
-            }
-        }
-    }
-    """
-)
 
 # use logging to print statements, display at info level
 logging.basicConfig(
@@ -68,7 +51,7 @@ logging.basicConfig(
 )
 
 papi = ParticipantApi()
-sgapi = SequencingGroupApi()
+
 
 DEFAULT_JOINT_CALL_MT = dataset_path('mt/v7.mt')
 HAIL_IMAGE = get_config()['workflow']['driver_image']
@@ -101,6 +84,25 @@ def get_bone_marrow_sequencing_groups():
     """
     Extract TOB bone marrow samples (vs PBMCs)
     """
+    from metamist.graphql import gql, query
+    sgapi = SequencingGroupApi()
+    _query = gql(
+    """
+    query MyQuery {
+        project(name: "tob-wgs") {
+            sequencingGroups {
+                id
+                meta
+                assays {
+                    id
+                    meta
+                }
+            }
+        }
+    }
+    """
+)
+
     sequencing_groups = query(_query)['project']['sequencingGroups']
 
     bm_sequencing_groups = []
@@ -174,8 +176,6 @@ def get_low_qc_samples(
     - ambiguous sex or sex aneuploidy
     - WGS-based QC
     """
-    import pandas as pd
-
     meta = pd.read_csv(metadata_tsv_path, sep='\t')
     samples_contam = set(meta['r_contamination' > contam_rate, 's'])
     logging.info(
