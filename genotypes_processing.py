@@ -192,7 +192,7 @@ def get_low_qc_samples(
     logging.info(
         f'No. samples with sex aneuploidy or ambiguous sex: {len(samples_sex)}'
     )
-    samples_qc = set(meta[pd.notna('qc_metrics_filters')])
+    samples_qc = set(meta[meta['qc_metrics_filters'].isnull() == False]['s'])
     logging.info(f'No. samples not passing WGS QC: {len(samples_qc)}')
     return {*samples_contam, *samples_chim, *samples_sex, *samples_qc}
 
