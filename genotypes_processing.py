@@ -25,19 +25,19 @@ import random
 
 from cpg_utils import to_path
 from cpg_utils.hail_batch import (
-    copy_common_env,
+    # copy_common_env,
     dataset_path,
     get_config,
     init_batch,
     output_path,
-    remote_tmpdir,
+    # remote_tmpdir,
 )
 
 import click
 import pandas as pd
 
 import hail as hl
-import hailtop.batch as hb
+# import hailtop.batch as hb
 
 from metamist.apis import ParticipantApi, SequencingGroupApi
 
@@ -192,7 +192,7 @@ def get_low_qc_samples(
     logging.info(
         f'No. samples with sex aneuploidy or ambiguous sex: {len(samples_sex)}'
     )
-    samples_qc = set(meta[meta['qc_metrics_filters'].isnull() == False]['s'])
+    samples_qc = set(meta[meta['qc_metrics_filters'].isnull() is False]['s'])
     logging.info(f'No. samples not passing WGS QC: {len(samples_qc)}')
     return {*samples_contam, *samples_chim, *samples_sex, *samples_qc}
 
