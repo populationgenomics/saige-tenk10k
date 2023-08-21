@@ -185,9 +185,10 @@ def get_low_qc_samples(
     )
     samples_chim = set(meta[meta['r_chimera'] > chimera_rate]['s'])
     logging.info(f'No. samples with chimera rate > {chimera_rate}: {len(samples_chim)}')
-    samples_sex = set(
-        meta[meta['hard_filters'] in ['ambiguous_sex', 'sex_aneuploidy']]['s']
-    )
+    samples_sex = {
+        *set(meta[meta['hard_filters'] == 'ambiguous_sex']['s']),
+        *set(meta[meta['hard_filters'] == 'sex_aneuploidy']['s']),
+    }
     logging.info(
         f'No. samples with sex aneuploidy or ambiguous sex: {len(samples_sex)}'
     )
