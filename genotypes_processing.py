@@ -334,7 +334,7 @@ def genotypes_pipeline(
     filter_job.call(
         filter_variants,
         mt_path=mt_path,
-        samples=sc_samples,
+        samples_str=sc_samples,
         output_mt_path=output_mt_path,
         vre_plink_path=vre_plink_path,
     )
