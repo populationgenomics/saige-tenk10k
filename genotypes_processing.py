@@ -25,12 +25,10 @@ import random
 
 from cpg_utils import to_path
 from cpg_utils.hail_batch import (
-    # copy_common_env,
     dataset_path,
     get_config,
     init_batch,
     output_path,
-    # remote_tmpdir,
 )
 
 import click
@@ -38,7 +36,6 @@ import pandas as pd
 
 import hail as hl
 
-# import hailtop.batch as hb
 
 from metamist.apis import ParticipantApi, SequencingGroupApi
 
@@ -309,11 +306,6 @@ def genotypes_pipeline(
     """
     Run one-off QC filtering pipeline
     """
-    # sb = hb.ServiceBackend(
-    #     billing_project=get_config()['hail']['billing_project'],
-    #     remote_tmpdir=remote_tmpdir(),
-    # )
-    # batch = hb.Batch('SAIGE-QTL pipeline', backend=sb)
 
     # extract individuals for which we have single-cell (sc) data
     sample_mapping_file = pd.read_csv(dataset_path(sample_mapping_file_tsv), sep='\t')
@@ -329,22 +321,12 @@ def genotypes_pipeline(
         logging.info('File already exists no need to filter')
         return
 
-    # filter_job = batch.new_python_job(name='MT filter job')
-    # copy_common_env(filter_job)
-    # filter_job.image(HAIL_IMAGE)
-    # print(type(mt_path), mt_path)
-    # print(type(sc_samples), sc_samples)
-    # print(type(output_mt_path), output_mt_path)
-    # print(type(vre_plink_path), vre_plink_path)
     filter_variants(
         mt_path=mt_path,
         samples_str=sc_samples,
         output_mt_path=output_mt_path,
         vre_plink_path=vre_plink_path,
     )
-
-    # # set jobs running
-    # batch.run(wait=False)
 
 
 if __name__ == '__main__':
