@@ -274,12 +274,15 @@ def filter_variants(
     vre_mt = vre_mt.sample_rows(
         p=0.01
     )  # in case this is very costly, subset first a bit
+    logging.info(f'Initial subset of variants: {vre_mt.count()[0]}')
     pruned_variant_table = hl.ld_prune(vre_mt.GT, r2=0.2, bp_window_size=500000)
     vre_mt = vre_mt.filter_rows(hl.is_defined(pruned_variant_table[vre_mt.row_key]))
+    logging.info(f'Subset of variants after pruning: {vre_mt.count()[0]}')
     # randomly sample {vre_n_markers} variants
     random.seed(0)
     vre_mt = vre_mt.sample_rows((vre_n_markers * 1.1) / vre_mt.count[0])
     vre_mt = vre_mt.head(vre_n_markers)
+    logging.info(f'Subset to {vre_n_markers} variants: {vre_mt.count()[0]}')
 
     # export to plink common variants only for sparse GRM
     from hail.methods import export_plink
