@@ -263,6 +263,7 @@ def filter_variants(
     # subset variants for variance ratio estimation
     # minor allele count (MAC) > 20
     tot_counts = mt.variant_qc.AC[1] + mt.variant_qc.AC[2]
+    print(tot_counts)
     vre_mt = mt.filter_rows(
         ((mt.variant_qc.AC[1] > vre_mac_threshold) & (mt.variant_qc.AC[1] < tot_counts))
         | (
