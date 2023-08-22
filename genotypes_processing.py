@@ -270,11 +270,12 @@ def filter_variants(
             & (mt.variant_qc.AC[1] > 0)
         )
     )
+    logging.info(f'Number of variants post AC filter: {vre_mt.count()[0]}')
     # perform LD pruning
-    vre_mt = vre_mt.sample_rows(
-        p=0.01
-    )  # in case this is very costly, subset first a bit
-    logging.info(f'Initial subset of variants: {vre_mt.count()[0]}')
+    # vre_mt = vre_mt.sample_rows(
+    #     p=0.01
+    # )  # in case this is very costly, subset first a bit
+    # logging.info(f'Initial subset of variants: {vre_mt.count()[0]}')
     pruned_variant_table = hl.ld_prune(vre_mt.GT, r2=0.2, bp_window_size=500000)
     vre_mt = vre_mt.filter_rows(hl.is_defined(pruned_variant_table[vre_mt.row_key]))
     logging.info(f'Subset of variants after pruning: {vre_mt.count()[0]}')
