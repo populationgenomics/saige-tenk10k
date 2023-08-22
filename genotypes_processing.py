@@ -55,7 +55,7 @@ DEFAULT_JOINT_CALL_MT = dataset_path('mt/v7.mt')
 HAIL_IMAGE = get_config()['workflow']['driver_image']
 
 
-# region SUBSET_SAMPLES
+# region SAMPLES_SUBSETTING_FUNCTIONS
 
 
 def remove_sc_outliers(df, outliers=None):
@@ -63,6 +63,9 @@ def remove_sc_outliers(df, outliers=None):
     Remove outlier samples, as identified by single-cell analysis
     """
     if outliers is None:
+        # by default, for TOB, we remove two samples
+        # 966_967 for extremely low cell number
+        # 88_88 for abnormal B cell composition
         outliers = ['966_967', '88_88']
     else:
         outliers = outliers.extend(['966_967', '88_88'])
@@ -195,9 +198,9 @@ def get_low_qc_samples(
     return {*samples_contam, *samples_chim, *samples_sex, *samples_qc}
 
 
-# endregion SUBSET_SAMPLES
+# endregion SAMPLES_SUBSETTING_FUNCTIONS
 
-# region SUBSET_VARIANTS
+# region VARIANTS_SUBSETTING_FUNCTIONS
 
 
 # only needs to be run once for a given cohort (e.g., OneK1K / TOB)
@@ -262,21 +265,13 @@ def filter_variants(
 
     # subset variants for variance ratio estimation
     # minor allele count (MAC) > 20
-    tot_counts = mt.variant_qc.AC[1] + mt.variant_qc.AC[2]
-    print(tot_counts)
-    vre_mt = mt.filter_rows(
-        ((mt.variant_qc.AC[1] > vre_mac_threshold) & (mt.variant_qc.AC[1] < tot_counts))
-        | (
-            (mt.variant_qc.AC[1] < (tot_counts - vre_mac_threshold))
-            & (mt.variant_qc.AC[1] > 0)
-        )
-    )
+    vre_mt = mt.filter_rows(mt.variant_qc.AC[1] > vre_mac_threshold)
     logging.info(f'Number of variants post AC filter: {vre_mt.count()[0]}')
     # perform LD pruning
-    # vre_mt = vre_mt.sample_rows(
-    #     p=0.01
-    # )  # in case this is very costly, subset first a bit
-    # logging.info(f'Initial subset of variants: {vre_mt.count()[0]}')
+    vre_mt = vre_mt.sample_rows(
+        p=0.01
+    )  # in case this is very costly, subset first a bit
+    logging.info(f'Initial subset of variants: {vre_mt.count()[0]}')
     pruned_variant_table = hl.ld_prune(vre_mt.GT, r2=0.2, bp_window_size=500000)
     vre_mt = vre_mt.filter_rows(hl.is_defined(pruned_variant_table[vre_mt.row_key]))
     logging.info(f'Subset of variants after pruning: {vre_mt.count()[0]}')
@@ -292,10 +287,7 @@ def filter_variants(
     export_plink(vre_mt, vre_plink_path, ind_id=vre_mt.s)
 
 
-# endregion SUBSET_VARIANTS
-
-
-config = get_config()
+# endregion VARIANTS_SUBSETTING_FUNCTIONS
 
 
 @click.command()
