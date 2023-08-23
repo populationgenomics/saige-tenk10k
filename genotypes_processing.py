@@ -238,6 +238,7 @@ def filter_variants(
     # read hail matrix table object (WGS data)
     init_batch()
     mt = hl.read_matrix_table(mt_path)
+    logging.info(f'No total loci: {mt.count()[0]}')
 
     # subset to relevant samples (samples we have scRNA-seq data for)
     mt = mt.filter_cols(hl.set(samples).contains(mt.s))
@@ -271,7 +272,7 @@ def filter_variants(
     # subset variants for variance ratio estimation
     # minor allele count (MAC) > 20
     vre_mt = mt.filter_rows(mt.variant_qc.AC[0] > vre_mac_threshold)
-    # when testing this in a notebook I get 261416 here I keep getting 0
+    # when testing this in a notebook I get 8809223 here I keep getting 0
     logging.info(f'Number of variants post AC filter: {vre_mt.count()[0]}')
     if vre_mt.count()[0] == 0:
         logging.info('No variants left, exit')
