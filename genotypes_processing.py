@@ -197,7 +197,8 @@ def get_low_qc_samples(
     # 1: ```meta['qc_metrics_filters'].isnull() is False````
     # 2: ```not meta['qc_metrics_filters'].isnull()```
     # throw an error. Any ideas?
-    samples_qc = set(meta[meta['qc_metrics_filters'].isnull() == False]['s'])
+    # samples_qc = set(meta[meta['qc_metrics_filters'].isnull() == False]['s'])
+    samples_qc = set(meta[meta['qc_metrics_filters'].notnull()]['s'])
     logging.info(f'No. samples not passing WGS QC: {len(samples_qc)}')
     return {*samples_contam, *samples_chim, *samples_sex, *samples_qc}
 
