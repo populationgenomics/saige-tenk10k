@@ -274,6 +274,7 @@ def filter_variants(
     # when testing this in a notebook I get 261416 here I keep getting 0
     logging.info(f'Number of variants post AC filter: {vre_mt.count()[0]}')
     if vre_mt.count()[0] == 0:
+        logging.info('No variants left, exit')
         return
     # perform LD pruning
     vre_mt = vre_mt.sample_rows(
