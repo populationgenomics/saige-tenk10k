@@ -273,6 +273,8 @@ def filter_variants(
     vre_mt = mt.filter_rows(mt.variant_qc.AC[0] > vre_mac_threshold)
     print(vre_mac_threshold)
     logging.info(f'Number of variants post AC filter: {vre_mt.count()[0]}')
+    if vre_mt.count()[0] == 0:
+        return
     # perform LD pruning
     vre_mt = vre_mt.sample_rows(
         p=0.01
