@@ -271,6 +271,7 @@ def filter_variants(
     # subset variants for variance ratio estimation
     # minor allele count (MAC) > 20
     vre_mt = mt.filter_rows(mt.variant_qc.AC[0] > vre_mac_threshold)
+    print(vre_mac_threshold)
     logging.info(f'Number of variants post AC filter: {vre_mt.count()[0]}')
     # perform LD pruning
     vre_mt = vre_mt.sample_rows(
