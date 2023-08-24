@@ -262,10 +262,10 @@ def filter_variants(
     mt = hl.experimental.densify(mt)
 
     # add sample filters
-    bm_samples = get_bone_marrow_sequencing_groups()
+    bm_samples = get_bone_marrow_sequencing_groups(mt=mt)
     dup_samples = get_duplicated_samples(mt=mt)
     out_samples = get_non_tob_samples(mt=mt)
-    qc_samples = get_low_qc_samples()
+    qc_samples = get_low_qc_samples(mt=mt)
     filter_samples = {*bm_samples, *dup_samples, *out_samples, *qc_samples}
     logging.info(f'Total samples to filter: {len(filter_samples)}')
     # will this work with a set or should it be a list?
