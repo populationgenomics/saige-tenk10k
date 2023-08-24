@@ -298,9 +298,9 @@ def filter_variants(
     # subset variants for variance ratio estimation
     # minor allele count (MAC) > 20
     vre_mt = mt.filter_rows(mt.variant_qc.AC[0] > vre_mac_threshold)
-    # when testing this in a notebook I get 8809223 here I keep getting 0
-    logging.info(f'Number of variants post AC filter: {vre_mt.count()[0]}')
-    if vre_mt.count()[0] == 0:
+    n_ac_vars = vre_mt.count()[0]  # to avoid evaluating this 2X
+    logging.info(f'Number of variants post AC filter: {n_ac_vars}')
+    if n_ac_vars == 0:
         logging.info('No variants left, exit')
         return
     # perform LD pruning
