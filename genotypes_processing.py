@@ -175,7 +175,8 @@ def get_non_tob_samples(mt: hl.MatrixTable) -> set:
     logging.info(f'Number of non-TOB samples: {len(non_tob_samples)}')
     print(non_tob_samples)
     if non_tob_samples != {'NA12878', 'NA12891', 'NA12892', 'Syndip'}:
-        logging.info("Not the right samples, check this function")
+        logging.info('Not the right samples, check this function')
+        return
     # return {'NA12878', 'NA12891', 'NA12892', 'Syndip'}
     return {non_tob_samples}
 
