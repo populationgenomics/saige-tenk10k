@@ -141,7 +141,8 @@ def get_duplicated_samples(mt: hl.MatrixTable) -> set:
     keep = [sublist for list in keep for sublist in list]
 
     matrix_samples = mt.s.collect()
-    dup_samples = matrix_samples[matrix_samples not in keep]
+    # dup_samples = matrix_samples[matrix_samples not in keep]
+    dup_samples = matrix_samples.difference(keep)
     logging.info(f'Number of duplicated samples: {len(set(dup_samples))}')
     print(set(dup_samples))
     # if set(dup_samples) != {'CPG4994', 'CPG5066'}:
