@@ -243,6 +243,8 @@ def filter_variants(
     and also post sample QC
     that are additionally sufficiently common (MAC>20) and not in LD
     """
+    from hail.methods import export_plink
+
     # read hail matrix table object (WGS data)
     init_batch()
     mt = hl.read_matrix_table(mt_path)
@@ -313,8 +315,6 @@ def filter_variants(
     logging.info(f'Subset to {vre_n_markers} variants: {vre_mt.count()[0]}')
 
     # export to plink common variants only for sparse GRM
-    from hail.methods import export_plink
-
     export_plink(vre_mt, vre_plink_path, ind_id=vre_mt.s)
 
 
