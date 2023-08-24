@@ -144,6 +144,8 @@ def get_duplicated_samples(mt: hl.MatrixTable) -> set:
     dup_samples = matrix_samples[matrix_samples not in keep]
     logging.info(f'Number of duplicated samples: {len(set(dup_samples))}')
     print(set(dup_samples))
+    # if set(dup_samples) != {'CPG4994', 'CPG5066'}:
+    #     logging.info("Not the right samples, check this function")
     # return {'CPG4994', 'CPG5066'}
     return set(dup_samples)
 
@@ -164,13 +166,16 @@ def get_non_tob_samples(mt: hl.MatrixTable) -> set:
     tob_samples = [sublist for list in sgs for sublist in list]
     matrix_samples = set(mt.s.collect())
     common_samples = set(tob_samples).intersection(matrix_samples)
-    if common_samples == matrix_samples:
-        logging.info('No samples to remove, exit')
-        return set()
+    print(len(common_samples))
+    # if common_samples == matrix_samples:
+    #     logging.info('No samples to remove, exit')
+    #     return set()
     # non_tob_samples = matrix_samples not in common_samples
     non_tob_samples = matrix_samples.difference(common_samples)
     logging.info(f'Number of non-TOB samples: {len(non_tob_samples)}')
     print(non_tob_samples)
+    if non_tob_samples != {'NA12878', 'NA12891', 'NA12892', 'Syndip'}:
+        logging.info("Not the right samples, check this function")
     # return {'NA12878', 'NA12891', 'NA12892', 'Syndip'}
     return {non_tob_samples}
 
@@ -190,7 +195,7 @@ def get_low_qc_samples(
     meta = pd.read_csv(metadata_tsv_path, sep='\t')
     samples_contam = set(meta[meta['r_contamination'] > contam_rate]['s'])
     logging.info(
-        f'Number of samples with contamination rate > {contam_rate}: {len(samples_contam)}'
+        f'Number of samples w. contam. rate > {contam_rate}: {len(samples_contam)}'
     )
     samples_chim = set(meta[meta['r_chimera'] > chimera_rate]['s'])
     logging.info(
