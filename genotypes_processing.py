@@ -270,8 +270,8 @@ def filter_variants(
         logging.info('No samples left, exit')
         return
 
-    # subset to relevant samples (samples we have scRNA-seq data for)
-    mt = mt.filter_cols(hl.set(samples).contains(mt.s))
+    # # subset to relevant samples (samples we have scRNA-seq data for)
+    # mt = mt.filter_cols(hl.set(samples).contains(mt.s))
 
     # filter out low quality variants and consider biallelic SNPs only
     # (no multi-allelic, no ref-only, no indels)
