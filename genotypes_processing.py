@@ -165,8 +165,10 @@ def get_non_tob_samples(mt: hl.MatrixTable) -> set:
     matrix_samples = set(mt.s.collect())
     common_samples = set(tob_samples).intersection(matrix_samples)
     if common_samples == matrix_samples:
+        logging.info('No samples to remove, exit')
         return set()
-    non_tob_samples = matrix_samples not in common_samples
+    # non_tob_samples = matrix_samples not in common_samples
+    non_tob_samples = matrix_samples.difference(common_samples)
     logging.info(f'Number of non-TOB samples: {len(non_tob_samples)}')
     print(non_tob_samples)
     # return {'NA12878', 'NA12891', 'NA12892', 'Syndip'}
