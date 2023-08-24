@@ -269,6 +269,9 @@ def filter_variants(
     # will this work with a set or should it be a list?
     mt = mt.filter_cols(mt.s in filter_samples)
     logging.info(f'Number of samples after filtering: {mt.count()[1]}')
+    if mt.count()[1] == 0:
+        logging.info("No samples left, exit")
+        return
 
     # filter out low quality variants and consider biallelic SNPs only
     # (no multi-allelic, no ref-only, no indels)
