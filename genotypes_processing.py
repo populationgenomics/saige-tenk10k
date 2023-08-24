@@ -74,13 +74,6 @@ def remove_sc_outliers(df, outliers=None):
     return df
 
 
-# for the 3 functions below, not very confident on the use of
-# metamist, so I have retained the manual selection of
-# specific samples (commented out)
-# as a note: all of this should be done within the processing
-# pipeline at some stage, so perhaps does not need to be perfect
-
-
 def get_bone_marrow_sequencing_groups(mt: hl.MatrixTable) -> set:
     """
     Extract TOB bone marrow samples (vs PBMCs)
@@ -149,7 +142,6 @@ def get_duplicated_samples(mt: hl.MatrixTable) -> set:
     # if set(dup_samples) != {'CPG4994', 'CPG5066'}:
     #     logging.info('Not the right samples, check this function')
     #     return set()
-    # return {'CPG4994', 'CPG5066'}
     return set(dup_samples)
 
 
@@ -181,14 +173,13 @@ def get_non_tob_samples(mt: hl.MatrixTable) -> set:
     if non_tob_samples != {'NA12878', 'NA12891', 'NA12892', 'syndip'}:
         logging.info('Not the right samples, check this function')
         return set()
-    # return {'NA12878', 'NA12891', 'NA12892', 'syndip'}
     return non_tob_samples
 
 
 def get_low_qc_samples(
     mt: hl.MatrixTable,
     metadata_tsv_path='gs://cpg-tob-wgs-test-analysis/joint-calling/v7/meta.tsv',
-    contam_rate=0.05,  # defined based on distribution of parameters here
+    contam_rate=0.05,  # defined based on distribution of parameters in TOB
     chimera_rate=0.05,  # as above
 ) -> set:
     """
