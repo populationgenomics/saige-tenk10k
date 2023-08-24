@@ -140,7 +140,7 @@ def get_duplicated_samples(mt: hl.MatrixTable) -> set:
     logging.info(f'Number of duplicated samples: {len(set(dup_samples))}')
     print(set(dup_samples))
     # if set(dup_samples) != {'CPG4994', 'CPG5066'}:
-    #     logging.info('Not the right samples, check this function')
+    #     logging.info('Not the right samples, check dupl. function')
     #     return set()
     return set(dup_samples)
 
@@ -171,7 +171,7 @@ def get_non_tob_samples(mt: hl.MatrixTable) -> set:
     logging.info(f'Number of non-TOB samples: {len(non_tob_samples)}')
     print(non_tob_samples)
     if non_tob_samples != {'NA12878', 'NA12891', 'NA12892', 'syndip'}:
-        logging.info('Not the right samples, check this function')
+        logging.info('Not the right samples, check non-TOB function')
         return set()
     return non_tob_samples
 
@@ -261,8 +261,7 @@ def filter_variants(
     qc_samples = get_low_qc_samples(mt=mt)
     filter_samples = {*bm_samples, *dup_samples, *out_samples, *qc_samples}
     logging.info(f'Total samples to filter: {len(filter_samples)}')
-    # will this work with a set or should it be a list?
-    # mt = mt.filter_cols(mt.s not in filter_samples)
+    # use syntax from:
     # https://hail.is/docs/0.2/hail.MatrixTable.html#hail.MatrixTable.filter_cols
     set_to_remove = hl.literal(filter_samples)
     mt = mt.filter_cols(~set_to_remove.contains(mt['s']))
@@ -279,7 +278,7 @@ def filter_variants(
 
     # filter out low quality variants and consider biallelic SNPs only
     # (no multi-allelic, no ref-only, no indels)
-    mt = mt.filter_rows(  # check these filters!
+    mt = mt.filter_rows(
         (hl.len(hl.or_else(mt.filters, hl.empty_set(hl.tstr))) == 0)  # QC
         & (hl.len(mt.alleles) == 2)  # remove hom-ref
         & (mt.n_unsplit_alleles == 2)  # biallelic (exclude multiallelic)
@@ -292,19 +291,18 @@ def filter_variants(
     logging.info(f'No QC-passing, biallelic SNPs: {mt.count()[0]}')
 
     # subset variants for variance ratio estimation
-    # minor allele count (MAC) > 20
+    # minor allele count (MAC) > {vre_n_markers}
     vre_mt = mt.filter_rows(mt.variant_qc.AC[0] > vre_mac_threshold)
     n_ac_vars = vre_mt.count()[0]  # to avoid evaluating this 2X
     logging.info(f'Number of variants post AC filter: {n_ac_vars}')
     if n_ac_vars == 0:
         logging.info('No variants left, exit')
         return
-    # perform LD pruning
+    # since pruning is very costly, subset first a bit
     random.seed(0)
-    vre_mt = vre_mt.sample_rows(
-        p=0.01
-    )  # in case this is very costly, subset first a bit
+    vre_mt = vre_mt.sample_rows(p=0.01)
     logging.info(f'Initial subset of variants: {vre_mt.count()[0]}')
+    # perform LD pruning
     pruned_variant_table = hl.ld_prune(vre_mt.GT, r2=0.2, bp_window_size=500000)
     vre_mt = vre_mt.filter_rows(hl.is_defined(pruned_variant_table[vre_mt.row_key]))
     logging.info(f'Subset of variants after pruning: {vre_mt.count()[0]}')
@@ -339,7 +337,7 @@ def genotypes_pipeline(
     sample_mapping_file = pd.read_csv(dataset_path(sample_mapping_file_tsv), sep='\t')
     # we may want to exclude these from the smf directly
     sample_mapping_file = remove_sc_outliers(sample_mapping_file)
-    # check column names - CPG_ID would be better?
+    # extract CPG IDs from file
     sc_samples = ','.join(sample_mapping_file['InternalID'].unique())
 
     # filter to QC-passing, biallelic SNPs
