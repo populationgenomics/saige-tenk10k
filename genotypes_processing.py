@@ -263,6 +263,10 @@ def filter_variants(
     out_samples = get_non_tob_samples(mt=mt)
     qc_samples = get_low_qc_samples()
     filter_samples = {*bm_samples, *dup_samples, *out_samples, *qc_samples}
+    logging.info(f'Total samples to filter: {len(filter_samples)}')
+    matrix_samples = set(mt.s.collect())
+    to_filter = set(filter_samples).intersection(matrix_samples)
+    logging.info(f'Samples filtered: {matrix_samples.difference(to_filter)}')
     # will this work with a set or should it be a list?
     mt = mt.filter_cols(mt.s in filter_samples)
     logging.info(f'Number of samples after filtering: {mt.count()[1]}')
