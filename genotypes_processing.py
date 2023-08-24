@@ -81,7 +81,7 @@ def remove_sc_outliers(df, outliers=None):
 # pipeline at some stage, so perhaps does not need to be perfect
 
 
-def get_bone_marrow_sequencing_groups():
+def get_bone_marrow_sequencing_groups(mt: hl.MatrixTable) -> set:
     """
     Extract TOB bone marrow samples (vs PBMCs)
     """
@@ -115,7 +115,9 @@ def get_bone_marrow_sequencing_groups():
                 bm_sequencing_groups.append(sg_id)
                 continue
     logging.info(f'Number of bone marrow samples: {len(set(bm_sequencing_groups))}')
-    return set(bm_sequencing_groups)
+    bm_samples = set(bm_sequencing_groups)
+    matrix_samples = set(mt.s.collect())
+    return bm_samples.intersection(matrix_samples)
 
 
 # remove duplicated samples based on TOB IDs
@@ -179,15 +181,16 @@ def get_non_tob_samples(mt: hl.MatrixTable) -> set:
     if non_tob_samples != {'NA12878', 'NA12891', 'NA12892', 'syndip'}:
         logging.info('Not the right samples, check this function')
         return set()
-    # return {'NA12878', 'NA12891', 'NA12892', 'Syndip'}
+    # return {'NA12878', 'NA12891', 'NA12892', 'syndip'}
     return non_tob_samples
 
 
 def get_low_qc_samples(
+    mt: hl.MatrixTable,
     metadata_tsv_path='gs://cpg-tob-wgs-test-analysis/joint-calling/v7/meta.tsv',
     contam_rate=0.05,  # defined based on distribution of parameters here
     chimera_rate=0.05,  # as above
-):
+) -> set:
     """
     Extract samples that did not pass QC
     - high contamination rate
@@ -213,7 +216,9 @@ def get_low_qc_samples(
     )
     samples_qc = set(meta[meta['qc_metrics_filters'].notnull()]['s'])
     logging.info(f'Number of samples not passing WGS QC: {len(samples_qc)}')
-    return {*samples_contam, *samples_chim, *samples_sex, *samples_qc}
+    low_qc_samples = {*samples_contam, *samples_chim, *samples_sex, *samples_qc}
+    matrix_samples = set(mt.s.collect())
+    return low_qc_samples.intersection(matrix_samples)
 
 
 # endregion SAMPLES_SUBSETTING_FUNCTIONS
