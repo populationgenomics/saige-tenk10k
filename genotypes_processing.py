@@ -139,8 +139,8 @@ def get_duplicated_samples(mt: hl.MatrixTable) -> set:
     # Get the SG ID associated with each of the most recent samples
     keep = [sample_sg_map[sample_id] for sample_id in latest_samples]
     keep = [list(sg.values())[0] for sg in keep]
-    keep = [sublist for list in keep for sublist in list]
-    keep = set(keep)
+    # lint complains about syntax below even though it works?
+    keep = set([sublist for list in keep for sublist in list])
 
     matrix_samples = set(mt.s.collect())
     dup_samples = matrix_samples.difference(keep)
