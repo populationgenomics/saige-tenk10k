@@ -224,7 +224,7 @@ def get_low_qc_samples(
 # only needs to be run once for a given cohort (e.g., OneK1K / TOB)
 def filter_variants(
     mt_path: str,  # 'mt/v7.mt'
-    samples_str: str,
+    sc_samples_str: str,
     output_mt_path: str,  # 'tob_wgs/filtered.mt'
     vre_plink_path: str,  # 'tob_wgs/vr_plink_2000_variants
     vre_mac_threshold: int = 20,
@@ -247,7 +247,7 @@ def filter_variants(
     and also post sample QC
     that are additionally sufficiently common (MAC>20) and not in LD
     """
-    # samples = samples_str.split(',')
+    sc_samples = sc_samples_str.split(',')
     # read hail matrix table object (WGS data)
     init_batch()
     mt = hl.read_matrix_table(mt_path)
@@ -274,8 +274,10 @@ def filter_variants(
         logging.info('No samples left, exit')
         return
 
-    # # subset to relevant samples (samples we have scRNA-seq data for)
-    # mt = mt.filter_cols(hl.set(samples).contains(mt.s))
+    # subset to relevant samples (samples we have scRNA-seq data for)
+    logging.info(f'Number of sc samples: {len(samples)}')
+    mt = mt.filter_cols(hl.set(samples).contains(mt.s))
+    logging.info(f'Number of remaining samples: {mt.count()[1]}')
 
     # filter out low quality variants and consider biallelic SNPs only
     # (no multi-allelic, no ref-only, no indels)
@@ -353,7 +355,7 @@ def genotypes_pipeline(
 
     filter_variants(
         mt_path=mt_path,
-        samples_str=sc_samples,
+        sc_samples_str=sc_samples,
         output_mt_path=output_mt_path,
         vre_plink_path=vre_plink_path,
     )
