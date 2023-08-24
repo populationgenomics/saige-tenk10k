@@ -113,6 +113,8 @@ def get_bone_marrow_sequencing_groups():
             if assay['meta'].get('Primary study') == 'Pilot/bone marrow':
                 bm_sequencing_groups.append(sg_id)
                 continue
+    logging.info(f'Number of bone marrow samples: {len(bm_sequencing_groups)}')
+    print(bm_sequencing_groups)
     return set(bm_sequencing_groups)
 
 
@@ -140,6 +142,8 @@ def get_duplicated_samples(mt: hl.MatrixTable) -> set:
 
     matrix_samples = mt.s.collect()
     dup_samples = matrix_samples[matrix_samples not in keep]
+    logging.info(f'Number of duplicated samples: {len(dup_samples)}')
+    print(dup_samples)
     # return {'CPG4994', 'CPG5066'}
     return set(dup_samples)
 
@@ -163,6 +167,8 @@ def get_non_tob_samples(mt: hl.MatrixTable) -> set:
     if common_samples == matrix_samples:
         return set()
     non_tob_samples = matrix_samples not in common_samples
+    logging.info(f'Number of non-TOB samples: {len(non_tob_samples)}')
+    print(non_tob_samples)
     # return {'NA12878', 'NA12891', 'NA12892', 'Syndip'}
     return {non_tob_samples}
 
@@ -249,13 +255,9 @@ def filter_variants(
 
     # add sample filters
     bm_samples = get_bone_marrow_sequencing_groups()
-    print(len(bm_samples))
     dup_samples = get_duplicated_samples(mt=mt)
-    print(len(dup_samples))
     out_samples = get_non_tob_samples(mt=mt)
-    print(len(out_samples))
     qc_samples = get_low_qc_samples()
-    print(len(qc_samples))
     filter_samples = {*bm_samples, *dup_samples, *out_samples, *qc_samples}
     # will this work with a set or should it be a list?
     mt = mt.filter_cols(mt.s in filter_samples)
