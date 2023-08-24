@@ -146,7 +146,7 @@ def get_duplicated_samples(mt: hl.MatrixTable) -> set:
     print(set(dup_samples))
     # if set(dup_samples) != {'CPG4994', 'CPG5066'}:
     #     logging.info("Not the right samples, check this function")
-    #     return
+    #     return set()
     # return {'CPG4994', 'CPG5066'}
     return set(dup_samples)
 
@@ -177,7 +177,7 @@ def get_non_tob_samples(mt: hl.MatrixTable) -> set:
     print(non_tob_samples)
     if non_tob_samples != {'NA12878', 'NA12891', 'NA12892', 'Syndip'}:
         logging.info('Not the right samples, check this function')
-        return
+        return set()
     # return {'NA12878', 'NA12891', 'NA12892', 'Syndip'}
     return {non_tob_samples}
 
