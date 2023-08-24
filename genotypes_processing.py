@@ -305,7 +305,7 @@ def filter_variants(
     logging.info(f'Subset of variants after pruning: {vre_mt.count()[0]}')
     # randomly sample {vre_n_markers} variants
     random.seed(0)
-    vre_mt = vre_mt.sample_rows((vre_n_markers * 1.1) / vre_mt.count[0])
+    vre_mt = vre_mt.sample_rows((vre_n_markers * 1.1) / vre_mt.count()[0])
     vre_mt = vre_mt.head(vre_n_markers)
     logging.info(f'Subset to {vre_n_markers} variants: {vre_mt.count()[0]}')
 
