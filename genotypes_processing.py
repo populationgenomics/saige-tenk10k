@@ -166,8 +166,8 @@ def get_non_tob_samples(mt: hl.MatrixTable) -> set:
     # double-layered list comprehension to flatten
     tob_samples = [sublist for list in sgs for sublist in list]
     matrix_samples = set(mt.s.collect())
-    common_samples = set(tob_samples).intersection(matrix_samples)
     logging.info(f'Matrix samples: {matrix_samples}')
+    common_samples = set(tob_samples).intersection(matrix_samples)
     logging.info(f'Common samples: {common_samples}')
     if common_samples == matrix_samples:
         logging.info('No samples to remove, exit')
@@ -254,9 +254,6 @@ def filter_variants(
     logging.info(f'Number of total loci: {mt.count()[0]}')
     logging.info(f'Number of total samples: {mt.count()[1]}')
 
-    # subset to relevant samples (samples we have scRNA-seq data for)
-    mt = mt.filter_cols(hl.set(samples).contains(mt.s))
-
     # densify
     mt = hl.experimental.densify(mt)
 
@@ -272,6 +269,9 @@ def filter_variants(
     if mt.count()[1] == 0:
         logging.info('No samples left, exit')
         return
+
+    # subset to relevant samples (samples we have scRNA-seq data for)
+    mt = mt.filter_cols(hl.set(samples).contains(mt.s))
 
     # filter out low quality variants and consider biallelic SNPs only
     # (no multi-allelic, no ref-only, no indels)
