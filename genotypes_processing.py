@@ -185,8 +185,8 @@ def get_non_tob_samples(mt: hl.MatrixTable) -> set:
 
 def get_low_qc_samples(
     metadata_tsv_path='gs://cpg-tob-wgs-test-analysis/joint-calling/v7/meta.tsv',
-    contam_rate=0.05,
-    chimera_rate=0.05,
+    contam_rate=0.05,  # defined based on distribution of parameters here
+    chimera_rate=0.05,  # as above
 ):
     """
     Extract samples that did not pass QC
@@ -211,11 +211,6 @@ def get_low_qc_samples(
     logging.info(
         f'Number of samples with sex aneuploidy or ambiguous sex: {len(samples_sex)}'
     )
-    # lint complains about this syntax, but both solutions it offers:
-    # 1: ```meta['qc_metrics_filters'].isnull() is False````
-    # 2: ```not meta['qc_metrics_filters'].isnull()```
-    # throw an error. Any ideas?
-    # samples_qc = set(meta[meta['qc_metrics_filters'].isnull() == False]['s'])
     samples_qc = set(meta[meta['qc_metrics_filters'].notnull()]['s'])
     logging.info(f'Number of samples not passing WGS QC: {len(samples_qc)}')
     return {*samples_contam, *samples_chim, *samples_sex, *samples_qc}
