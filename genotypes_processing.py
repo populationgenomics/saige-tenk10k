@@ -180,7 +180,7 @@ def get_non_tob_samples(mt: hl.MatrixTable) -> set:
         logging.info('Not the right samples, check this function')
         return set()
     # return {'NA12878', 'NA12891', 'NA12892', 'Syndip'}
-    return {non_tob_samples}
+    return non_tob_samples
 
 
 def get_low_qc_samples(
@@ -275,8 +275,8 @@ def filter_variants(
         return
 
     # subset to relevant samples (samples we have scRNA-seq data for)
-    logging.info(f'Number of sc samples: {len(samples)}')
-    mt = mt.filter_cols(hl.set(samples).contains(mt.s))
+    logging.info(f'Number of sc samples: {len(sc_samples)}')
+    mt = mt.filter_cols(hl.set(sc_samples).contains(mt.s))
     logging.info(f'Number of remaining samples: {mt.count()[1]}')
 
     # filter out low quality variants and consider biallelic SNPs only
