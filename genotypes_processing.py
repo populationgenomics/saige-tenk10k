@@ -247,7 +247,7 @@ def filter_variants(
     and also post sample QC
     that are additionally sufficiently common (MAC>20) and not in LD
     """
-    samples = samples_str.split(',')
+    # samples = samples_str.split(',')
     # read hail matrix table object (WGS data)
     init_batch()
     mt = hl.read_matrix_table(mt_path)
