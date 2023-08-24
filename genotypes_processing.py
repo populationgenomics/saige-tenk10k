@@ -103,8 +103,9 @@ def get_bone_marrow_sequencing_groups():
     }
     """
     )
-
+    logging.getLogger().setLevel(logging.WARN)
     sequencing_groups = query(_query)['project']['sequencingGroups']
+    logging.getLogger().setLevel(logging.INFO)
 
     bm_sequencing_groups = []
     for sg in sequencing_groups:
