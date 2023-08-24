@@ -115,7 +115,6 @@ def get_bone_marrow_sequencing_groups():
                 bm_sequencing_groups.append(sg_id)
                 continue
     logging.info(f'Number of bone marrow samples: {len(set(bm_sequencing_groups))}')
-    print(set(bm_sequencing_groups))
     return set(bm_sequencing_groups)
 
 
@@ -169,7 +168,8 @@ def get_non_tob_samples(mt: hl.MatrixTable) -> set:
     tob_samples = [sublist for list in sgs for sublist in list]
     matrix_samples = set(mt.s.collect())
     common_samples = set(tob_samples).intersection(matrix_samples)
-    print(len(common_samples))
+    logging.info(f'Matrix samples, {len(matrix_samples)}')
+    logging.info(f'Common samples, {len(common_samples)}')
     if common_samples == matrix_samples:
         logging.info('No samples to remove, exit')
         return set()
