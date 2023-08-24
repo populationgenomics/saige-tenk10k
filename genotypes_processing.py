@@ -168,8 +168,8 @@ def get_non_tob_samples(mt: hl.MatrixTable) -> set:
     tob_samples = [sublist for list in sgs for sublist in list]
     matrix_samples = set(mt.s.collect())
     common_samples = set(tob_samples).intersection(matrix_samples)
-    logging.info(f'Matrix samples, {len(matrix_samples)}')
-    logging.info(f'Common samples, {len(common_samples)}')
+    logging.info(f'Matrix samples: {matrix_samples}')
+    logging.info(f'Common samples: {common_samples}')
     if common_samples == matrix_samples:
         logging.info('No samples to remove, exit')
         return set()
