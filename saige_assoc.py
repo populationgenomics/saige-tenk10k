@@ -28,6 +28,7 @@ def build_fit_null_command(
     sample_id_pheno: str,  # IND_ID
     output_prefix: str,  # ./${gene_name}_B_IN_count
     plink_path: str,  # ./input/nfam_100_nindep_0_step1_includeMoreRareVariants_poly
+    cis_window_file: str,
     pheno_col: str = 'y',
     trait_type: str = 'count',
     skip_vre: str = 'FALSE',  # this is a boolean but that's encoded differently between R and python
@@ -47,8 +48,9 @@ def build_fit_null_command(
     - Phenotype / covariate file - rows: samples, cols: pheno (y), cov1, cov2 etc
     - Comma separated str of column mnames from previous file to be used as covariates
     - Column name specifying sample / individual (e.g., IND_ID, or CPG_ID etc)
-    - Plink path: path to plink file (subset of ~2,000 markers for VRE)
     - output prefix: where to save the fitted model (.rda)
+    - Plink path: path to plink file (subset of ~2,000 markers for VRE)
+    - cis window: file with chrom | start | end to specify window
     - pheno col: name of column specifying pheno (default: "y")
     - trait type: count = Poisson, count_nb = Negative Binomial
     - option to skip Variance Ratio estimation (discouraged)
@@ -68,6 +70,7 @@ def build_fit_null_command(
     saige_command_step1 += f' --phenoCol={pheno_col}'
     saige_command_step1 += f' --covarColList={cov_col_list}'
     saige_command_step1 += f' --sampleIDColinphenoFile={sample_id_pheno}'
+    saige_command_step1 += f'--rangestoIncludeFile={cis_window_file}'
     saige_command_step1 += f' --traitType={trait_type}'
     saige_command_step1 += f' --outputPrefix={output_prefix}'
     saige_command_step1 += f' --skipVarianceRatioEstimation={skip_vre}'
