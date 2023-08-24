@@ -142,13 +142,13 @@ def get_duplicated_samples(mt: hl.MatrixTable) -> set:
 
     matrix_samples = set(mt.s.collect())
     dup_samples = matrix_samples.difference(keep)
-    logging.info(f'Number of duplicated samples: {len(set(dup_samples))}')
-    print(set(dup_samples))
+    logging.info(f'Number of duplicated samples: {len(dup_samples)}')
+    logging.info(f'Duplicated samples: {dup_samples}')
     # if set(dup_samples) != {'CPG4994', 'CPG5066'}:
     #     logging.info('Not the right samples, check this function')
     #     return set()
     # return {'CPG4994', 'CPG5066'}
-    return set(dup_samples)
+    return dup_samples
 
 
 def get_non_tob_samples(mt: hl.MatrixTable) -> set:
@@ -162,25 +162,30 @@ def get_non_tob_samples(mt: hl.MatrixTable) -> set:
     sample_sg_map = sgapi.get_all_sequencing_group_ids_by_sample_by_type(
         project='tob-wgs'
     )
-    sgs = [list(sg.values())[0] for sg in sample_sg_map.values()]
-    # double-layered list comprehension to flatten
-    tob_samples = [sublist for list in sgs for sublist in list]
+    tob_samples = set()
+    for sample_id in sample_sg_map:
+        tob_samples.update(sample_sg_map[sample_id]['genome'])
+
+    logging.info(f'Number of TOB SG IDs: {len(tob_samples)}')
+
     matrix_samples = set(mt.s.collect())
     logging.info(f'Matrix samples: {matrix_samples}')
-    common_samples = set(tob_samples).intersection(matrix_samples)
+    common_samples = tob_samples.intersection(matrix_samples)
     logging.info(f'Common samples: {common_samples}')
     if common_samples == matrix_samples:
         logging.info('No samples to remove, exit')
         return set()
+
     # non_tob_samples = matrix_samples not in common_samples
     non_tob_samples = matrix_samples.difference(common_samples)
     logging.info(f'Number of non-TOB samples: {len(non_tob_samples)}')
-    print(non_tob_samples)
+    logging.info(f'Non-TOB samples: {non_tob_samples}')
+
     if non_tob_samples != {'NA12878', 'NA12891', 'NA12892', 'syndip'}:
         logging.info('Not the right samples, check this function')
         return set()
     # return {'NA12878', 'NA12891', 'NA12892', 'Syndip'}
-    return {non_tob_samples}
+    return non_tob_samples
 
 
 def get_low_qc_samples(
@@ -224,7 +229,7 @@ def get_low_qc_samples(
 # only needs to be run once for a given cohort (e.g., OneK1K / TOB)
 def filter_variants(
     mt_path: str,  # 'mt/v7.mt'
-    samples_str: str,
+    samples: set[str],
     output_mt_path: str,  # 'tob_wgs/filtered.mt'
     vre_plink_path: str,  # 'tob_wgs/vr_plink_2000_variants
     vre_mac_threshold: int = 20,
@@ -247,12 +252,11 @@ def filter_variants(
     and also post sample QC
     that are additionally sufficiently common (MAC>20) and not in LD
     """
-    # samples = samples_str.split(',')
     # read hail matrix table object (WGS data)
     init_batch()
     mt = hl.read_matrix_table(mt_path)
-    logging.info(f'Number of total loci: {mt.count()[0]}')
-    logging.info(f'Number of total samples: {mt.count()[1]}')
+    logging.info(f'Number of total loci: {mt.count_rows()}')
+    logging.info(f'Number of total samples: {mt.count_cols()}')
 
     # densify
     mt = hl.experimental.densify(mt)
@@ -263,13 +267,19 @@ def filter_variants(
     out_samples = get_non_tob_samples(mt=mt)
     qc_samples = get_low_qc_samples()
     filter_samples = {*bm_samples, *dup_samples, *out_samples, *qc_samples}
+
     logging.info(f'Total samples to filter: {len(filter_samples)}')
+    logging.info(f'Samples to filter: {filter_samples}')
+
     matrix_samples = set(mt.s.collect())
-    to_filter = set(filter_samples).intersection(matrix_samples)
+    to_filter = filter_samples.intersection(matrix_samples)
+
+    logging.info(f'Samples to keep: {to_filter}')
     logging.info(f'Samples filtered: {matrix_samples.difference(to_filter)}')
+
     # will this work with a set or should it be a list?
     mt = mt.filter_cols(mt.s in filter_samples)
-    logging.info(f'Number of samples after filtering: {mt.count()[1]}')
+    logging.info(f'Number of samples after filtering: {mt.count_cols()}')
     if mt.count()[1] == 0:
         logging.info('No samples left, exit')
         return
@@ -341,7 +351,6 @@ def genotypes_pipeline(
     # we may want to exclude these from the smf directly
     sample_mapping_file = remove_sc_outliers(sample_mapping_file)
     # check column names - CPG_ID would be better?
-    sc_samples = ','.join(sample_mapping_file['InternalID'].unique())
 
     # filter to QC-passing, biallelic SNPs
     output_mt_path = output_path('qc_filtered.mt')
@@ -353,7 +362,7 @@ def genotypes_pipeline(
 
     filter_variants(
         mt_path=mt_path,
-        samples_str=sc_samples,
+        samples=sample_mapping_file['InternalID'].unique(),  # not using this value?
         output_mt_path=output_mt_path,
         vre_plink_path=vre_plink_path,
     )
