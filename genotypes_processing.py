@@ -304,6 +304,7 @@ def filter_variants(
         logging.info('No variants left, exit')
         return
     # perform LD pruning
+    random.seed(0)
     vre_mt = vre_mt.sample_rows(
         p=0.01
     )  # in case this is very costly, subset first a bit
