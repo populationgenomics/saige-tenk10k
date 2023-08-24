@@ -252,7 +252,6 @@ def filter_variants(
     and also post sample QC
     that are additionally sufficiently common (MAC>20) and not in LD
     """
-    sc_samples = sc_samples_str.split(',')
     # read hail matrix table object (WGS data)
     init_batch()
     mt = hl.read_matrix_table(mt_path)
@@ -269,9 +268,6 @@ def filter_variants(
     qc_samples = get_low_qc_samples()
     filter_samples = {*bm_samples, *dup_samples, *out_samples, *qc_samples}
     logging.info(f'Total samples to filter: {len(filter_samples)}')
-    matrix_samples = set(mt.s.collect())
-    to_filter = set(filter_samples).intersection(matrix_samples)
-    logging.info(f'Samples filtered: {matrix_samples.difference(to_filter)}')
     # will this work with a set or should it be a list?
     mt = mt.filter_cols(mt.s in filter_samples)
     logging.info(f'Number of samples after filtering: {mt.count()[1]}')
@@ -280,6 +276,7 @@ def filter_variants(
         return
 
     # subset to relevant samples (samples we have scRNA-seq data for)
+    sc_samples = sc_samples_str.split(',')
     logging.info(f'Number of sc samples: {len(sc_samples)}')
     mt = mt.filter_cols(hl.set(sc_samples).contains(mt.s))
     logging.info(f'Number of remaining samples: {mt.count()[1]}')
