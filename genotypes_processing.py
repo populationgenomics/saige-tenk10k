@@ -142,8 +142,8 @@ def get_duplicated_samples(mt: hl.MatrixTable) -> set:
 
     matrix_samples = mt.s.collect()
     dup_samples = matrix_samples[matrix_samples not in keep]
-    logging.info(f'Number of duplicated samples: {len(dup_samples)}')
-    print(dup_samples)
+    logging.info(f'Number of duplicated samples: {len(set(dup_samples))}')
+    print(set(dup_samples))
     # return {'CPG4994', 'CPG5066'}
     return set(dup_samples)
 
@@ -190,16 +190,18 @@ def get_low_qc_samples(
     meta = pd.read_csv(metadata_tsv_path, sep='\t')
     samples_contam = set(meta[meta['r_contamination'] > contam_rate]['s'])
     logging.info(
-        f'No. samples with contamination rate > {contam_rate}: {len(samples_contam)}'
+        f'Number of samples with contamination rate > {contam_rate}: {len(samples_contam)}'
     )
     samples_chim = set(meta[meta['r_chimera'] > chimera_rate]['s'])
-    logging.info(f'No. samples with chimera rate > {chimera_rate}: {len(samples_chim)}')
+    logging.info(
+        f'Number of samples with chimera rate > {chimera_rate}: {len(samples_chim)}'
+    )
     samples_sex = {
         *set(meta[meta['hard_filters'] == 'ambiguous_sex']['s']),
         *set(meta[meta['hard_filters'] == 'sex_aneuploidy']['s']),
     }
     logging.info(
-        f'No. samples with sex aneuploidy or ambiguous sex: {len(samples_sex)}'
+        f'Number of samples with sex aneuploidy or ambiguous sex: {len(samples_sex)}'
     )
     # lint complains about this syntax, but both solutions it offers:
     # 1: ```meta['qc_metrics_filters'].isnull() is False````
@@ -207,7 +209,7 @@ def get_low_qc_samples(
     # throw an error. Any ideas?
     # samples_qc = set(meta[meta['qc_metrics_filters'].isnull() == False]['s'])
     samples_qc = set(meta[meta['qc_metrics_filters'].notnull()]['s'])
-    logging.info(f'No. samples not passing WGS QC: {len(samples_qc)}')
+    logging.info(f'Number of samples not passing WGS QC: {len(samples_qc)}')
     return {*samples_contam, *samples_chim, *samples_sex, *samples_qc}
 
 
