@@ -260,7 +260,10 @@ def filter_variants(
     filter_samples = {*bm_samples, *dup_samples, *out_samples, *qc_samples}
     logging.info(f'Total samples to filter: {len(filter_samples)}')
     # will this work with a set or should it be a list?
-    mt = mt.filter_cols(mt.s not in filter_samples)
+    # mt = mt.filter_cols(mt.s not in filter_samples)
+    # https://hail.is/docs/0.2/hail.MatrixTable.html#hail.MatrixTable.filter_cols
+    set_to_remove = hl.literal(filter_samples)
+    mt = mt.filter_cols(~set_to_remove.contains(mt['s']))
     logging.info(f'Number of samples after filtering: {mt.count()[1]}')
     if mt.count()[1] == 0:
         logging.info('No samples left, exit')
