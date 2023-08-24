@@ -142,6 +142,9 @@ def get_duplicated_samples(mt: hl.MatrixTable) -> set:
 
     matrix_samples = mt.s.collect()
     dup_samples = matrix_samples[matrix_samples not in keep]
+    # if it's a single value, set would split into characters
+    if len(dup_samples) == 1:
+        return dup_samples
     # dup_samples = matrix_samples.difference(keep)
     logging.info(f'Number of duplicated samples: {len(set(dup_samples))}')
     print(set(dup_samples))
