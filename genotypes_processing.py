@@ -166,7 +166,6 @@ def get_non_tob_samples(mt: hl.MatrixTable) -> set:
     if common_samples == matrix_samples:
         logging.info('No samples to remove, exit')
         return set()
-    # non_tob_samples = matrix_samples not in common_samples
     non_tob_samples = matrix_samples.difference(common_samples)
     logging.info(f'Number of non-TOB samples: {len(non_tob_samples)}')
     print(non_tob_samples)
@@ -175,11 +174,12 @@ def get_non_tob_samples(mt: hl.MatrixTable) -> set:
         return set()
     return non_tob_samples
 
-
+# cutoffs currently based on:
+# https://github.com/populationgenomics/joint-calling/blob/main/joint_calling/filter_cutoffs.yaml
 def get_low_qc_samples(
     mt: hl.MatrixTable,
     metadata_tsv_path='gs://cpg-tob-wgs-test-analysis/joint-calling/v7/meta.tsv',
-    contam_rate=0.05,  # defined based on distribution of parameters in TOB
+    contam_rate=0.04,  # defined based on distribution of parameters in TOB
     chimera_rate=0.05,  # as above
 ) -> set:
     """
