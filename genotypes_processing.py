@@ -139,13 +139,10 @@ def get_duplicated_samples(mt: hl.MatrixTable) -> set:
     keep = [sample_sg_map[sample_id] for sample_id in latest_samples]
     keep = [list(sg.values())[0] for sg in keep]
     keep = [sublist for list in keep for sublist in list]
+    keep = set(keep)
 
-    matrix_samples = mt.s.collect()
-    dup_samples = matrix_samples[matrix_samples not in keep]
-    # if it's a single value, set would split into characters
-    if len(dup_samples) == 1:
-        return dup_samples
-    # dup_samples = matrix_samples.difference(keep)
+    matrix_samples = set(mt.s.collect())
+    dup_samples = matrix_samples.difference(keep)
     logging.info(f'Number of duplicated samples: {len(set(dup_samples))}')
     print(set(dup_samples))
     # if set(dup_samples) != {'CPG4994', 'CPG5066'}:
