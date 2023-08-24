@@ -238,7 +238,8 @@ def filter_variants(
     # read hail matrix table object (WGS data)
     init_batch()
     mt = hl.read_matrix_table(mt_path)
-    logging.info(f'No total loci: {mt.count()[0]}')
+    logging.info(f'Number of total loci: {mt.count()[0]}')
+    logging.info(f'Number of total samples: {mt.count()[1]}')
 
     # subset to relevant samples (samples we have scRNA-seq data for)
     mt = mt.filter_cols(hl.set(samples).contains(mt.s))
@@ -248,12 +249,17 @@ def filter_variants(
 
     # add sample filters
     bm_samples = get_bone_marrow_sequencing_groups()
+    print(len(bm_samples))
     dup_samples = get_duplicated_samples(mt=mt)
+    print(len(dup_samples))
     out_samples = get_non_tob_samples(mt=mt)
+    print(len(out_samples))
     qc_samples = get_low_qc_samples()
+    print(len(qc_samples))
     filter_samples = {*bm_samples, *dup_samples, *out_samples, *qc_samples}
     # will this work with a set or should it be a list?
     mt = mt.filter_cols(mt.s in filter_samples)
+    logging.info(f'Number of samples after filtering: {mt.count()[1]}')
 
     # filter out low quality variants and consider biallelic SNPs only
     # (no multi-allelic, no ref-only, no indels)
