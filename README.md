@@ -11,6 +11,7 @@ The pipeline is split into four parts, to make for more flexible usage:
 4. Association testing: prepare and run SAIGE-QTL commands for association mapping
 
 Only [1] is ready for now.
+Working on [2] in this branch.
 
 ## Genotypes preprocessing (once per cohort, e.g., TOB)
 
