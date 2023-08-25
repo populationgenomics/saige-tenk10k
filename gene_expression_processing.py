@@ -17,6 +17,9 @@ More details in README
 output files in tob_wgs_genetics/saige_qtl/input
 """
 
+# import python modules
+import click
+
 import pandas as pd
 
 # adapted from https://github.com/populationgenomics/tob-wgs/blob/get-variants/
@@ -48,3 +51,19 @@ def filter_lowly_expressed_genes(expression_df, min_pct=5):
     expression_df.insert(loc=0, column='sampleid', value=sample_ids)
 
     return expression_df
+
+@click.command()
+@click.option('--gene-info-tsv')
+def expression_pipeline(
+    gene_info_tsv: str,
+):
+    """
+    Run expression prep pipeline
+    """
+    gene_info_df = pd.read_csv(gene_info_tsv, sep='\t')
+    return gene_info_df
+
+
+
+if __name__ == '__main__':
+    expression_pipeline()
