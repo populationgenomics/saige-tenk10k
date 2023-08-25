@@ -174,6 +174,7 @@ def get_non_tob_samples(mt: hl.MatrixTable) -> set:
         return set()
     return non_tob_samples
 
+
 # cutoffs currently based on:
 # https://github.com/populationgenomics/joint-calling/blob/main/joint_calling/filter_cutoffs.yaml
 def get_low_qc_samples(
