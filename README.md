@@ -11,9 +11,10 @@ The pipeline is split into four parts, to make for more flexible usage:
 4. Association testing: prepare and run SAIGE-QTL commands for association mapping
 
 Only [1] is ready for now.
+
 Working on [2] in this branch.
 
-## Genotypes preprocessing (once per cohort, e.g., TOB)
+## [1] Genotypes preprocessing (once per cohort, e.g., TOB)
 
 Function name: filter_variants.
 
@@ -27,7 +28,6 @@ It outputs two objects:
 * MT object, all retained samples and variants (both common & rare at this stage)
 * plink object for only 2,000 variants (minor allele count>20), after LD pruning - this is for the estimation of the variance ratio (VR plinks)
 
-
 ### To run
 
 ```bash
@@ -39,6 +39,21 @@ analysis-runner \
     python3 genotypes_processing.py \
       --mt-path 'mt/v7.mt' \
       --sample-mapping-file-tsv 'scrna-seq/grch38_association_files/OneK1K_CPG_IDs.tsv'
+```
+
+## [2] Gene expression and gene info processing
+
+Python script to
+
+### To run
+
+```bash
+analysis-runner \
+    --dataset tob-wgs \
+    --access-level standard \
+    --output-dir 'tob_wgs_genetics/saige_qtl/input' \
+    --description 'scRNA-seq processing batch job' \
+    python3 gene_expression_processing.py
 ```
 
 ## Data
