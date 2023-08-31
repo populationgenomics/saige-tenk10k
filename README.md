@@ -26,7 +26,7 @@ Hail query to filter WGS object to
 It outputs two objects:
 
 * MT object, all retained samples and variants (both common & rare at this stage)
-* plink object for only 2,000 variants (minor allele count>20), after LD pruning - this is for the estimation of the variance ratio (VR plinks)
+* plink object for only 2,000 variants (minor allele count>20), after LD pruning - this is for the estimation of the variance ratio (VR plinks, input to SAIGE-QTL)
 
 ### To run
 
@@ -43,7 +43,12 @@ analysis-runner \
 
 ## [2] Gene expression and gene info processing
 
-Python script to
+Python script to combine gene expression & covariates into pheno_cov_filenames text files (input to SAIGE-QTL) and builds cis_window files based on gene info (chrom, start, end; also a direct input file for SAIGE-QTL).
+
+It outputs:
+
+* one phenotype covariates filename per chromosome, cell type
+* one cis_window file across all genes (for a given window size)
 
 ### To run
 
@@ -68,3 +73,4 @@ TenK10K is matched single-cell RNA-seq (scRNA-seq) and whole-genome sequencing (
 
 * [SAIGE-QTL pipeline flowchar GSlides](https://docs.google.com/presentation/d/1OhNiA6DaP9ZGlAbh8uZuZWzvrrr_QwvJwJ_lVPBZoic/edit#slide=id.g25daf727307_0_102)
 * [SAIGE-QTL pipeline notes GDoc](https://docs.google.com/document/d/1t11VafeU1THA4X58keHd5oPVglTYiY3DKC7P05GHCzw/edit)
+* [CellRegMap Hail Batch + WDL pipeline repo](https://github.com/populationgenomics/cellregmap-pipeline/tree/main)
