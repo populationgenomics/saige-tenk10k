@@ -156,9 +156,9 @@ def get_non_tob_samples(mt: hl.MatrixTable) -> set:
     sample_sg_map = sgapi.get_all_sequencing_group_ids_by_sample_by_type(
         project='tob-wgs'
     )
-    sgs = [list(sg.values())[0] for sg in sample_sg_map.values()]
-    # double-layered list comprehension to flatten
-    tob_samples = [sublist for list in sgs for sublist in list]
+    tob_samples = set()
+    for sample_id in sample_sg_map:
+        tob_samples.update(sample_sg_map[sample_id]['genome'])
     matrix_samples = set(mt.s.collect())
     logging.info(f'Matrix samples: {matrix_samples}')
     common_samples = set(tob_samples).intersection(matrix_samples)
