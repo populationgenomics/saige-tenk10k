@@ -267,7 +267,7 @@ def filter_variants(
     set_to_remove = hl.literal(filter_samples)
     mt = mt.filter_cols(~set_to_remove.contains(mt['s']))
     logging.info(f'Number of samples after filtering: {mt.count()[1]}')
-    if mt.count()[1] == 0:
+    if mt.count_cols() == 0:
         logging.info('No samples left, exit')
         return
 
