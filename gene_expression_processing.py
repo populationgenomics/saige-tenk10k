@@ -58,7 +58,7 @@ def expression_pipeline(
     gene_info_tsv: str,
 ):
     """
-    Run expression prep pipeline
+    Run expression processing pipeline
     """
     gene_info_df = pd.read_csv(gene_info_tsv, sep='\t')
     return gene_info_df
