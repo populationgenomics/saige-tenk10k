@@ -268,8 +268,7 @@ def filter_variants(
     mt = mt.filter_cols(~set_to_remove.contains(mt['s']))
     logging.info(f'Number of samples after filtering: {mt.count()[1]}')
     if mt.count_cols() == 0:
-        logging.info('No samples left, exit')
-        return
+        raise ValueError('No samples left after filtering')
 
     # subset to relevant samples (samples we have scRNA-seq data for)
     sc_samples = sc_samples_str.split(',')
