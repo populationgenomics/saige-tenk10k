@@ -25,7 +25,7 @@
 #    no-member
 #    c-extension-no-member
 #
-disable=f-string-without-interpolation,inherit-non-class,too-few-public-methods,bad-continuation,bad-whitespace,fixme,logging-fstring-interpolation,trailing-whitespace,use-dict-literal,too-many-instance-attributes,line-too-long,no-else-return,redefined-builtin,arguments-renamed
+disable=f-string-without-interpolation,too-few-public-methods,fixme,logging-fstring-interpolation,too-many-instance-attributes
 
 # Overriding variable name patterns to allow short 1- or 2-letter variables
 attr-rgx=[a-z_][a-z0-9_]{0,30}$

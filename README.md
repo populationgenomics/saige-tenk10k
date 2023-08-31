@@ -1,114 +1,54 @@
-# Hail batch workflow to run SAIGE on TenK10K data
+# Hail batch workflow to run SAIGE-QTL on TenK10K data
 
-This is a hail batch pipeline to run the new [QTL version of SAIGE](https://github.com/weizhou0/qtl) on CPG's GCP, to map associations between common and rare genetic variants and single-cell gene expression from blood.
+This is a hail batch pipeline to run the new [QTL version of SAIGE](https://github.com/weizhou0/qtl) on CPG's GCP, to map associations between both common and rare genetic variants and single-cell gene expression from blood.
+First, this will be run on the TOB (AKA OneK1K) and then BioHEART datasets as part of phase 1 of the TenK10K project (see *Data* below), but in the future all datasets within OurDNA (with scRNA-seq + WGS data) will go through this pipeline as well.
 
-* **Plan A**: at present, just adapting our [CellRegMap Hail batch pipeline](https://github.com/populationgenomics/cellregmap-pipeline/blob/main/batch.py) hoping it can run R / external code smoothly.
-* **Plan B**: if that fails, we may need to adapt [Konrad K's UKBB exomes analysis github](https://github.com/Nealelab/ukb_exomes), underlying [this paper](https://www.sciencedirect.com/science/article/pii/S2666979X22001100), or at least using [these python wrappers for SAIGE](https://github.com/Nealelab/ukb_common/blob/master/utils/saige_pipeline.py).
+The pipeline is split into four parts, to make for more flexible usage:
 
-## Plan A
+1. Genotype processing (SNV): this involves sample and variant QC of the WGS data, and genotype file preparation specifically for common and rare single-nucleotide variants
+2. Expression (phenotype) processing: this involves processing of the scRNA-seq data, and preparation of the pheno_cov file
+3. Input files check and preparation: this involves combining data from above and cross-check for consistency prior to running SAIGE-QTL
+4. Association testing: prepare and run SAIGE-QTL commands for association mapping
 
-### Genotypes preprocessing (once per cohort)
+Only [1] is ready for now.
 
-Hail query to filter WGS object to i) QC-passing, ii) non ref-ref variants, and considering only samples for which we have scRNA-seq data.
+## Genotypes preprocessing (once per cohort, e.g., TOB)
 
-It outputs three objects:
+Function name: filter_variants.
 
-* MT object, rare (freq<5%) variants
-* MT object, common (freq>1%) variants
-* plink object for only 2,000 variants (MAC>20), after LD pruning - this is for the estimation of the variance ratio (VR plinks)
+Hail query to filter WGS object to
 
-<!-- # skip for now - unrelated individuals
-* SAIGE R script to create sparse GRM
-  * just once for all individuals, all variants after LD-pruning, and MAF>1% -->
+* samples that are: i) QC-passing, ii) present in the scRNA-seq dataset
+* variants that are: i) QC-passing, ii) non ref-ref variants, and iii) (for now) indels and multi-allelic SNPs.
 
-### Expression preprocessing (once per cell type)
+It outputs two objects:
 
-Python script to combine expression (pheno), covariates into a single pheno_cov file as input to saige-qtl.
+* MT object, all retained samples and variants (both common & rare at this stage)
+* plink object for only 2,000 variants (minor allele count>20), after LD pruning - this is for the estimation of the variance ratio (VR plinks)
 
-Inputs:
 
-* chromosome-specific scanpy (AnnData) objects, single-cell expression for all cells, all genes for that chromosome (sctransformed sc-counts)
-* covariates: combination of 1) exploded donor-level covariates (e.g., sex) and 2) cell-level covariates (PCs, batch)
-* sample mapping file: matching donor ID (onek1k vs CPG) and cell barcodes, including cell type labels
+### To run
 
-Output file (one per cell type):
-
-* text file concatenating covs, expression of genes, and individual id (same as plink files) for all cells from that cell type
-
-### Variant selection (once per gene)
-
-Hail query to filter object to relevant variants
-
-* for common variants, only genomic proximity (+/-100kb)
-* for rare variants, i) genomic proximity (+/-50kb), 2) regulatory consequences (vep), 3) open chromatin (any cell type)
-
-Outputs:
-
-* plink files (.bed, .bim, .fam) for common variants
-* plink files (.bed, .bim, .fam) for rare variants
-* group file for rare variants. For each region(=gene?)
-  * row1: region1 | var    | 1:100010:A:C | 1:100016:A:C
-  * row2: region1 | anno   | promoter     | enhancer
-  * row3: region1 | weight | 0.5          | 0.3
-
-### Run association (for each gene, cell type combination)
-
-For both step 1 and step2:
-
-  * Python job to build command ("Rscript --arg1 par1 --arg2 par2..)
-  * Job to run command
-
-#### Step1: Fit null model
-
-Inputs:
-
-* Pheno cov file
-* VR plinks
-* info on what gene, what covs, what likelihood to use
-
-Outputs:
-
-* model object (.rda)
-* variance ratio estimate (.txt)
-
-#### Step2: Run association
-
-Inputs:
-
-* model object (.rda)
-* variance ratio estimate (.txt)
-* genotypes to test (plink)
-* rare only: group file
-
-Output:
-
-* txt file with all results
-
-### Results aggregation (once per cell type)
-
-Python to aggregate all results from Step2 above
-
-### To run (this may need to be updated)
-
-```shell
+```bash
 analysis-runner \
     --dataset tob-wgs \
     --access-level standard \
-    --output-dir "tob_wgs_genetics/saige_qtl/" \
-    --image ? \
-    --description "Saige QTL batch job" \
-    python3 saige_tenk10k.py \
-      --input-files-prefix tob_wgs_genetics/saige_qtl/input \
-      --sample-mapping-file-tsv tob_wgs_genetics/saige_qtl/input/smf.tsv \
-      --genes VPREB3 \
-      --chromosomes 22 \
-      --celltypes B_intermediate
+    --output-dir 'tob_wgs_genetics/saige_qtl/input' \
+    --description 'WGS processing batch job' \
+    python3 genotypes_processing.py \
+      --mt-path 'mt/v7.mt' \
+      --sample-mapping-file-tsv 'scrna-seq/grch38_association_files/OneK1K_CPG_IDs.tsv'
 ```
 
 ## Data
 
 TenK10K is matched single-cell RNA-seq (scRNA-seq) and whole-genome sequencing (WGS) data from up to 10,000 individuals:
 
-* Phase 0: OneK1K data only (1,000 individuals) - already generated
-* Phase 1: OneK1K + BioHEART (2,000 individuals) - WGS done, scRNA-seq in progress
-* Phase 2: TBC
+* Phase 0: OneK1K data only (1,000 individuals) - already generated (both WGS and scRNA-seq, though with an older technology)
+* Phase 1: OneK1K + BioHEART (2,000 individuals) - WGS done, scRNA-seq in progress (new kit, which should result in many more cells per individual)
+* Phase 2/final: aim is ~ 10,000 individuals from the (extended) TOB/OneK1K, BioHEART, ADAPT, LBIO and AIM cohorts (nothing generated besides current stage of Phase 1)
+
+## Additional resources
+
+* [SAIGE-QTL pipeline flowchar GSlides](https://docs.google.com/presentation/d/1OhNiA6DaP9ZGlAbh8uZuZWzvrrr_QwvJwJ_lVPBZoic/edit#slide=id.g25daf727307_0_102)
+* [SAIGE-QTL pipeline notes GDoc](https://docs.google.com/document/d/1t11VafeU1THA4X58keHd5oPVglTYiY3DKC7P05GHCzw/edit)
