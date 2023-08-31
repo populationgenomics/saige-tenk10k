@@ -179,7 +179,7 @@ def get_non_tob_samples(mt: hl.MatrixTable) -> set:
 # https://github.com/populationgenomics/joint-calling/blob/main/joint_calling/filter_cutoffs.yaml
 def get_low_qc_samples(
     mt: hl.MatrixTable,
-    metadata_tsv_path='gs://cpg-tob-wgs-test-analysis/joint-calling/v7/meta.tsv',
+    metadata_tsv='joint-calling/v7/meta.tsv',
     contam_rate=0.04,  # defined based on distribution of parameters in TOB
     chimera_rate=0.05,  # as above
 ) -> set:
@@ -190,6 +190,7 @@ def get_low_qc_samples(
     - ambiguous sex or sex aneuploidy
     - WGS-based QC
     """
+    metadata_tsv_path = dataset_path(metadata_tsv, 'analysis')
     meta = pd.read_csv(metadata_tsv_path, sep='\t')
     samples_contam = set(meta[meta['r_contamination'] > contam_rate]['s'])
     logging.info(
