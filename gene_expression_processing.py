@@ -76,7 +76,7 @@ def filter_lowly_expressed_genes(expression_df, min_pct=5):
 
 def get_chrom_celltype_expression(
     expression_files_prefix: str,
-    chromosome: int,
+    chromosome: str,
     cell_type: str,
     gene_info_tsv: str,
 ):
@@ -163,6 +163,7 @@ def expression_pipeline(
     gene_info_tsv: str,
     expression_files_prefix: str,
     celltypes: str,
+    chromosomes: str,
     sample_mapping_file_path: str,
 ):
     """
