@@ -43,6 +43,7 @@ logging.basicConfig(
     stream=sys.stderr,
 )
 
+
 # adapted from https://github.com/populationgenomics/tob-wgs/blob/get-variants/
 # scripts/eqtl_hail_batch/generate_eqtl_spearman.py#L34-L60
 def filter_lowly_expressed_genes(expression_df, min_pct=5):
@@ -170,7 +171,7 @@ def expression_pipeline(
     Run expression processing pipeline
     """
     celltype_list = celltypes.split(',')
-    chromosome_list = celltypes.split(',')
+    chromosome_list = chromosomes.split(',')
     logging.info(f'Cell types to run: {celltype_list}')
     logging.info(f'Chromosomes to run: {chromosome_list}')
 
