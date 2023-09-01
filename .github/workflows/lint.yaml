@@ -16,7 +16,7 @@ jobs:
         python-version: '3.10'
 
     - name: Install packages
-      run: pip install -r requirements-dev.txt
+      run: pip install -r requirements-dev.txt -r requirements.txt
 
     - name: Install pre-commit hooks
       run: pre-commit install --install-hooks

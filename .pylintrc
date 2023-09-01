@@ -18,6 +18,9 @@
 # 11. no-else-return
 # 12. redefined-builtin
 # 13. arguments-renamed
+# 14. R0801/duplicate-code
+# 15. invalid-unary-operand-type (hail query negative conditional queries)
+# 16. unsubscriptable-object (GQL query objects)
 #
 # The following require installing the python modules imported in the source code.
 #    Add these if you don't want to include all dependencies into the dev environment:
@@ -25,7 +28,7 @@
 #    no-member
 #    c-extension-no-member
 #
-disable=f-string-without-interpolation,too-few-public-methods,fixme,logging-fstring-interpolation,too-many-instance-attributes
+disable=f-string-without-interpolation,too-few-public-methods,fixme,logging-fstring-interpolation,too-many-instance-attributes,R0801,invalid-unary-operand-type,unsubscriptable-object
 
 # Overriding variable name patterns to allow short 1- or 2-letter variables
 attr-rgx=[a-z_][a-z0-9_]{0,30}$
