@@ -184,7 +184,10 @@ def expression_pipeline(
         for chromosome in chromosome_list:
             # get expression (cell type + chromosome)
             expr_df = get_chrom_celltype_expression(
-                chromosome=chromosome, cell_type=celltype, gene_info_tsv=gene_info_tsv
+                expression_files_prefix=expression_files_prefix,
+                chromosome=chromosome,
+                cell_type=celltype,
+                gene_info_tsv=gene_info_tsv,
             )
             # combine files
             pheno_cov_df = build_pheno_cov_filename(
