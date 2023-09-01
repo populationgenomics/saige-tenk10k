@@ -68,6 +68,17 @@ def get_chrom_celltype_expression(
     cell_type: str,
     gene_info_tsv: str,
 ):
+    """Extracts relevant expression info
+
+    Input:
+    - chromosome & cell type of interest
+    - path to (single-cell) expression files, one tsv file per cell type,
+    rows are cells and columns are genes
+    - path to dataframe containing gene info, for each gene (=row),
+    specifies chrom, start, end and strand
+
+    Output: expression dataframe for only relevant genes
+    """
     # get single-cell expression for the cell type of interest
     expression_tsv_path = dataset_path(
         os.path.join(
@@ -91,6 +102,14 @@ def get_celltype_covariates(
     expression_files_prefix: str,
     cell_type: str,
 ):
+    """Obtain cell type specific covariates
+
+    Input:
+    - cell type of interest
+    - covariate files prefix
+
+    Output: covariate df for cell type of interest
+    """
     covs_tsv_path = dataset_path(
         os.path.join(
             expression_files_prefix,
