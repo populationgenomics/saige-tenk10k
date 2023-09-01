@@ -19,18 +19,29 @@ output files in tob_wgs_genetics/saige_qtl/input
 
 # import python modules
 import os
+import sys
 
+import logging
+
+from cpg_utils import to_path
 from cpg_utils.hail_batch import (
     dataset_path,
     # get_config,
     # init_batch,
-    # output_path,
+    output_path,
 )
 
 import click
 
 import pandas as pd
 
+# use logging to print statements, display at info level
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s %(levelname)s %(module)s:%(lineno)d - %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S',
+    stream=sys.stderr,
+)
 
 # adapted from https://github.com/populationgenomics/tob-wgs/blob/get-variants/
 # scripts/eqtl_hail_batch/generate_eqtl_spearman.py#L34-L60
@@ -143,16 +154,48 @@ def build_pheno_cov_filename(
 
 
 @click.command()
+@click.option('--celltypes')
+@click.option('--chromosomes')
 @click.option('--gene-info-tsv')
 @click.option('--expression-files-prefix')
+@click.option('--sample-mapping-file-path')
 def expression_pipeline(
     gene_info_tsv: str,
+    expression_files_prefix: str,
+    celltypes: str,
+    sample_mapping_file_path: str,
 ):
     """
     Run expression processing pipeline
     """
-    gene_info_df = pd.read_csv(gene_info_tsv, sep='\t')
-    return gene_info_df
+    celltype_list = celltypes.split(',')
+    chromosome_list = celltypes.split(',')
+    logging.info(f'Cell types to run: {celltype_list}')
+    logging.info(f'Chromosomes to run: {chromosome_list}')
+
+    smf_df = pd.read_csv(sample_mapping_file_path, sep='\t')
+
+    for celltype in celltype_list:
+        # get covariates (cell type specific)
+        cov_df = get_celltype_covariates(
+            expression_files_prefix=expression_files_prefix, cell_type=celltype
+        )
+        for chromosome in chromosome_list:
+            # get expression (cell type + chromosome)
+            expr_df = get_chrom_celltype_expression(
+                chromosome=chromosome, cell_type=celltype, gene_info_tsv=gene_info_tsv
+            )
+            # combine files
+            pheno_cov_df = build_pheno_cov_filename(
+                cov_df=cov_df, expression_df=expr_df, smf_df=smf_df
+            )
+
+            # write to output
+            pheno_cov_filename = to_path(
+                output_path(f'input_files/{chromosome}_{celltype}.csv')
+            )
+            with pheno_cov_filename.open('w') as pcf:
+                pheno_cov_df.to_csv(pcf, index=False)
 
 
 if __name__ == '__main__':
