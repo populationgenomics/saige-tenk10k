@@ -150,9 +150,9 @@ def get_non_tob_samples(mt: hl.MatrixTable) -> set:
     sample_sg_map = sgapi.get_all_sequencing_group_ids_by_sample_by_type(
         project='tob-wgs'
     )
-    sgs = [list(sg.values())[0] for sg in sample_sg_map.values()]
-    # double-layered list comprehension to flatten
-    tob_samples = [sublist for list in sgs for sublist in list]
+    tob_samples = set()
+    for sample_id in sample_sg_map:
+        tob_samples.update(sample_sg_map[sample_id]['genome'])
     matrix_samples = set(mt.s.collect())
     logging.info(f'Matrix samples: {matrix_samples}')
     common_samples = set(tob_samples).intersection(matrix_samples)
@@ -173,7 +173,7 @@ def get_non_tob_samples(mt: hl.MatrixTable) -> set:
 # https://github.com/populationgenomics/joint-calling/blob/main/joint_calling/filter_cutoffs.yaml
 def get_low_qc_samples(
     mt: hl.MatrixTable,
-    metadata_tsv_path='gs://cpg-tob-wgs-test-analysis/joint-calling/v7/meta.tsv',
+    metadata_tsv='joint-calling/v7/meta.tsv',
     contam_rate=0.04,  # defined based on distribution of parameters in TOB
     chimera_rate=0.05,  # as above
 ) -> set:
@@ -184,6 +184,7 @@ def get_low_qc_samples(
     - ambiguous sex or sex aneuploidy
     - WGS-based QC
     """
+    metadata_tsv_path = dataset_path(metadata_tsv, 'analysis')
     meta = pd.read_csv(metadata_tsv_path, sep='\t')
     samples_contam = set(meta[meta['r_contamination'] > contam_rate]['s'])
     logging.info(
@@ -259,10 +260,10 @@ def filter_variants(
     # https://hail.is/docs/0.2/hail.MatrixTable.html#hail.MatrixTable.filter_cols
     set_to_remove = hl.literal(filter_samples)
     mt = mt.filter_cols(~set_to_remove.contains(mt['s']))
+    
     remaining_samples = mt.count_cols()
-
     if remaining_samples == 0:
-        logging.info('No samples left, exit')
+        raise ValueError('No samples left, exit')
         return
 
     logging.info(f'Number of samples after filtering: {remaining_samples}')
