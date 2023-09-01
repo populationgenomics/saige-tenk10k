@@ -28,7 +28,7 @@ It outputs two objects:
 * MT object, all retained samples and variants (both common & rare at this stage)
 * plink object for only 2,000 variants (minor allele count>20), after LD pruning - this is for the estimation of the variance ratio (VR plinks, input to SAIGE-QTL)
 
-### To run
+### To run [1]
 
 ```bash
 analysis-runner \
@@ -50,7 +50,7 @@ It outputs:
 * one phenotype covariates filename per chromosome, cell type
 * one cis_window file across all genes (for a given window size)
 
-### To run
+### To run [2]
 
 ```bash
 analysis-runner \
