@@ -21,6 +21,7 @@ import logging
 import sys
 
 import click
+import hail as hl
 import pandas as pd
 
 from cpg_utils import to_path
@@ -151,6 +152,22 @@ def build_pheno_cov_filename(
     return pheno_cov_df
 
 
+def get_gene_cis_file(gene: str, gene_info_tsv: str, window_size: int):
+    """Get gene cis window file"""
+    gene_info_df = pd.read_csv(gene_info_tsv, sep='\t')
+    # get gene chromosome
+    chrom = gene_info_df['chr']
+    # get gene body position (start and end) and add window
+    left_boundary = max(1, int(gene_info_df['start']) - window_size)
+    right_boundary = min(
+        int(gene_info_df['end']) + window_size,
+        hl.get_reference('GRCh38').lengths[chrom],
+    )
+    data = {"chromosome": chrom, "start": left_boundary, "end": right_boundary}
+    gene_cis_df = pd.DataFrame(data, index=gene)
+    return gene_cis_df
+
+
 @click.command()
 @click.option('--celltypes')
 @click.option('--chromosomes')
@@ -158,6 +175,7 @@ def build_pheno_cov_filename(
 @click.option('--expression-files-prefix')
 @click.option('--sample-mapping-file-path')
 @click.option('--min-pct-expr')
+@click.option('--cis-window-size')
 def expression_pipeline(
     gene_info_tsv: str,
     expression_files_prefix: str,
@@ -165,6 +183,7 @@ def expression_pipeline(
     chromosomes: str,
     sample_mapping_file_path: str,
     min_pct_expr: int = 5,
+    cis_window_size: int = 100000,
 ):
     """
     Run expression processing pipeline
@@ -201,12 +220,24 @@ def expression_pipeline(
 
             # write to output
             pheno_cov_filename = to_path(
-                output_path(f'input_files/{chromosome}_{celltype}.csv')
+                output_path(f'input_files/pheno_cov_files/{chromosome}_{celltype}.csv')
             )
             with pheno_cov_filename.open('w') as pcf:
                 pheno_cov_df.to_csv(pcf, index=False)
 
     # create gene cis window files
+    gene_info_df = pd.read_csv(gene_info_tsv, sep='\t')
+    for gene in gene_info_df.index.values:
+        gene_cis_filename = to_path(
+            output_path(f'input_files/cis_window_files/{gene}_{cis_window_size}bp.csv')
+        )
+        gene_cis_df = get_gene_cis_file(
+            gene=gene,
+            gene_info_tsv=gene_info_tsv,
+            window_size=cis_window_size,
+        )
+        with gene_cis_filename.open('w') as gcf:
+            gene_cis_df.to_csv(gcf, index=False)
 
 
 if __name__ == '__main__':
