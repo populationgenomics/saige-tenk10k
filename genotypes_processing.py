@@ -34,7 +34,6 @@ from cpg_utils.hail_batch import (
 from metamist.apis import ParticipantApi, SequencingGroupApi
 from metamist.graphql import gql, query
 
-
 # use logging to print statements, display at info level
 logging.basicConfig(
     level=logging.INFO,
@@ -42,7 +41,6 @@ logging.basicConfig(
     datefmt='%Y-%m-%d %H:%M:%S',
     stream=sys.stderr,
 )
-
 
 DEFAULT_JOINT_CALL_MT = dataset_path('mt/v7.mt')
 HAIL_IMAGE = get_config()['workflow']['driver_image']
@@ -172,10 +170,10 @@ def get_non_tob_samples(mt: hl.MatrixTable) -> set:
 # cutoffs currently based on:
 # https://github.com/populationgenomics/joint-calling/blob/main/joint_calling/filter_cutoffs.yaml
 def get_low_qc_samples(
-    mt: hl.MatrixTable,
-    metadata_tsv='joint-calling/v7/meta.tsv',
-    contam_rate=0.04,  # defined based on distribution of parameters in TOB
-    chimera_rate=0.05,  # as above
+        mt: hl.MatrixTable,
+        metadata_tsv='joint-calling/v7/meta.tsv',
+        contam_rate=0.04,  # defined based on distribution of parameters in TOB
+        chimera_rate=0.05,  # as above
 ) -> set:
     """
     Extract samples that did not pass QC
@@ -215,12 +213,12 @@ def get_low_qc_samples(
 
 # only needs to be run once for a given cohort (e.g., OneK1K / TOB)
 def filter_variants(
-    mt_path: str,  # 'mt/v7.mt'
-    sc_samples_str: str,
-    output_mt_path: str,  # 'tob_wgs/filtered.mt'
-    vre_plink_path: str,  # 'tob_wgs/vr_plink_2000_variants
-    vre_mac_threshold: int = 20,
-    vre_n_markers: int = 2000,
+        mt_path: str,  # 'mt/v7.mt'
+        sc_samples_str: str,
+        output_mt_path: str,  # 'tob_wgs/filtered.mt'
+        vre_plink_path: str,  # 'tob_wgs/vr_plink_2000_variants
+        vre_mac_threshold: int = 20,
+        vre_n_markers: int = 2000,
 ):
     """Subset hail matrix table
 
@@ -260,10 +258,11 @@ def filter_variants(
     # https://hail.is/docs/0.2/hail.MatrixTable.html#hail.MatrixTable.filter_cols
     set_to_remove = hl.literal(filter_samples)
     mt = mt.filter_cols(~set_to_remove.contains(mt['s']))
-    remaining_samples = mt.count_cols()
 
+    remaining_samples = mt.count_cols()
     if remaining_samples == 0:
         raise ValueError('No samples left, exit')
+        return
 
     logging.info(f'Number of samples after filtering: {remaining_samples}')
 
@@ -323,8 +322,8 @@ def filter_variants(
 )
 @click.option('--mt-path', default=DEFAULT_JOINT_CALL_MT)
 def genotypes_pipeline(
-    sample_mapping_file_tsv: str,
-    mt_path: str,
+        sample_mapping_file_tsv: str,
+        mt_path: str,
 ):
     """
     Run one-off QC filtering pipeline
