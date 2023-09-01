@@ -260,7 +260,7 @@ def filter_variants(
     # https://hail.is/docs/0.2/hail.MatrixTable.html#hail.MatrixTable.filter_cols
     set_to_remove = hl.literal(filter_samples)
     mt = mt.filter_cols(~set_to_remove.contains(mt['s']))
-    
+
     remaining_samples = mt.count_cols()
     if remaining_samples == 0:
         raise ValueError('No samples left, exit')
