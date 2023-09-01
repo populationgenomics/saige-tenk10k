@@ -122,9 +122,29 @@ def get_celltype_covariates(
     return covs_df
 
 
+def build_pheno_cov_filename(
+    expression_df,
+    cov_df,
+    smf_df,
+):
+    """Combine files to build final input
+
+    Input:
+    - Expression dataframe
+    - Covariates dataframe
+    - Sample mapping file, mapping cells to donors
+    """
+    # cells_exprs_smf = set(expression_df.index.values).intersection(
+    #     set(smf_df['cell'].unique())
+    # )
+    # common_cells = set(cov_df.index.values).intersection(cells_exprs_smf)
+    pheno_cov_df = pd.concat([expression_df, cov_df, smf_df], axis=1)
+    return pheno_cov_df
+
+
 @click.command()
 @click.option('--gene-info-tsv')
-@click.option('')
+@click.option('--expression-files-prefix')
 def expression_pipeline(
     gene_info_tsv: str,
 ):
