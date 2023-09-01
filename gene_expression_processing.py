@@ -163,7 +163,7 @@ def get_gene_cis_file(gene: str, gene_info_tsv: str, window_size: int):
         int(gene_info_df['end']) + window_size,
         hl.get_reference('GRCh38').lengths[chrom],
     )
-    data = {"chromosome": chrom, "start": left_boundary, "end": right_boundary}
+    data = {'chromosome': chrom, 'start': left_boundary, 'end': right_boundary}
     gene_cis_df = pd.DataFrame(data, index=gene)
     return gene_cis_df
 
