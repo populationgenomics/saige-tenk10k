@@ -27,8 +27,6 @@ import pandas as pd
 from cpg_utils import to_path
 from cpg_utils.hail_batch import (
     dataset_path,
-    # get_config,
-    # init_batch,
     output_path,
 )
 
