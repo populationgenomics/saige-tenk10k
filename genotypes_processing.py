@@ -264,7 +264,6 @@ def filter_variants(
     remaining_samples = mt.count_cols()
     if remaining_samples == 0:
         raise ValueError('No samples left, exit')
-        return
 
     logging.info(f'Number of samples after filtering: {remaining_samples}')
 
