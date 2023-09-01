@@ -157,12 +157,14 @@ def build_pheno_cov_filename(
 @click.option('--gene-info-tsv')
 @click.option('--expression-files-prefix')
 @click.option('--sample-mapping-file-path')
+@click.option('--min-pct-expr')
 def expression_pipeline(
     gene_info_tsv: str,
     expression_files_prefix: str,
     celltypes: str,
     chromosomes: str,
     sample_mapping_file_path: str,
+    min_pct_expr: int = 5,
 ):
     """
     Run expression processing pipeline
@@ -172,6 +174,7 @@ def expression_pipeline(
     logging.info(f'Cell types to run: {celltype_list}')
     logging.info(f'Chromosomes to run: {chromosome_list}')
 
+    # create phenotype covariate files
     smf_df = pd.read_csv(sample_mapping_file_path, sep='\t')
 
     for celltype in celltype_list:
@@ -187,6 +190,10 @@ def expression_pipeline(
                 cell_type=celltype,
                 gene_info_tsv=gene_info_tsv,
             )
+            # remove lowly expressed genes
+            expr_df = filter_lowly_expressed_genes(
+                expression_df=expr_df, min_pct=min_pct_expr
+            )
             # combine files
             pheno_cov_df = build_pheno_cov_filename(
                 cov_df=cov_df, expression_df=expr_df, smf_df=smf_df
@@ -198,6 +205,8 @@ def expression_pipeline(
             )
             with pheno_cov_filename.open('w') as pcf:
                 pheno_cov_df.to_csv(pcf, index=False)
+
+    # create gene cis window files
 
 
 if __name__ == '__main__':
