@@ -1,7 +1,4 @@
 #!/usr/bin/env python3
-# pylint: disable=broad-exception-raised,import-error,import-outside-toplevel,missing-module-docstring,no-value-for-parameter,too-many-arguments,too-many-branches,too-many-locals,too-many-statements,wrong-import-order,wrong-import-position
-
-__author__ = 'annacuomo'
 
 """
 Hail Batch workflow to extract relevant variants to test.
@@ -17,11 +14,14 @@ output files in tob_wgs_genetics/saige_qtl/input
 """
 
 # import python modules
+import logging
+import random
 import sys
 
-import logging
-
-import random
+import click
+import pandas as pd
+import hail as hl
+from hail.methods import export_plink
 
 from cpg_utils import to_path
 from cpg_utils.hail_batch import (
@@ -31,13 +31,8 @@ from cpg_utils.hail_batch import (
     output_path,
 )
 
-import click
-import pandas as pd
-
-import hail as hl
-
-
 from metamist.apis import ParticipantApi, SequencingGroupApi
+from metamist.graphql import gql, query
 
 
 # use logging to print statements, display at info level
@@ -47,8 +42,6 @@ logging.basicConfig(
     datefmt='%Y-%m-%d %H:%M:%S',
     stream=sys.stderr,
 )
-
-papi = ParticipantApi()
 
 
 DEFAULT_JOINT_CALL_MT = dataset_path('mt/v7.mt')
@@ -78,7 +71,6 @@ def get_bone_marrow_sequencing_groups(mt: hl.MatrixTable) -> set:
     """
     Extract TOB bone marrow samples (vs PBMCs)
     """
-    from metamist.graphql import gql, query
 
     _query = gql(
         """
@@ -122,11 +114,13 @@ def get_duplicated_samples(mt: hl.MatrixTable) -> set:
     Extract duplicated samples for same individual
     i.e., keep "-PBMC" version (now keeping most recent)
     """
-    sgapi = SequencingGroupApi()
-    sample_sg_map = sgapi.get_all_sequencing_group_ids_by_sample_by_type(
+    sample_sg_map = SequencingGroupApi().get_all_sequencing_group_ids_by_sample_by_type(
         project='tob-wgs'
     )
-    sams = papi.get_external_participant_id_to_internal_sample_id(project='tob-wgs')
+
+    sams = ParticipantApi().get_external_participant_id_to_internal_sample_id(
+        project='tob-wgs'
+    )
     # Keep the most recent sample for each participant in the project
     latest_samples = set(dict(sams).values())
 
@@ -245,7 +239,6 @@ def filter_variants(
     and also post sample QC
     that are additionally sufficiently common (MAC>20) and not in LD
     """
-    from hail.methods import export_plink
 
     # read hail matrix table object (WGS data)
     init_batch()
@@ -267,9 +260,12 @@ def filter_variants(
     # https://hail.is/docs/0.2/hail.MatrixTable.html#hail.MatrixTable.filter_cols
     set_to_remove = hl.literal(filter_samples)
     mt = mt.filter_cols(~set_to_remove.contains(mt['s']))
-    logging.info(f'Number of samples after filtering: {mt.count()[1]}')
-    if mt.count_cols() == 0:
-        raise ValueError('No samples left after filtering')
+    remaining_samples = mt.count_cols()
+
+    if remaining_samples == 0:
+        raise ValueError('No samples left, exit')
+
+    logging.info(f'Number of samples after filtering: {remaining_samples}')
 
     # subset to relevant samples (samples we have scRNA-seq data for)
     sc_samples = sc_samples_str.split(',')
@@ -358,4 +354,4 @@ def genotypes_pipeline(
 
 
 if __name__ == '__main__':
-    genotypes_pipeline()
+    genotypes_pipeline()  # pylint: disable=no-value-for-parameter
