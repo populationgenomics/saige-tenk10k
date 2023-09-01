@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# pylint: disable=wrong-import-position
+# pylint: disable=import-error,missing-module-docstring,no-value-for-parameter,wrong-import-position
 
 __author__ = 'annacuomo'
 
@@ -61,20 +61,21 @@ def filter_lowly_expressed_genes(expression_df, min_pct=5):
 
     return expression_df
 
+
 def get_chrom_celltype_expression(
-        expression_files_prefix: str,
-        chromosome: int,
-        cell_type: str,
-        gene_info_tsv: str,
+    expression_files_prefix: str,
+    chromosome: int,
+    cell_type: str,
+    gene_info_tsv: str,
 ):
     # get single-cell expression for the cell type of interest
     expression_tsv_path = dataset_path(
-            os.path.join(
-                expression_files_prefix,
-                'expression_files',
-                f'{cell_type}_expression.tsv',
-            )
+        os.path.join(
+            expression_files_prefix,
+            'expression_files',
+            f'{cell_type}_expression.tsv',
         )
+    )
     expression_df = pd.read_csv(expression_tsv_path, sep='\t', index_col=0)
     # extract all genes
     all_genes = expression_df.columns.values
@@ -83,24 +84,22 @@ def get_chrom_celltype_expression(
     genes_chrom = gene_info_df[gene_info_df['chr'] == chromosome].index.values
     common_genes = set(all_genes).intersection(set(genes_chrom))
     # return expression for the correct chromosomes only
-    return expression_df[:,common_genes]
+    return expression_df[:, common_genes]
+
 
 def get_celltype_covariates(
-        expression_files_prefix: str,
-        cell_type: str,
+    expression_files_prefix: str,
+    cell_type: str,
 ):
     covs_tsv_path = dataset_path(
-            os.path.join(
-                expression_files_prefix,
-                'covariate_files',
-                f'{cell_type}_covs.tsv',
-            )
+        os.path.join(
+            expression_files_prefix,
+            'covariate_files',
+            f'{cell_type}_covs.tsv',
         )
+    )
     covs_df = pd.read_csv(covs_tsv_path, sep='\t', index_col=0)
     return covs_df
-
-
-
 
 
 @click.command()
@@ -114,7 +113,6 @@ def expression_pipeline(
     """
     gene_info_df = pd.read_csv(gene_info_tsv, sep='\t')
     return gene_info_df
-
 
 
 if __name__ == '__main__':
