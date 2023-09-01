@@ -1,7 +1,5 @@
 #!/usr/bin/env python3
-# pylint: disable=import-error,missing-module-docstring,no-value-for-parameter,wrong-import-position
 
-__author__ = 'annacuomo'
 
 """
 Hail Batch workflow to create gene expression files.
@@ -19,9 +17,11 @@ output files in tob_wgs_genetics/saige_qtl/input
 
 # import python modules
 import os
+import logging
 import sys
 
-import logging
+import click
+import pandas as pd
 
 from cpg_utils import to_path
 from cpg_utils.hail_batch import (
@@ -31,9 +31,6 @@ from cpg_utils.hail_batch import (
     output_path,
 )
 
-import click
-
-import pandas as pd
 
 # use logging to print statements, display at info level
 logging.basicConfig(
@@ -204,4 +201,4 @@ def expression_pipeline(
 
 
 if __name__ == '__main__':
-    expression_pipeline()
+    expression_pipeline()  # pylint: disable=no-value-for-parameter
