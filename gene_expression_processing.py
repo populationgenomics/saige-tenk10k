@@ -166,6 +166,24 @@ def get_gene_cis_file(gene: str, gene_info_tsv: str, window_size: int):
     return gene_cis_df
 
 
+def make_gene_loc_dict(file) -> dict[str, dict]:
+    """
+    Turn gene information into a dictionary
+    to avoid opening this file for every gene
+    """
+    from csv import DictReader
+
+    gene_dict = {}
+
+    with open(to_path(file)) as handle:
+        reader = DictReader(handle, delimiter='\t')
+
+        for row in reader:
+            gene_dict[row['gene_name']] = row
+
+    return gene_dict
+
+
 @click.command()
 @click.option('--celltypes')
 @click.option('--chromosomes')
