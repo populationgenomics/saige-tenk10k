@@ -205,7 +205,6 @@ def expression_pipeline(
                 expression_files_prefix=expression_files_prefix,
                 chromosome=chromosome,
                 cell_type=celltype,
-                gene_info_tsv=gene_info_tsv,
             )
             # remove lowly expressed genes
             expr_df = filter_lowly_expressed_genes(
