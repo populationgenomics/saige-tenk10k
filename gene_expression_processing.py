@@ -72,10 +72,10 @@ def filter_lowly_expressed_genes(expression_df, min_pct=5):
 
 
 def get_chrom_celltype_expression(
+    gene_info_df,
     expression_files_prefix: str,
     chromosome: str,
     cell_type: str,
-    gene_info_tsv: str,
 ):
     """Extracts relevant expression info
 
@@ -100,7 +100,6 @@ def get_chrom_celltype_expression(
     # extract all genes
     all_genes = expression_df.columns.values
     # select only genes on relevant chromosome
-    gene_info_df = pd.read_csv(gene_info_tsv, sep='\t')
     genes_chrom = gene_info_df[gene_info_df['chr'] == chromosome].index.values
     common_genes = set(all_genes).intersection(set(genes_chrom))
     # return expression for the correct chromosomes only
@@ -150,9 +149,8 @@ def build_pheno_cov_filename(
     return pheno_cov_df
 
 
-def get_gene_cis_file(gene: str, gene_info_tsv: str, window_size: int):
+def get_gene_cis_file(gene_info_df, gene: str, window_size: int):
     """Get gene cis window file"""
-    gene_info_df = pd.read_csv(gene_info_tsv, sep='\t')
     # get gene chromosome
     chrom = gene_info_df['chr']
     # get gene body position (start and end) and add window
@@ -164,24 +162,6 @@ def get_gene_cis_file(gene: str, gene_info_tsv: str, window_size: int):
     data = {'chromosome': chrom, 'start': left_boundary, 'end': right_boundary}
     gene_cis_df = pd.DataFrame(data, index=gene)
     return gene_cis_df
-
-
-def make_gene_loc_dict(file) -> dict[str, dict]:
-    """
-    Turn gene information into a dictionary
-    to avoid opening this file for every gene
-    """
-    from csv import DictReader
-
-    gene_dict = {}
-
-    with open(to_path(file)) as handle:
-        reader = DictReader(handle, delimiter='\t')
-
-        for row in reader:
-            gene_dict[row['gene_name']] = row
-
-    return gene_dict
 
 
 @click.command()
@@ -211,6 +191,7 @@ def expression_pipeline(
 
     # create phenotype covariate files
     smf_df = pd.read_csv(sample_mapping_file_path, sep='\t')
+    gene_info_df = pd.read_csv(gene_info_tsv, sep='\t')
 
     for celltype in celltype_list:
         # get covariates (cell type specific)
@@ -220,6 +201,7 @@ def expression_pipeline(
         for chromosome in chromosome_list:
             # get expression (cell type + chromosome)
             expr_df = get_chrom_celltype_expression(
+                gene_info_df=gene_info_df,
                 expression_files_prefix=expression_files_prefix,
                 chromosome=chromosome,
                 cell_type=celltype,
@@ -242,14 +224,13 @@ def expression_pipeline(
                 pheno_cov_df.to_csv(pcf, index=False)
 
     # create gene cis window files
-    gene_info_df = pd.read_csv(gene_info_tsv, sep='\t')
     for gene in gene_info_df.index.values:
         gene_cis_filename = to_path(
             output_path(f'input_files/cis_window_files/{gene}_{cis_window_size}bp.csv')
         )
         gene_cis_df = get_gene_cis_file(
+            gene_info_df=gene_info_df,
             gene=gene,
-            gene_info_tsv=gene_info_tsv,
             window_size=cis_window_size,
         )
         with gene_cis_filename.open('w') as gcf:
