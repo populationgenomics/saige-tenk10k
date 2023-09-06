@@ -25,6 +25,7 @@ SAIGE_QTL_IMAGE = 'australia-southeast1-docker.pkg.dev/cpg-common/images/saige-q
 def build_fit_null_command(
     pheno_file: str,
     cov_col_list: str,  # PC1
+    sample_cov_col_list: str,  # age
     sample_id_pheno: str,  # IND_ID
     output_prefix: str,  # ./${gene_name}_B_IN_count
     plink_path: str,  # ./input/nfam_100_nindep_0_step1_includeMoreRareVariants_poly
@@ -61,12 +62,13 @@ def build_fit_null_command(
     Output:
     Rscript command (str) ready to run (bash)
     """
-    saige_command_step1 = 'Rscript step1_fitNULLGLMM_qtl.R'
+    saige_command_step1 = 'Rscript step1_fitNULLGLMM_qtl_new.R'
     saige_command_step1 += f' --useSparseGRMtoFitNULL={use_sparse_grm_null}'
     saige_command_step1 += f' --useGRMtoFitNULL={use_grm_null}'
     saige_command_step1 += f' --phenoFile={pheno_file}'
     saige_command_step1 += f' --phenoCol={pheno_col}'
     saige_command_step1 += f' --covarColList={cov_col_list}'
+    saige_command_step1 += f' --sampleCovarColList={sample_cov_col_list}'
     saige_command_step1 += f' --sampleIDColinphenoFile={sample_id_pheno}'
     saige_command_step1 += f' --traitType={trait_type}'
     saige_command_step1 += f' --outputPrefix={output_prefix}'
