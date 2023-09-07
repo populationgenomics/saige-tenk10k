@@ -114,9 +114,7 @@ def get_bone_marrow_sequencing_groups(mt: hl.MatrixTable) -> set:
 
 
 # remove duplicated samples based on TOB IDs
-# CPG4994, CPG67264 both the same individual (TOB1282)
-# CPG5066, CPG67504 both TOB1289
-# in both cases keep the latter which is the resequenced version
+# keep the latter which is the resequenced version
 def get_duplicated_samples(mt: hl.MatrixTable) -> set:
     """
     Extract duplicated samples for same individual
@@ -139,9 +137,6 @@ def get_duplicated_samples(mt: hl.MatrixTable) -> set:
     dup_samples = matrix_samples.difference(keep)
     logging.info(f'Number of duplicated samples: {len(set(dup_samples))}')
     print(set(dup_samples))
-    # if set(dup_samples) != {'CPG4994', 'CPG5066'}:
-    #     logging.info('Not the right samples, check dupl. function')
-    #     return set()
     return set(dup_samples)
 
 
@@ -152,7 +147,6 @@ def get_non_tob_samples(mt: hl.MatrixTable) -> set:
     """
     sgapi = SequencingGroupApi()
     # Return Sample IDs mapped to seq type, sequencing group ID
-    # (e.g. {'XPG123': {'genome' : ['CPG123']}, {'XPG456': {'exome':['CPG456']}})
     sample_sg_map = sgapi.get_all_sequencing_group_ids_by_sample_by_type(
         project='tob-wgs'
     )
