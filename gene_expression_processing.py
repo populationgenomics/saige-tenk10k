@@ -132,7 +132,7 @@ def get_celltype_covariates(
 def build_pheno_cov_filename(
     expression_df,
     cov_df,
-    smf_df,
+    smf_df,  # sample mapping file
 ):
     """Combine files to build final input
 
@@ -151,6 +151,8 @@ def build_pheno_cov_filename(
 
 def get_gene_cis_file(gene_info_df, gene: str, window_size: int):
     """Get gene cis window file"""
+    # select the gene from df
+    gene_info_df[gene_info_df['gene']==gene]
     # get gene chromosome
     chrom = gene_info_df['chr']
     # get gene body position (start and end) and add window
