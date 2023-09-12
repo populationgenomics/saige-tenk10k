@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# pylint: disable=no-value-for-parameter,too-many-arguments,wrong-import-position
 
 __author__ = 'annacuomo'
 
@@ -14,9 +13,11 @@ Hail Batch workflow to perform association tests using SAIGE-QTL
 
 """
 
-from cpg_utils.hail_batch import get_config, remote_tmpdir
 import click
+
 import hailtop.batch as hb
+from cpg_utils.hail_batch import get_config, remote_tmpdir
+
 
 SAIGE_QTL_IMAGE = 'australia-southeast1-docker.pkg.dev/cpg-common/images/saige-qtl'
 
@@ -46,7 +47,8 @@ def build_fit_null_command(
 
     Input:
     - Phenotype / covariate file - rows: samples, cols: pheno (y), cov1, cov2 etc
-    - Comma separated str of column mnames from previous file to be used as covariates
+    - Comma separated str of column names from previous file to be used as covariates
+    - Same as above but for sample specific covariates
     - Column name specifying sample / individual (e.g., IND_ID, or CPG_ID etc)
     - output prefix: where to save the fitted model (.rda)
     - Plink path: path to plink file (subset of ~2,000 markers for VRE)
@@ -127,7 +129,7 @@ def build_run_single_variant_test_command(
     Output:
     Rscript command (str) ready to run
     """
-    saige_command_step2_sv = 'Rscript step2_tests_qtl.R'
+    saige_command_step2_sv = 'Rscript step2_tests_qtl_new.R'
     saige_command_step2_sv += f' --vcfFile={vcf_file}'
     saige_command_step2_sv += f' --vcfFileIndex={vcf_file_index}'
     # saige_command_step2_sv += f' --AlleleOrder={allele_order}'
@@ -160,16 +162,17 @@ def build_run_set_test_command(
     group_annotation: str,  # e.g., 'lof:missense'
     group_file: str,  # .txt
     # allele_order: str = 'alt-first',  # change this and skip 2-g??
-    # min_maf: float = 0,
+    min_maf: float = 0,
     min_mac: int = 5,
     loco_bool: str = 'FALSE',
     # is_no_adj_cov: str = 'TRUE',
     # is_sparse_grm: str = 'FALSE',
     n_markers: int = 10000,
     pval_cutoff: float = 0.05,
-    spa_cutoff: int = 10000,
+    spa_cutoff: int = 2,
     # is_emp_spa: str = 'FALSE',
-    max_maf_group: float = 0.5,
+    max_maf_group: str = '0.5',
+    min_maf_group: str = '0',
 ):
     """Build SAIGE command for running set test
     This will run a set test using Burden, SKAT and SKAT-O
@@ -192,7 +195,7 @@ def build_run_set_test_command(
     Output:
     Rscript command (str) ready to run
     """
-    saige_command_step2 = 'Rscript step2_tests_qtl.R'
+    saige_command_step2 = 'Rscript step2_tests_qtl_new.R'
     saige_command_step2 += f' --vcfFile={vcf_file}'
     saige_command_step2 += f' --vcfFileIndex={vcf_file_index}'
     # saige_command_step2 += f' --AlleleOrder={allele_order}'
@@ -202,16 +205,18 @@ def build_run_set_test_command(
     saige_command_step2 += f' --minMAC={min_mac}'
     saige_command_step2 += f' --LOCO={loco_bool}'
     saige_command_step2 += f' --GMMATmodelFile={gmmat_model_path}'
+    saige_command_step2 += f' --SPAcutoff={spa_cutoff}'
     saige_command_step2 += f' --varianceRatioFile={variance_ratio_path}'
+    saige_command_step2 += f' --groupFile={group_file}'
+    saige_command_step2 += f' --annotation_in_groupTest={group_annotation}'
+    saige_command_step2 += f' --maxMAF_in_groupTest={max_maf_group}'
+    saige_command_step2 += f' --minMAF_in_groupTest={min_maf_group}'
     # saige_command_step2 += f' --is_noadjCov={is_no_adj_cov}'
     # saige_command_step2 += f' --is_sparseGRM={is_sparse_grm}'
     saige_command_step2 += f' --markers_per_chunk={n_markers}'
     saige_command_step2 += f' --pval_cutoff_for_fastTest={pval_cutoff}'
-    saige_command_step2 += f' --SPAcutoff={spa_cutoff}'
     # saige_command_step2 += f' --is_EmpSPA={is_emp_spa}'
-    saige_command_step2 += f' --annotation_in_groupTest={group_annotation}'
-    saige_command_step2 += f' --maxMAF_in_groupTest={max_maf_group}'
-    saige_command_step2 += f' --groupFile={group_file}'
+
     return saige_command_step2
 
 
@@ -279,4 +284,4 @@ def association_pipeline(
 
 
 if __name__ == '__main__':
-    association_pipeline()
+    association_pipeline()  # pylint: disable=no-value-for-parameter
