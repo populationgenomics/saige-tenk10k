@@ -88,12 +88,14 @@ def get_chrom_celltype_expression(
 
     Output: expression dataframe for only relevant genes
     """
-    # get single-cell expression for the cell type of interest
+    # get single-cell expression for the cell type
+    # and chromosome of interest (check)
     expression_tsv_path = dataset_path(
         os.path.join(
             expression_files_prefix,
             'expression_files',
-            f'{cell_type}_expression.tsv',
+            cell_type,
+            f'{chromosome}_expression.tsv',
         )
     )
     expression_df = pd.read_csv(expression_tsv_path, sep='\t', index_col=0)
@@ -141,10 +143,6 @@ def build_pheno_cov_filename(
     - Covariates dataframe
     - Sample mapping file, mapping cells to donors
     """
-    # cells_exprs_smf = set(expression_df.index.values).intersection(
-    #     set(smf_df['cell'].unique())
-    # )
-    # common_cells = set(cov_df.index.values).intersection(cells_exprs_smf)
     pheno_cov_df = pd.concat([expression_df, cov_df, smf_df], axis=1)
     return pheno_cov_df
 
@@ -152,7 +150,7 @@ def build_pheno_cov_filename(
 def get_gene_cis_file(gene_info_df, gene: str, window_size: int):
     """Get gene cis window file"""
     # select the gene from df
-    gene_info_df[gene_info_df['gene']==gene]
+    gene_info_df[gene_info_df['gene'] == gene]
     # get gene chromosome
     chrom = gene_info_df['chr']
     # get gene body position (start and end) and add window
@@ -175,10 +173,10 @@ def get_gene_cis_file(gene_info_df, gene: str, window_size: int):
 @click.option('--min-pct-expr')
 @click.option('--cis-window-size')
 def expression_pipeline(
-    gene_info_tsv: str,
-    expression_files_prefix: str,
     celltypes: str,
     chromosomes: str,
+    gene_info_tsv: str,
+    expression_files_prefix: str,
     sample_mapping_file_path: str,
     min_pct_expr: int = 5,
     cis_window_size: int = 100000,
