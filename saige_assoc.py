@@ -237,37 +237,43 @@ def association_pipeline(
     )
     batch = hb.Batch('SAIGE-QTL pipeline', backend=sb)
 
-    fit_null_job = batch.new_job(name='fit null')
-    fit_null_job.image(SAIGE_QTL_IMAGE)
-    cmd = build_fit_null_command(
-        pheno_file=pheno_cov_filename_tsv,
-        cov_col_list=covs_list,
-        sample_id_pheno=sample_id,
-        output_prefix=output_path,
-        plink_path=plink_path,
-        pheno_col=pheno_col,
-    )
-    fit_null_job.command(cmd)
+    for celltype in celltypes:
+        for chromosome in chromosomes:
+            # get genes
+            for gene in genes:
 
-    run_sv_assoc_job = batch.new_job(name='single variant test')
-    run_sv_assoc_job.image(SAIGE_QTL_IMAGE)
-    run_sv_assoc_job.depends_on(fit_null_job)
-    cmd = build_run_single_variant_test_command(
-        vcf_file=vcf_file_path,
-        vcf_file_index=f'{vcf_file_path}.tbi',
-        saige_output_file=output_path,
-    )
-    run_sv_assoc_job.command(cmd)
 
-    run_set_assoc_job = batch.new_job(name='settest')
-    run_set_assoc_job.image(SAIGE_QTL_IMAGE)
-    run_set_assoc_job.depends_on(fit_null_job)
-    cmd = build_run_set_test_command(
-        vcf_file=vcf_file_path,
-        vcf_file_index=f'{vcf_file_path}.tbi',
-        saige_output_file=output_path,
-    )
-    run_set_assoc_job.command(cmd)
+                fit_null_job = batch.new_job(name='fit null')
+                fit_null_job.image(SAIGE_QTL_IMAGE)
+                cmd = build_fit_null_command(
+                    pheno_file=pheno_cov_filename_tsv,
+                    cov_col_list=covs_list,
+                    sample_id_pheno=sample_id,
+                    output_prefix=output_path,
+                    plink_path=plink_path,
+                    pheno_col=pheno_col,
+                )
+                fit_null_job.command(cmd)
+
+                run_sv_assoc_job = batch.new_job(name='single variant test')
+                run_sv_assoc_job.image(SAIGE_QTL_IMAGE)
+                run_sv_assoc_job.depends_on(fit_null_job)
+                cmd = build_run_single_variant_test_command(
+                    vcf_file=vcf_file_path,
+                    vcf_file_index=f'{vcf_file_path}.tbi',
+                    saige_output_file=output_path,
+                )
+                run_sv_assoc_job.command(cmd)
+
+                run_set_assoc_job = batch.new_job(name='settest')
+                run_set_assoc_job.image(SAIGE_QTL_IMAGE)
+                run_set_assoc_job.depends_on(fit_null_job)
+                cmd = build_run_set_test_command(
+                    vcf_file=vcf_file_path,
+                    vcf_file_index=f'{vcf_file_path}.tbi',
+                    saige_output_file=output_path,
+                )
+                run_set_assoc_job.command(cmd)
 
     # set jobs running
     batch.run(wait=False)
