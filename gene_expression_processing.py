@@ -150,13 +150,13 @@ def build_pheno_cov_filename(
 def get_gene_cis_file(gene_info_df, gene: str, window_size: int):
     """Get gene cis window file"""
     # select the gene from df
-    gene_info_df[gene_info_df['gene'] == gene]
+    gene_info_gene = gene_info_df[gene_info_df['gene'] == gene]
     # get gene chromosome
-    chrom = gene_info_df['chr']
+    chrom = gene_info_gene['chr']
     # get gene body position (start and end) and add window
-    left_boundary = max(1, int(gene_info_df['start']) - window_size)
+    left_boundary = max(1, int(gene_info_gene['start']) - window_size)
     right_boundary = min(
-        int(gene_info_df['end']) + window_size,
+        int(gene_info_gene['end']) + window_size,
         hl.get_reference('GRCh38').lengths[chrom],
     )
     data = {'chromosome': chrom, 'start': left_boundary, 'end': right_boundary}
