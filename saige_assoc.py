@@ -98,13 +98,10 @@ def build_run_single_variant_test_command(
     min_maf: float = 0,
     min_mac: int = 5,
     loco_bool: str = 'FALSE',
-    # is_no_adj_cov: str = 'TRUE',
-    # is_sparse_grm: str = 'FALSE',
     is_fast_test: str = 'TRUE',
     n_markers: int = 10000,
     pval_cutoff: float = 0.05,
     spa_cutoff: int = 10000,
-    # is_emp_spa: str = 'FALSE',
 ):
     """Build SAIGE command for running single variant test
     This will run a single variant test using a score test
@@ -132,7 +129,6 @@ def build_run_single_variant_test_command(
     saige_command_step2_sv = 'Rscript step2_tests_qtl_new.R'
     saige_command_step2_sv += f' --vcfFile={vcf_file}'
     saige_command_step2_sv += f' --vcfFileIndex={vcf_file_index}'
-    # saige_command_step2_sv += f' --AlleleOrder={allele_order}'
     saige_command_step2_sv += f' --SAIGEOutputFile={saige_output_file}'
     saige_command_step2_sv += f' --chrom={chrom}'
     saige_command_step2_sv += f'--rangestoIncludeFile={cis_window_file}'
@@ -141,13 +137,10 @@ def build_run_single_variant_test_command(
     saige_command_step2_sv += f' --LOCO={loco_bool}'
     saige_command_step2_sv += f' --GMMATmodelFile={gmmat_model_path}'
     saige_command_step2_sv += f' --varianceRatioFile={variance_ratio_path}'
-    # saige_command_step2_sv += f' --is_noadjCov={is_no_adj_cov}'
-    # saige_command_step2_sv += f' --is_sparseGRM={is_sparse_grm}'
     saige_command_step2_sv += f' --is_fastTest={is_fast_test}'
     saige_command_step2_sv += f' --markers_per_chunk={n_markers}'
     saige_command_step2_sv += f' --pval_cutoff_for_fastTest={pval_cutoff}'
     saige_command_step2_sv += f' --SPAcutoff={spa_cutoff}'
-    # saige_command_step2_sv += f' --is_EmpSPA={is_emp_spa}'
     return saige_command_step2_sv
 
 
@@ -165,12 +158,9 @@ def build_run_set_test_command(
     min_maf: float = 0,
     min_mac: int = 5,
     loco_bool: str = 'FALSE',
-    # is_no_adj_cov: str = 'TRUE',
-    # is_sparse_grm: str = 'FALSE',
     n_markers: int = 10000,
     pval_cutoff: float = 0.05,
     spa_cutoff: int = 2,
-    # is_emp_spa: str = 'FALSE',
     max_maf_group: str = '0.5',
     min_maf_group: str = '0',
 ):
