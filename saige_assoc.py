@@ -226,6 +226,8 @@ def association_pipeline(
     output_path: str,
     plink_path: str,
     pheno_col: str,
+    chromosomes: str,
+    celltypes: str,
 ):
     """
     Run association for one gene
@@ -237,11 +239,13 @@ def association_pipeline(
     )
     batch = hb.Batch('SAIGE-QTL pipeline', backend=sb)
 
-    for celltype in celltypes:
-        for chromosome in chromosomes:
+    celltypes_list = celltypes.split(' ')
+    chromosomes_list = chromosomes.split(' ')
+
+    for celltype in celltypes_list:
+        for chromosome in chromosomes_list:
             # get genes
             for gene in genes:
-
 
                 fit_null_job = batch.new_job(name='fit null')
                 fit_null_job.image(SAIGE_QTL_IMAGE)
