@@ -178,6 +178,15 @@ def get_gene_cis_file(gene_info_df, gene: str, window_size: int):
 @click.option('--sample-mapping-file-path')
 @click.option('--min-pct-expr')
 @click.option('--cis-window-size')
+@click.option(
+    '--max-gene-concurrency',
+    type=int,
+    default=50,
+    help=(
+        'To avoid resource starvation, set this concurrency to limit horizontal scale. '
+        'Higher numbers have a better walltime, but risk jobs that are stuck (which are expensive)'
+    ),
+)
 def expression_pipeline(
     celltypes: str,
     chromosomes: str,
@@ -186,6 +195,7 @@ def expression_pipeline(
     sample_mapping_file_path: str,
     min_pct_expr: int = 5,
     cis_window_size: int = 100000,
+    max_gene_concurrency=100,
 ):
     """
     Run expression processing pipeline
@@ -225,6 +235,18 @@ def expression_pipeline(
             # extract genes
             # pylint: disable=no-member
             genes = filtered_expr_adata.raw.var.index
+
+            # Setup MAX concurrency by genes
+            _dependent_jobs: list[hb.job.Job] = []
+
+            def manage_concurrency_for_job(job: hb.job.Job):
+                """
+                To avoid having too many jobs running at once, we have to limit concurrency.
+                """
+                if len(_dependent_jobs) >= max_gene_concurrency:
+                    job.depends_on(_dependent_jobs[-max_gene_concurrency])
+                _dependent_jobs.append(job)
+
             # combine files
             for gene in genes:
                 pheno_cov_job = batch.new_python_job(name='creta pheno cov job')
