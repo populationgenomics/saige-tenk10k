@@ -250,6 +250,7 @@ def expression_pipeline(
             # combine files
             for gene in genes:
                 pheno_cov_job = batch.new_python_job(name='creta pheno cov job')
+                manage_concurrency_for_job(pheno_cov_job)
                 copy_common_env(pheno_cov_job)
                 pheno_cov_job.image(CELLREGMAP_IMAGE)
                 pheno_cov_df = pheno_cov_job.call(
