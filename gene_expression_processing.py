@@ -147,17 +147,24 @@ def get_celltype_covariates(
 
 
 def build_pheno_cov_filename(
-    expression_df,
+    gene_name,
+    expression_adata,
     cov_df,
     smf_df,  # sample mapping file
 ):
     """Combine files to build final input
+    reduce to one file per gene
 
     Input:
     - Expression dataframe
     - Covariates dataframe
     - Sample mapping file, mapping cells to donors
     """
+    gene_adata = expression_adata[:, gene_name]
+    gene_mat = gene_adata.raw.X.todense()
+    expression_df = pd.DataFrame(
+        data=gene_mat.T, index=gene_adata.raw.var.index, columns=gene_adata.obs.index
+    )
     pheno_cov_df = pd.concat([expression_df, cov_df, smf_df], axis=1)
     return pheno_cov_df
 
