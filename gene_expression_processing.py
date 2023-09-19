@@ -23,6 +23,9 @@ import sys
 import click
 import hail as hl
 import pandas as pd
+import scanpy as sc
+
+from cloudpathlib import AnyPath
 
 from cpg_utils import to_path
 from cpg_utils.hail_batch import (
@@ -73,9 +76,9 @@ def filter_lowly_expressed_genes(expression_df, min_pct=5):
 
 def get_chrom_celltype_expression(
     gene_info_df,
-    expression_files_prefix: str,
+    # expression_files_prefix: str,
     chromosome: str,
-    cell_type: str,
+    # cell_type: str,
 ):
     """Extracts relevant expression info
 
@@ -90,22 +93,34 @@ def get_chrom_celltype_expression(
     """
     # get single-cell expression for the cell type
     # and chromosome of interest (check)
-    expression_tsv_path = dataset_path(
-        os.path.join(
-            expression_files_prefix,
-            'expression_files',
-            cell_type,
-            f'{chromosome}_expression.tsv',
+    # expression_tsv_path = dataset_path(
+    #     os.path.join(
+    #         expression_files_prefix,
+    #         'expression_files',
+    #         cell_type,
+    #         f'{chromosome}_expression.tsv',
+    #     )
+    # )
+    # expression_df = pd.read_csv(expression_tsv_path, sep='\t', index_col=0)
+
+    # this is where the file is now, but the files will eventually be in a different folder
+    # and split by cell type (at least this all naive B cells only)
+    expression_h5ad_path = AnyPath(
+        dataset_path(
+            f'scrna-seq/CellRegMap_input_files/expression_objects/sce{chromosome}.h5ad'
         )
-    )
-    expression_df = pd.read_csv(expression_tsv_path, sep='\t', index_col=0)
+    ).copy('here.h5ad')
+    expression_adata = sc.read(expression_h5ad_path)
+
     # extract all genes
-    all_genes = expression_df.columns.values
+    all_genes = expression_adata.raw.var.index
+    # all_genes = expression_df.columns.values
     # select only genes on relevant chromosome
     genes_chrom = gene_info_df[gene_info_df['chr'] == chromosome].index.values
     common_genes = set(all_genes).intersection(set(genes_chrom))
     # return expression for the correct chromosomes only
-    return expression_df[:, common_genes]
+    # return expression_df[:, common_genes]
+    return expression_adata[:, common_genes]  # check syntax
 
 
 def get_celltype_covariates(
