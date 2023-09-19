@@ -1,4 +1,5 @@
 cpg_utils
+click
 hail
 metamist
 pandas
