@@ -26,9 +26,7 @@ import hail as hl
 import pandas as pd
 import scanpy as sc
 
-from cloudpathlib import AnyPath
-
-from cpg_utils import to_path
+from cpg_utils import to_path, Path
 from cpg_utils.hail_batch import (
     dataset_path,
     output_path,
@@ -83,7 +81,7 @@ def get_chrom_celltype_expression(
             f'scrna-seq/CellRegMap_input_files/expression_objects/sce{chromosome}.h5ad'
         )
     ).copy('here.h5ad')
-    expression_h5ad_path = AnyPath(
+    expression_h5ad_path = Path(
         dataset_path(
             os.path.join(expression_files_prefix, cell_type, f'sce{chromosome}.h5ad')
         )
