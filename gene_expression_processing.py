@@ -205,9 +205,9 @@ def expression_pipeline(
     gene_info_df = pd.read_csv(gene_info_tsv, sep='\t')
 
     # Setup MAX concurrency by genes
-    _dependent_jobs: list[hb.job.Job] = []
+    _dependent_jobs: list[hb.batch.job.Job] = []
 
-    def manage_concurrency_for_job(job: hb.job.Job):
+    def manage_concurrency_for_job(job: hb.batch.job.Job):
         """
         To avoid having too many jobs running at once, we have to limit concurrency.
         """
