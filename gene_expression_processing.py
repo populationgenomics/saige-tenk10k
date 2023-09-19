@@ -229,13 +229,13 @@ def expression_pipeline(
                 cell_type=celltype,
             )
             # remove lowly expressed genes
-            expr_adata: sc.AnnData = filter_lowly_expressed_genes(
+            filter_adata: sc.AnnData = filter_lowly_expressed_genes(
                 expression_adata=expr_adata, min_pct=min_pct_expr
             )
 
             # combine files for each gene
             # pylint: disable=no-member
-            for gene in expr_adata.raw.var.index:
+            for gene in filter_adata.raw.var.index:
                 pheno_cov_job = get_batch().new_python_job(name='creta pheno cov job')
                 copy_common_env(pheno_cov_job)
                 pheno_cov_job.image(CELLREGMAP_IMAGE)
@@ -245,7 +245,7 @@ def expression_pipeline(
                     build_pheno_cov_filename,
                     gene_name=gene,
                     cov_df=cov_df,
-                    expression_adata=expr_adata,
+                    expression_adata=filter_adata,
                     smf_df=smf_df,
                     out_path=output_path(
                         f'input_files/pheno_cov_files/{gene}_{celltype}.csv'
