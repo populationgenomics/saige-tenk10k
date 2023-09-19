@@ -15,7 +15,6 @@ More details in README
 output files in tob_wgs_genetics/saige_qtl/input
 """
 
-# import python modules
 import os
 import logging
 import math
@@ -26,7 +25,7 @@ import hail as hl
 import pandas as pd
 import scanpy as sc
 
-from cpg_utils import to_path, Path
+from cpg_utils import to_path
 from cpg_utils.hail_batch import (
     dataset_path,
     output_path,
@@ -42,7 +41,7 @@ logging.basicConfig(
 )
 
 
-def filter_lowly_expressed_genes(expression_adata, min_pct=5):
+def filter_lowly_expressed_genes(expression_adata, min_pct=5) -> sc.AnnData:
     """Remove genes with low expression across cells
 
     Input: adata with all genes
@@ -52,6 +51,8 @@ def filter_lowly_expressed_genes(expression_adata, min_pct=5):
     n_all_cells = len(expression_adata.obs.index)
     min_cells = math.ceil((n_all_cells * min_pct) / 100)
     expression_adata = sc.pp.filter_genes(expression_adata, min_cells=min_cells)
+    assert isinstance(expression_adata, sc.AnnData)
+
     return expression_adata
 
 
@@ -60,7 +61,7 @@ def get_chrom_celltype_expression(
     expression_files_prefix: str,  # tob_wgs_genetics/saige_qtl/input/
     chromosome: str,
     cell_type: str,
-):
+) -> sc.AnnData:
     """Extracts relevant expression info
 
     Input:
@@ -76,12 +77,12 @@ def get_chrom_celltype_expression(
     # first line is where the file is now,
     # but (second line) the files will eventually be in the below folder
     # and split by cell type (at least this all naive B cells only)
-    expression_h5ad_path = Path(
+    expression_h5ad_path = to_path(
         dataset_path(
             f'scrna-seq/CellRegMap_input_files/expression_objects/sce{chromosome}.h5ad'
         )
     ).copy('here.h5ad')
-    expression_h5ad_path = Path(
+    expression_h5ad_path = to_path(
         dataset_path(
             os.path.join(expression_files_prefix, cell_type, f'sce{chromosome}.h5ad')
         )
@@ -197,18 +198,19 @@ def expression_pipeline(
         )
         for chromosome in chromosome_list:
             # get expression (cell type + chromosome)
-            expr_adata = get_chrom_celltype_expression(
+            expr_adata: sc.AnnData = get_chrom_celltype_expression(
                 gene_info_df=gene_info_df,
                 expression_files_prefix=expression_files_prefix,
                 chromosome=chromosome,
                 cell_type=celltype,
             )
             # remove lowly expressed genes
-            expr_adata = filter_lowly_expressed_genes(
+            filtered_expr_adata: sc.AnnData = filter_lowly_expressed_genes(
                 expression_adata=expr_adata, min_pct=min_pct_expr
             )
             # extract genes
-            genes = expr_adata.raw.var.index
+            # pylint: disable=no-member
+            genes = filtered_expr_adata.raw.var.index
             # combine files
             for gene in genes:
                 pheno_cov_df = build_pheno_cov_filename(
