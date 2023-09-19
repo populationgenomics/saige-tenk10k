@@ -91,9 +91,9 @@ def filter_lowly_expressed_genes(expression_adata, min_pct=5):
 
 def get_chrom_celltype_expression(
     gene_info_df,
-    # expression_files_prefix: str,
+    expression_files_prefix: str,  # tob_wgs_genetics/saige_qtl/input/
     chromosome: str,
-    # cell_type: str,
+    cell_type: str,
 ):
     """Extracts relevant expression info
 
@@ -104,25 +104,20 @@ def get_chrom_celltype_expression(
     - path to dataframe containing gene info, for each gene (=row),
     specifies chrom, start, end and strand
 
-    Output: expression dataframe for only relevant genes
+    Output: expression adata object for only relevant genes
     """
-    # get single-cell expression for the cell type
-    # and chromosome of interest (check)
-    # expression_tsv_path = dataset_path(
-    #     os.path.join(
-    #         expression_files_prefix,
-    #         'expression_files',
-    #         cell_type,
-    #         f'{chromosome}_expression.tsv',
-    #     )
-    # )
-    # expression_df = pd.read_csv(expression_tsv_path, sep='\t', index_col=0)
 
-    # this is where the file is now, but the files will eventually be in a different folder
+    # first line is where the file is now,
+    # but (second line) the files will eventually be in the below folder
     # and split by cell type (at least this all naive B cells only)
     expression_h5ad_path = AnyPath(
         dataset_path(
             f'scrna-seq/CellRegMap_input_files/expression_objects/sce{chromosome}.h5ad'
+        )
+    ).copy('here.h5ad')
+    expression_h5ad_path = AnyPath(
+        dataset_path(
+            f'{expression_files_prefix}/expression_files/{cell_type}/sce{chromosome}.h5ad'
         )
     ).copy('here.h5ad')
     expression_adata = sc.read(expression_h5ad_path)
@@ -240,20 +235,17 @@ def expression_pipeline(
             # get expression (cell type + chromosome)
             expr_adata = get_chrom_celltype_expression(
                 gene_info_df=gene_info_df,
-                # expression_files_prefix=expression_files_prefix,
+                expression_files_prefix=expression_files_prefix,
                 chromosome=chromosome,
-                # cell_type=celltype,
+                cell_type=celltype,
             )
-            # # remove lowly expressed genes
-            # expr_df = filter_lowly_expressed_genes(
-            #     expression_df=expr_df, min_pct=min_pct_expr
-            # )
-            # combine files
-            # pheno_cov_df = build_pheno_cov_filename(
-            #     cov_df=cov_df, expression_df=expr_df, smf_df=smf_df
-            # )
+            # remove lowly expressed genes
+            expr_adata = filter_lowly_expressed_genes(
+                expression_adata=expr_adata, min_pct=min_pct_expr
+            )
             # extract genes
             genes = expr_adata.raw.var.index
+            # combine files
             for gene in genes:
                 pheno_cov_df = build_pheno_cov_filename(
                     gene_name=gene,
@@ -261,13 +253,12 @@ def expression_pipeline(
                     expression_adata=expr_adata,
                     smf_df=smf_df,
                 )
-
-            # write to output
-            pheno_cov_filename = to_path(
-                output_path(f'input_files/pheno_cov_files/{chromosome}_{celltype}.csv')
-            )
-            with pheno_cov_filename.open('w') as pcf:
-                pheno_cov_df.to_csv(pcf, index=False)
+                # write to output
+                pheno_cov_filename = to_path(
+                    output_path(f'input_files/pheno_cov_files/{gene}_{celltype}.csv')
+                )
+                with pheno_cov_filename.open('w') as pcf:
+                    pheno_cov_df.to_csv(pcf, index=False)
 
     # create gene cis window files
     for gene in gene_info_df.index.values:
