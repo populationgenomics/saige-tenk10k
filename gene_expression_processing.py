@@ -21,6 +21,7 @@ import logging
 import sys
 
 import click
+import math
 import hail as hl
 import pandas as pd
 import scanpy as sc
@@ -81,8 +82,6 @@ def filter_lowly_expressed_genes(expression_adata, min_pct=5):
 
     Output: adata filtered
     """
-    import math
-
     n_all_cells = len(expression_adata.obs.index)
     min_cells = math.ceil((n_all_cells * min_pct) / 100)
     expression_adata = sc.pp.filter_genes(expression_adata, min_cells=min_cells)
