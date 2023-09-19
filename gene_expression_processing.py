@@ -76,7 +76,7 @@ def get_chrom_celltype_expression(
     # first line is where the file is now,
     # but (second line) the files will eventually be in the below folder
     # and split by cell type (at least this all naive B cells only)
-    expression_h5ad_path = AnyPath(
+    expression_h5ad_path = Path(
         dataset_path(
             f'scrna-seq/CellRegMap_input_files/expression_objects/sce{chromosome}.h5ad'
         )
