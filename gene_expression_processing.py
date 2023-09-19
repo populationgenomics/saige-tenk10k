@@ -18,10 +18,10 @@ output files in tob_wgs_genetics/saige_qtl/input
 # import python modules
 import os
 import logging
+import math
 import sys
 
 import click
-import math
 import hail as hl
 import pandas as pd
 import scanpy as sc
@@ -85,7 +85,11 @@ def get_chrom_celltype_expression(
     ).copy('here.h5ad')
     expression_h5ad_path = AnyPath(
         dataset_path(
-            f'{expression_files_prefix}/expression_files/{cell_type}/sce{chromosome}.h5ad'
+            os.path.join(
+                expression_files_prefix,
+                cell_type,
+                f'sce{chromosome}.h5ad'
+            )
         )
     ).copy('here.h5ad')
     expression_adata = sc.read(expression_h5ad_path)
