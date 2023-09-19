@@ -27,13 +27,8 @@ import pandas as pd
 import scanpy as sc
 
 from cpg_utils import to_path
-from cpg_utils.hail_batch import (
-    copy_common_env,
-    dataset_path,
-    get_config,
-    remote_tmpdir,
-    output_path,
-)
+from cpg_utils.hail_batch import copy_common_env, dataset_path, output_path
+from cpg_workflows.batch import get_batch
 
 
 # use logging to print statements, display at info level
@@ -130,13 +125,12 @@ def get_celltype_covariates(
 
 
 def build_pheno_cov_filename(
-    gene_name,
-    expression_adata,
-    cov_df,
-    smf_df,  # sample mapping file
+    gene_name, expression_adata, cov_df, smf_df, out_path: str  # sample mapping file
 ):
-    """Combine files to build final input
+    """
+    Combine files to build final input
     reduce to one file per gene
+    write the output to disc within this method
 
     Input:
     - Expression dataframe
@@ -149,7 +143,9 @@ def build_pheno_cov_filename(
         data=gene_mat.T, index=gene_adata.raw.var.index, columns=gene_adata.obs.index
     )
     pheno_cov_df = pd.concat([expression_df, cov_df, smf_df], axis=1)
-    return pheno_cov_df
+
+    with to_path(out_path).open('w') as pcf:
+        pheno_cov_df.to_csv(pcf, index=False)
 
 
 def get_gene_cis_file(gene_info_df, gene: str, window_size: int):
@@ -166,8 +162,7 @@ def get_gene_cis_file(gene_info_df, gene: str, window_size: int):
     )
     data = {'chromosome': chrom, 'start': left_boundary, 'end': right_boundary}
     # check if I need an index at all
-    gene_cis_df = pd.DataFrame(data, index=[gene])
-    return gene_cis_df
+    return pd.DataFrame(data, index=[gene])
 
 
 @click.command()
@@ -183,8 +178,9 @@ def get_gene_cis_file(gene_info_df, gene: str, window_size: int):
     type=int,
     default=50,
     help=(
-        'To avoid resource starvation, set this concurrency to limit horizontal scale. '
-        'Higher numbers have a better walltime, but risk jobs that are stuck (which are expensive)'
+        'To avoid resource starvation, set this concurrency to limit '
+        'horizontal scale. Higher numbers have a better walltime, but '
+        'risk jobs that are stuck (which are expensive)'
     ),
 )
 def expression_pipeline(
@@ -200,27 +196,31 @@ def expression_pipeline(
     """
     Run expression processing pipeline
     """
-    sb = hb.ServiceBackend(
-        billing_project=get_config()['hail']['billing_project'],
-        remote_tmpdir=remote_tmpdir(),
-    )
-    batch = hb.Batch('CellRegMap pipeline', backend=sb)
 
-    celltype_list = celltypes.split(',')
-    chromosome_list = chromosomes.split(',')
-    logging.info(f'Cell types to run: {celltype_list}')
-    logging.info(f'Chromosomes to run: {chromosome_list}')
+    logging.info(f'Cell types to run: {celltypes}')
+    logging.info(f'Chromosomes to run: {chromosomes}')
 
     # create phenotype covariate files
     smf_df = pd.read_csv(sample_mapping_file_path, sep='\t')
     gene_info_df = pd.read_csv(gene_info_tsv, sep='\t')
 
-    for celltype in celltype_list:
+    # Setup MAX concurrency by genes
+    _dependent_jobs: list[hb.batch.job.Job] = []
+
+    def manage_concurrency_for_job(job: hb.batch.job.Job):
+        """
+        To avoid having too many jobs running at once, we have to limit concurrency.
+        """
+        if len(_dependent_jobs) >= max_gene_concurrency:
+            job.depends_on(_dependent_jobs[-max_gene_concurrency])
+        _dependent_jobs.append(job)
+
+    for celltype in celltypes.split(','):
         # get covariates (cell type specific)
         cov_df = get_celltype_covariates(
             expression_files_prefix=expression_files_prefix, cell_type=celltype
         )
-        for chromosome in chromosome_list:
+        for chromosome in chromosomes.split(','):
             # get expression (cell type + chromosome)
             expr_adata: sc.AnnData = get_chrom_celltype_expression(
                 gene_info_df=gene_info_df,
@@ -229,43 +229,29 @@ def expression_pipeline(
                 cell_type=celltype,
             )
             # remove lowly expressed genes
-            filtered_expr_adata: sc.AnnData = filter_lowly_expressed_genes(
+            expr_adata: sc.AnnData = filter_lowly_expressed_genes(
                 expression_adata=expr_adata, min_pct=min_pct_expr
             )
-            # extract genes
+
+            # combine files for each gene
             # pylint: disable=no-member
-            genes = filtered_expr_adata.raw.var.index
-
-            # Setup MAX concurrency by genes
-            _dependent_jobs: list[hb.job.Job] = []
-
-            def manage_concurrency_for_job(job: hb.job.Job):
-                """
-                To avoid having too many jobs running at once, we have to limit concurrency.
-                """
-                if len(_dependent_jobs) >= max_gene_concurrency:
-                    job.depends_on(_dependent_jobs[-max_gene_concurrency])
-                _dependent_jobs.append(job)
-
-            # combine files
-            for gene in genes:
-                pheno_cov_job = batch.new_python_job(name='creta pheno cov job')
-                manage_concurrency_for_job(pheno_cov_job)
+            for gene in expr_adata.raw.var.index:
+                pheno_cov_job = get_batch().new_python_job(name='creta pheno cov job')
                 copy_common_env(pheno_cov_job)
                 pheno_cov_job.image(CELLREGMAP_IMAGE)
-                pheno_cov_df = pheno_cov_job.call(
+
+                # pass the output file path to the job, don't expect an object back
+                pheno_cov_job.call(
                     build_pheno_cov_filename,
                     gene_name=gene,
                     cov_df=cov_df,
                     expression_adata=expr_adata,
                     smf_df=smf_df,
+                    out_path=output_path(
+                        f'input_files/pheno_cov_files/{gene}_{celltype}.csv'
+                    ),
                 )
-                # write to output (should this be inside the job?)
-                pheno_cov_filename = to_path(
-                    output_path(f'input_files/pheno_cov_files/{gene}_{celltype}.csv')
-                )
-                with pheno_cov_filename.open('w') as pcf:
-                    pheno_cov_df.to_csv(pcf, index=False)
+                manage_concurrency_for_job(pheno_cov_job)
 
     # create gene cis window files
     for gene in gene_info_df.index.values:
@@ -273,15 +259,13 @@ def expression_pipeline(
             output_path(f'input_files/cis_window_files/{gene}_{cis_window_size}bp.csv')
         )
         gene_cis_df = get_gene_cis_file(
-            gene_info_df=gene_info_df,
-            gene=gene,
-            window_size=cis_window_size,
+            gene_info_df=gene_info_df, gene=gene, window_size=cis_window_size
         )
         with gene_cis_filename.open('w') as gcf:
             gene_cis_df.to_csv(gcf, index=False)
 
     # set jobs running
-    batch.run(wait=False)
+    get_batch().run(wait=False)
 
 
 if __name__ == '__main__':
