@@ -30,6 +30,8 @@ from cpg_utils import to_path
 from cpg_utils.hail_batch import (
     copy_common_env,
     dataset_path,
+    get_config,
+    remote_tmpdir,
     output_path,
 )
 
@@ -42,7 +44,9 @@ logging.basicConfig(
     stream=sys.stderr,
 )
 
-CELLREGMAP_IMAGE = 'australia-southeast1-docker.pkg.dev/cpg-common/images/cellregmap:0.0.1'
+CELLREGMAP_IMAGE = (
+    'australia-southeast1-docker.pkg.dev/cpg-common/images/cellregmap:0.0.1'
+)
 
 
 def filter_lowly_expressed_genes(expression_adata, min_pct=5) -> sc.AnnData:
@@ -255,6 +259,7 @@ def expression_pipeline(
 
     # set jobs running
     batch.run(wait=False)
+
 
 if __name__ == '__main__':
     expression_pipeline()  # pylint: disable=no-value-for-parameter
