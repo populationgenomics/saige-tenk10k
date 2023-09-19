@@ -2,3 +2,4 @@ cpg_utils
 hail
 metamist
 pandas
+scanpy

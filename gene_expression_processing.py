@@ -85,11 +85,7 @@ def get_chrom_celltype_expression(
     ).copy('here.h5ad')
     expression_h5ad_path = AnyPath(
         dataset_path(
-            os.path.join(
-                expression_files_prefix,
-                cell_type,
-                f'sce{chromosome}.h5ad'
-            )
+            os.path.join(expression_files_prefix, cell_type, f'sce{chromosome}.h5ad')
         )
     ).copy('here.h5ad')
     expression_adata = sc.read(expression_h5ad_path)
