@@ -1,5 +1,6 @@
-cpg_utils
 click
+cpg_utils
+cpg_workflows
 hail
 metamist
 pandas
