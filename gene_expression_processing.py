@@ -22,11 +22,13 @@ import sys
 
 import click
 import hail as hl
+import hailtop.batch as hb
 import pandas as pd
 import scanpy as sc
 
 from cpg_utils import to_path
 from cpg_utils.hail_batch import (
+    copy_common_env,
     dataset_path,
     output_path,
 )
@@ -39,6 +41,8 @@ logging.basicConfig(
     datefmt='%Y-%m-%d %H:%M:%S',
     stream=sys.stderr,
 )
+
+CELLREGMAP_IMAGE = 'australia-southeast1-docker.pkg.dev/cpg-common/images/cellregmap:0.0.1'
 
 
 def filter_lowly_expressed_genes(expression_adata, min_pct=5) -> sc.AnnData:
@@ -182,6 +186,12 @@ def expression_pipeline(
     """
     Run expression processing pipeline
     """
+    sb = hb.ServiceBackend(
+        billing_project=get_config()['hail']['billing_project'],
+        remote_tmpdir=remote_tmpdir(),
+    )
+    batch = hb.Batch('CellRegMap pipeline', backend=sb)
+
     celltype_list = celltypes.split(',')
     chromosome_list = chromosomes.split(',')
     logging.info(f'Cell types to run: {celltype_list}')
@@ -213,13 +223,17 @@ def expression_pipeline(
             genes = filtered_expr_adata.raw.var.index
             # combine files
             for gene in genes:
-                pheno_cov_df = build_pheno_cov_filename(
+                pheno_cov_job = batch.new_python_job(name='creta pheno cov job')
+                copy_common_env(pheno_cov_job)
+                pheno_cov_job.image(CELLREGMAP_IMAGE)
+                pheno_cov_df = pheno_cov_job.call(
+                    build_pheno_cov_filename,
                     gene_name=gene,
                     cov_df=cov_df,
                     expression_adata=expr_adata,
                     smf_df=smf_df,
                 )
-                # write to output
+                # write to output (should this be inside the job?)
                 pheno_cov_filename = to_path(
                     output_path(f'input_files/pheno_cov_files/{gene}_{celltype}.csv')
                 )
@@ -239,6 +253,8 @@ def expression_pipeline(
         with gene_cis_filename.open('w') as gcf:
             gene_cis_df.to_csv(gcf, index=False)
 
+    # set jobs running
+    batch.run(wait=False)
 
 if __name__ == '__main__':
     expression_pipeline()  # pylint: disable=no-value-for-parameter
