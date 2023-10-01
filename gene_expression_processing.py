@@ -41,10 +41,12 @@ import pandas as pd
 import scanpy as sc
 
 from cpg_utils import to_path
+from cpg_utils.config import get_config
+
 from cpg_utils.hail_batch import copy_common_env, dataset_path, output_path
 from cpg_workflows.batch import get_batch
 
-
+config = get_config()
 # use logging to print statements, display at info level
 logging.basicConfig(
     level=logging.INFO,
