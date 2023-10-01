@@ -39,6 +39,7 @@ import pandas as pd
 import scanpy as sc
 
 from cpg_utils import to_path
+from cpg_workflows.batch import get_batch
 
 from cpg_utils.hail_batch import copy_common_env, dataset_path, output_path
 
