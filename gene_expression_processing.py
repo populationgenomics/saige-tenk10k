@@ -48,7 +48,7 @@ CELLREGMAP_IMAGE = (
 )
 
 
-def filter_lowly_expressed_genes(expression_adata, min_pct=5) -> sc.AnnData:
+def filter_lowly_expressed_genes(expression_adata, min_pct=5) -> scanpy.AnnData:
     """Remove genes with low expression across cells
 
     Input: adata with all genes
@@ -58,7 +58,7 @@ def filter_lowly_expressed_genes(expression_adata, min_pct=5) -> sc.AnnData:
     n_all_cells = len(expression_adata.obs.index)
     min_cells = math.ceil((n_all_cells * min_pct) / 100)
     expression_adata = scanpy.pp.filter_genes(expression_adata, min_cells=min_cells)
-    assert isinstance(expression_adata, sc.AnnData)
+    assert isinstance(expression_adata, scanpy.AnnData)
 
     return expression_adata
 
