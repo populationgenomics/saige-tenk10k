@@ -31,51 +31,13 @@ analysis-runner \
 import math
 
 import click
-import hail as hl
-import hailtop.batch as hb
-import pandas as pd
-import scanpy as sc
 
-from cpg_utils import to_path
-
-from cpg_utils.hail_batch import copy_common_env, dataset_path, output_path
+from cpg_utils.config import get_config
+from cpg_utils.hail_batch import output_path
 from cpg_workflows.batch import get_batch
 
+config = get_config()
 
-
-def get_chrom_celltype_expression(
-    gene_info_df,
-    expression_files_prefix: str,  # tob_wgs_genetics/saige_qtl/input/
-    chromosome: str,
-    cell_type: str,
-) -> sc.AnnData:
-    """Extracts relevant expression info
-
-    Input:
-    - chromosome & cell type of interest
-    - path to (single-cell) expression files, one tsv file per cell type,
-    rows are cells and columns are genes
-    - path to dataframe containing gene info, for each gene (=row),
-    specifies chrom, start, end and strand
-
-    Output: expression adata object for only relevant genes
-    """
-
-    # first line is where the file is now,
-    # but (second line) the files will eventually be in the below folder
-    # and split by cell type (at least this all naive B cells only)
-    expression_h5ad_path = to_path(
-        dataset_path(
-            f'scrna-seq/CellRegMap_input_files/expression_objects/sce22.h5ad'
-        )
-    ).copy('here.h5ad')
-    
-    expression_adata = sc.read(expression_h5ad_path)
-
-    # select only genes on relevant chromosome
-    genes_chrom = gene_info_df[gene_info_df['chr'] == chromosome].gene_name
-    # return expression for the correct chromosomes only
-    return expression_adata[:, expression_adata.var_names.isin(genes_chrom)]
 
 @click.command()
 @click.option('--celltypes')
@@ -85,16 +47,7 @@ def get_chrom_celltype_expression(
 @click.option('--sample-mapping-file-path')
 @click.option('--min-pct-expr', type=int, default =5)
 @click.option('--cis-window-size', type=int,default=100000)
-@click.option(
-    '--max-gene-concurrency',
-    type=int,
-    default=50,
-    help=(
-        'To avoid resource starvation, set this concurrency to limit '
-        'horizontal scale. Higher numbers have a better walltime, but '
-        'risk jobs that are stuck (which are expensive)'
-    ),
-)
+
 def expression_pipeline(
     celltypes: str,
     chromosomes: str,
