@@ -209,10 +209,10 @@ def expression_pipeline(
                 chromosome=chromosome,
                 cell_type=celltype,
             )
-            # remove lowly expressed genes
-            #filter_adata: sc.AnnData = filter_lowly_expressed_genes(
-           #     expression_adata=expr_adata, min_pct=min_pct_expr
-           # )
+            #remove lowly expressed genes
+            filter_adata: sc.AnnData = filter_lowly_expressed_genes(
+                expression_adata=expr_adata, min_pct=min_pct_expr
+            )
 
    
 
