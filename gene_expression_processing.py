@@ -48,7 +48,8 @@ CELLREGMAP_IMAGE = (
 )
 
 
-def filter_lowly_expressed_genes(expression_adata, min_pct=5) -> scanpy.AnnData:
+def filter_lowly_expressed_genes(expression_adata, min_pct=5):
+    import scanpy 
     """Remove genes with low expression across cells
 
     Input: adata with all genes
@@ -68,7 +69,8 @@ def get_chrom_celltype_expression(
     expression_files_prefix: str,  # tob_wgs_genetics/saige_qtl/input/
     chromosome: str,
     cell_type: str,
-) -> scanpy.AnnData:
+):
+    import scanpy
     """Extracts relevant expression info
 
     Input:
