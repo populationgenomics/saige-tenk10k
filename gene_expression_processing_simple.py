@@ -19,18 +19,16 @@ analysis-runner \
     --access-level test \
     --output-dir 'tob_wgs_genetics/saige_qtl/hope-test-input' \
     --description 'scRNA-seq processing batch job test' \
-    gene_expression_processing_simple.py \
+    --image australia-southeast1-docker.pkg.dev/cpg-common/images/cellregmap:0.0.3 \
+    gene_expression_processing_simple.py 
 
 """
 
-from cpg_workflows.batch import get_batch
 
 
 
 def main():
-    b = get_batch()
-
-    b.run(wait=False)
+    print("hello")
 
 
 if __name__ == '__main__':
