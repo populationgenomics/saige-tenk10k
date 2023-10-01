@@ -48,7 +48,7 @@ config = get_config()
 @click.option('--min-pct-expr', type=int, default =5)
 @click.option('--cis-window-size', type=int,default=100000)
 
-def expression_pipeline(
+def main(
     celltypes: str,
     chromosomes: str,
     gene_info_tsv: str,
@@ -70,4 +70,4 @@ def expression_pipeline(
 
 
 if __name__ == '__main__':
-    expression_pipeline()  # pylint: disable=no-value-for-parameter
+    main()  # pylint: disable=no-value-for-parameter
