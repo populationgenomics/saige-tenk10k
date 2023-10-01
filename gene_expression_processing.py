@@ -13,6 +13,17 @@ This script will:
 
 More details in README
 output files in tob_wgs_genetics/saige_qtl/input
+
+analysis-runner \
+    --dataset tob-wgs \
+    --access-level test \
+    --output-dir 'tob_wgs_genetics/saige_qtl/hope-test-input' \
+    --description 'scRNA-seq processing batch job test' \
+    python3 gene_expression_processing.py \
+    --celltypes=B_IN --chromosomes=chr22 \
+    --gene-info-tsv=gs://cpg-tob-wgs-test/scrna-seq/grch38_association_files/gene_location_files/GRCh38_geneloc_chr22.tsv \
+    --sample-mapping-file-path=gs://cpg-tob-wgs-test/scrna-seq/grch38_association_files/OneK1K_CPG_IDs.tsv
+
 """
 
 import os
@@ -82,23 +93,16 @@ def get_chrom_celltype_expression(
     # and split by cell type (at least this all naive B cells only)
     expression_h5ad_path = to_path(
         dataset_path(
-            f'scrna-seq/CellRegMap_input_files/expression_objects/sce{chromosome}.h5ad'
+            f'scrna-seq/CellRegMap_input_files/expression_objects/sce22.h5ad'
         )
     ).copy('here.h5ad')
-    expression_h5ad_path = to_path(
-        dataset_path(
-            os.path.join(expression_files_prefix, cell_type, f'sce{chromosome}.h5ad')
-        )
-    ).copy('here.h5ad')
+    
     expression_adata = sc.read(expression_h5ad_path)
 
-    # extract all genes
-    all_genes = expression_adata.raw.var.index
     # select only genes on relevant chromosome
-    genes_chrom = gene_info_df[gene_info_df['chr'] == chromosome].index.values
-    common_genes = set(all_genes).intersection(set(genes_chrom))
+    genes_chrom = gene_info_df[gene_info_df['chr'] == chromosome].gene_name
     # return expression for the correct chromosomes only
-    return expression_adata[:, common_genes]  # check syntax
+    return expression_adata[:, expression_adata.var_names.isin(genes_chrom)]
 
 
 def get_celltype_covariates(
@@ -113,14 +117,8 @@ def get_celltype_covariates(
 
     Output: covariate df for cell type of interest
     """
-    covs_tsv_path = dataset_path(
-        os.path.join(
-            expression_files_prefix,
-            'covariate_files',
-            f'{cell_type}_covs.tsv',
-        )
-    )
-    covs_df = pd.read_csv(covs_tsv_path, sep='\t', index_col=0)
+    covs_tsv_path = dataset_path('tob_wgs_genetics/saige_qtl/input/covariate_chr22_B_IN_tester.csv')
+    covs_df = pd.read_csv(covs_tsv_path, sep=',', index_col=0)
     return covs_df
 
 
@@ -171,8 +169,8 @@ def get_gene_cis_file(gene_info_df, gene: str, window_size: int):
 @click.option('--gene-info-tsv')
 @click.option('--expression-files-prefix')
 @click.option('--sample-mapping-file-path')
-@click.option('--min-pct-expr')
-@click.option('--cis-window-size')
+@click.option('--min-pct-expr', type=int, default =5)
+@click.option('--cis-window-size', type=int,default=100000)
 @click.option(
     '--max-gene-concurrency',
     type=int,
@@ -189,9 +187,9 @@ def expression_pipeline(
     gene_info_tsv: str,
     expression_files_prefix: str,
     sample_mapping_file_path: str,
-    min_pct_expr: int = 5,
-    cis_window_size: int = 100000,
-    max_gene_concurrency=100,
+    min_pct_expr: int,
+    cis_window_size: int,
+    max_gene_concurrency=int
 ):
     """
     Run expression processing pipeline
@@ -232,37 +230,6 @@ def expression_pipeline(
             filter_adata: sc.AnnData = filter_lowly_expressed_genes(
                 expression_adata=expr_adata, min_pct=min_pct_expr
             )
-
-            # combine files for each gene
-            # pylint: disable=no-member
-            for gene in filter_adata.raw.var.index:
-                pheno_cov_job = get_batch().new_python_job(name='creta pheno cov job')
-                copy_common_env(pheno_cov_job)
-                pheno_cov_job.image(CELLREGMAP_IMAGE)
-
-                # pass the output file path to the job, don't expect an object back
-                pheno_cov_job.call(
-                    build_pheno_cov_filename,
-                    gene_name=gene,
-                    cov_df=cov_df,
-                    expression_adata=filter_adata,
-                    smf_df=smf_df,
-                    out_path=output_path(
-                        f'input_files/pheno_cov_files/{gene}_{celltype}.csv'
-                    ),
-                )
-                manage_concurrency_for_job(pheno_cov_job)
-
-    # create gene cis window files
-    for gene in gene_info_df.index.values:
-        gene_cis_filename = to_path(
-            output_path(f'input_files/cis_window_files/{gene}_{cis_window_size}bp.csv')
-        )
-        gene_cis_df = get_gene_cis_file(
-            gene_info_df=gene_info_df, gene=gene, window_size=cis_window_size
-        )
-        with gene_cis_filename.open('w') as gcf:
-            gene_cis_df.to_csv(gcf, index=False)
 
     # set jobs running
     get_batch().run(wait=False)
