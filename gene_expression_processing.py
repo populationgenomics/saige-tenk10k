@@ -18,7 +18,7 @@ analysis-runner \
     --dataset tob-wgs \
     --access-level test \
     --output-dir 'tob_wgs_genetics/saige_qtl/hope-test-input' \
-    --image australia-southeast1-docker.pkg.dev/cpg-common/images/cellregmap:0.0.3 \
+    --image australia-southeast1-docker.pkg.dev/cpg-common/images/cellregmap:0.0.1 \
     --description 'scRNA-seq processing batch job test' \
     python3 gene_expression_processing.py \
     --celltypes=B_IN --chromosomes=chr22 \
