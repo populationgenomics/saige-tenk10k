@@ -24,30 +24,15 @@ analysis-runner \
 
 """
 
-import math
-
-import click
-
-from cpg_utils.config import get_config
-from cpg_utils.hail_batch import output_path
 from cpg_workflows.batch import get_batch
 
-config = get_config()
 
 
 @click.command()
 
-def main(
-    
-):
-    """
-    Run expression processing pipeline
-    """
-
+def main():
     b = get_batch()
-    
-    
-    # set jobs running
+
     b.run(wait=False)
 
 
