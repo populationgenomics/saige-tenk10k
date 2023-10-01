@@ -39,9 +39,12 @@ import pandas as pd
 import hailtop.batch as hb
 
 from cpg_utils import to_path
+from cpg_utils.config import get_config
+from cpg_utils.hail_batch import remote_tmpdir, output_path
 
 from cpg_utils.hail_batch import copy_common_env, dataset_path, output_path
 
+config = get_config()
 
 
 CELLREGMAP_IMAGE = (
