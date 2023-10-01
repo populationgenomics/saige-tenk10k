@@ -36,7 +36,7 @@ import sys
 import click
 import hail as hl
 import pandas as pd
-import hailtop.batch as hb
+from cpg_workflows.batch import get_batch
 
 from cpg_utils import to_path
 from cpg_utils.config import get_config
@@ -193,14 +193,9 @@ def expression_pipeline(
     """
     Run expression processing pipeline
     """
-    # Initializing Batch
-    backend = hb.ServiceBackend(
-        billing_project=get_config()['hail']['billing_project'],
-        remote_tmpdir=remote_tmpdir(),
-    )
-    b = hb.Batch(
-        backend=backend, default_python_image=config['workflow']['driver_image']
-    )
+    
+    b =get_batch()
+
     logging.info(f'Cell types to run: {celltypes}')
     logging.info(f'Chromosomes to run: {chromosomes}')
 
@@ -216,6 +211,7 @@ def expression_pipeline(
         for chromosome in chromosomes.split(','):
             # get expression (cell type + chromosome)
             j = b.new_python_job(name='Get expression (cell type + chr)')
+            j.image(CELLREGMAP_IMAGE)
             expr_adata = j.call(get_chrom_celltype_expression,gene_info_df=gene_info_df,
                 expression_files_prefix=expression_files_prefix,
                 chromosome=chromosome,
