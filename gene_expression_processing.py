@@ -49,9 +49,7 @@ from cpg_utils.hail_batch import copy_common_env, dataset_path, output_path
 config = get_config()
 
 
-CELLREGMAP_IMAGE = (
-    'australia-southeast1-docker.pkg.dev/cpg-common/images/cellregmap:0.0.3'
-)
+CELLREGMAP_IMAGE = config['images']['cellregmap']
 
 
 def filter_lowly_expressed_genes(expression_adata, min_pct=5):
@@ -194,8 +192,6 @@ def expression_pipeline(
     
     b =get_batch()
     config = get_config()
-    scanpy_image = hb.build_python_image('australia-southeast1-docker.pkg.dev/cpg-common/images/scanpy',
-                           requirements=['pandas', 'scanpy'])
 
     logging.info(f'Cell types to run: {celltypes}')
     logging.info(f'Chromosomes to run: {chromosomes}')
@@ -212,7 +208,7 @@ def expression_pipeline(
         for chromosome in chromosomes.split(','):
             # get expression (cell type + chromosome)
             j = b.new_python_job(name='Get expression (cell type + chr)')
-            j.image(scanpy_image)
+            j.image(CELLREGMAP_IMAGE)
             expr_adata = j.call(get_chrom_celltype_expression,gene_info_df,expression_files_prefix,chromosome,celltype)
             #f = b.new_python_job(name = 'remove lowly expressed genes')
            # filter_adata = f.call(filter_lowly_expressed_genes,expression_adata=expr_adata, min_pct=min_pct_expr)
