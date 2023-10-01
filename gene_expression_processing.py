@@ -36,6 +36,7 @@ import sys
 import click
 import hail as hl
 import pandas as pd
+import hailtop.batch as hb
 
 from cpg_utils import to_path
 
