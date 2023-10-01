@@ -37,6 +37,8 @@ import click
 import hail as hl
 import pandas as pd
 from cpg_workflows.batch import get_batch
+import hailtop.batch as hb
+
 
 from cpg_utils import to_path
 from cpg_utils.config import get_config
@@ -192,7 +194,7 @@ def expression_pipeline(
     
     b =get_batch()
     config = get_config()
-    scanpy_image = build_python_image(config['workflow']['driver_image'],
+    scanpy_image = hb.build_python_image(config['workflow']['driver_image'],
                            requirements=['pandas', 'scanpy'])
 
     logging.info(f'Cell types to run: {celltypes}')
