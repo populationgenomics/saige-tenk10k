@@ -95,7 +95,7 @@ def get_chrom_celltype_expression(
         dataset_path(
             f'scrna-seq/CellRegMap_input_files/expression_objects/sce22.h5ad'
         )
-    ).copy('here.h5ad')
+    )
     
     expression_adata = scanpy.read(expression_h5ad_path)
 
