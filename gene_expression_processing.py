@@ -18,7 +18,7 @@ output files in tob_wgs_genetics/saige_qtl/input
 
     analysis-runner --dataset "tob-wgs" \
     --description "prepare expression files" \
-    --access-level "test" --image australia-southeast1-docker.pkg.dev/cpg-common/images/cellregmap:0.0.3 \
+    --access-level "test" \
     --output-dir "tob_wgs_genetics/saige_qtl/hope-test-input" \
      gene_expression_processing.py  --celltypes=B_IN --chromosomes=chr22 \
     --gene-info-tsv=gs://cpg-tob-wgs-test/scrna-seq/grch38_association_files/gene_location_files/GRCh38_geneloc_chr22.tsv \
@@ -36,7 +36,6 @@ import sys
 import click
 import hail as hl
 import pandas as pd
-import scanpy as sc
 
 from cpg_utils import to_path
 
@@ -45,7 +44,7 @@ from cpg_utils.hail_batch import copy_common_env, dataset_path, output_path
 
 
 CELLREGMAP_IMAGE = (
-    'australia-southeast1-docker.pkg.dev/cpg-common/images/cellregmap:0.0.1'
+    'australia-southeast1-docker.pkg.dev/cpg-common/images/cellregmap:0.0.3'
 )
 
 
@@ -58,7 +57,7 @@ def filter_lowly_expressed_genes(expression_adata, min_pct=5) -> sc.AnnData:
     """
     n_all_cells = len(expression_adata.obs.index)
     min_cells = math.ceil((n_all_cells * min_pct) / 100)
-    expression_adata = sc.pp.filter_genes(expression_adata, min_cells=min_cells)
+    expression_adata = scanpy.pp.filter_genes(expression_adata, min_cells=min_cells)
     assert isinstance(expression_adata, sc.AnnData)
 
     return expression_adata
@@ -69,7 +68,7 @@ def get_chrom_celltype_expression(
     expression_files_prefix: str,  # tob_wgs_genetics/saige_qtl/input/
     chromosome: str,
     cell_type: str,
-) -> sc.AnnData:
+) -> scanpy.AnnData:
     """Extracts relevant expression info
 
     Input:
@@ -91,7 +90,7 @@ def get_chrom_celltype_expression(
         )
     ).copy('here.h5ad')
     
-    expression_adata = sc.read(expression_h5ad_path)
+    expression_adata = scanpy.read(expression_h5ad_path)
 
     # select only genes on relevant chromosome
     genes_chrom = gene_info_df[gene_info_df['chr'] == chromosome].gene_name
@@ -188,7 +187,14 @@ def expression_pipeline(
     """
     Run expression processing pipeline
     """
-
+    # Initializing Batch
+    backend = hb.ServiceBackend(
+        billing_project=get_config()['hail']['billing_project'],
+        remote_tmpdir=remote_tmpdir(),
+    )
+    b = hb.Batch(
+        backend=backend, default_python_image=config['workflow']['driver_image']
+    )
     logging.info(f'Cell types to run: {celltypes}')
     logging.info(f'Chromosomes to run: {chromosomes}')
 
@@ -203,16 +209,16 @@ def expression_pipeline(
         )
         for chromosome in chromosomes.split(','):
             # get expression (cell type + chromosome)
-            expr_adata: sc.AnnData = get_chrom_celltype_expression(
-                gene_info_df=gene_info_df,
+            j = b.new_python_job(name='Get expression (cell type + chr)')
+            expr_adata = j.call(get_chrom_celltype_expression,gene_info_df=gene_info_df,
                 expression_files_prefix=expression_files_prefix,
                 chromosome=chromosome,
-                cell_type=celltype,
+                cell_type=celltype
             )
             #remove lowly expressed genes
-            filter_adata: sc.AnnData = filter_lowly_expressed_genes(
-                expression_adata=expr_adata, min_pct=min_pct_expr
-            )
+            #filter_adata: scanpy.AnnData = filter_lowly_expressed_genes(
+            #    expression_adata=expr_adata, min_pct=min_pct_expr
+            #)
 
    
 
