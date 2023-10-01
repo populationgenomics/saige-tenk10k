@@ -31,7 +31,7 @@ import os
 import logging
 import math
 import sys
-from tkinter.tix import CELL
+#from tkinter.tix import CELL
 
 import click
 import hail as hl
@@ -57,7 +57,7 @@ CELLREGMAP_IMAGE = (
 )
 
 
-def filter_lowly_expressed_genes(expression_adata, min_pct=5) -> scanpy.AnnData:
+def filter_lowly_expressed_genes(expression_adata, min_pct=5) -> sc.AnnData:
     """Remove genes with low expression across cells
 
     Input: adata with all genes
@@ -77,7 +77,7 @@ def get_chrom_celltype_expression(
     expression_files_prefix: str,  # tob_wgs_genetics/saige_qtl/input/
     chromosome: str,
     cell_type: str,
-) -> scanpy.AnnData:
+) -> sc.AnnData:
     """Extracts relevant expression info
 
     Input:
@@ -99,7 +99,7 @@ def get_chrom_celltype_expression(
         )
     ).copy('here.h5ad')
     
-    expression_adata = scanpy.read(expression_h5ad_path)
+    expression_adata = sc.read(expression_h5ad_path)
 
     # select only genes on relevant chromosome
     genes_chrom = gene_info_df[gene_info_df['chr'] == chromosome].gene_name
@@ -222,9 +222,7 @@ def expression_pipeline(
         )
         for chromosome in chromosomes.split(','):
             # get expression (cell type + chromosome)
-            gene_exp_prep_job = get_batch().new_python_job(name = f'gene expression preparation for {chromosome}, {celltype}')
-            gene_exp_prep_job.image(CELLREGMAP_IMAGE)
-            expr_adata = gene_exp_prep_job.call(get_chrom_celltype_expression,
+            expr_adata: sc.AnnData = get_chrom_celltype_expression(
                 gene_info_df=gene_info_df,
                 expression_files_prefix=expression_files_prefix,
                 chromosome=chromosome,
