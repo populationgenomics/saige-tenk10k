@@ -36,7 +36,7 @@ import click
 import hail as hl
 import hailtop.batch as hb
 import pandas as pd
-import scanpy as sc
+#import scanpy as sc
 
 from cpg_utils import to_path
 from cpg_utils.hail_batch import copy_common_env, dataset_path, output_path
@@ -76,7 +76,7 @@ def get_chrom_celltype_expression(
     expression_files_prefix: str,  # tob_wgs_genetics/saige_qtl/input/
     chromosome: str,
     cell_type: str,
-) -> sc.AnnData:
+) -> scanpy.AnnData:
     """Extracts relevant expression info
 
     Input:
@@ -98,7 +98,7 @@ def get_chrom_celltype_expression(
         )
     ).copy('here.h5ad')
     
-    expression_adata = sc.read(expression_h5ad_path)
+    expression_adata = scanpy.read(expression_h5ad_path)
 
     # select only genes on relevant chromosome
     genes_chrom = gene_info_df[gene_info_df['chr'] == chromosome].gene_name
