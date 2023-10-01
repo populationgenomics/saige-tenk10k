@@ -18,9 +18,9 @@ analysis-runner \
     --dataset tob-wgs \
     --access-level test \
     --output-dir 'tob_wgs_genetics/saige_qtl/hope-test-input' \
-    --image australia-southeast1-docker.pkg.dev/cpg-common/images/cellregmap:0.0.1 \
+    --image australia-southeast1-docker.pkg.dev/cpg-common/images/cellregmap:0.0.3 \
     --description 'scRNA-seq processing batch job test' \
-    python3 gene_expression_processing.py \
+    python3 gene_expression_processing_simple.py \
     --celltypes=B_IN --chromosomes=chr22 \
     --gene-info-tsv=gs://cpg-tob-wgs-test/scrna-seq/grch38_association_files/gene_location_files/GRCh38_geneloc_chr22.tsv \
     --sample-mapping-file-path=gs://cpg-tob-wgs-test/scrna-seq/grch38_association_files/OneK1K_CPG_IDs.tsv \
@@ -111,21 +111,7 @@ def expression_pipeline(
     smf_df = pd.read_csv(sample_mapping_file_path, sep='\t')
     gene_info_df = pd.read_csv(gene_info_tsv, sep='\t')
 
-    for celltype in celltypes.split(','):
-        # get covariates (cell type specific)
-        for chromosome in chromosomes.split(','):
-            # get expression (cell type + chromosome)
-            expr_adata= get_chrom_celltype_expression(
-                gene_info_df=gene_info_df,
-                expression_files_prefix=expression_files_prefix,
-                chromosome=chromosome,
-                cell_type=celltype,
-            )
-            # remove lowly expressed genes
-            #filter_adata: sc.AnnData = filter_lowly_expressed_genes(
-           #     expression_adata=expr_adata, min_pct=min_pct_expr
-           # )
-
+    
     # set jobs running
     b.run(wait=False)
 
