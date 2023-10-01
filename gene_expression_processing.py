@@ -74,7 +74,7 @@ def get_chrom_celltype_expression(
     chromosome: str,
     cell_type: str,
 ):
-    import scanpy
+    #import scanpy
     """Extracts relevant expression info
 
     Input:
