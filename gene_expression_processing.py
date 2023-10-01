@@ -23,7 +23,8 @@ analysis-runner \
     python3 gene_expression_processing.py \
     --celltypes=B_IN --chromosomes=chr22 \
     --gene-info-tsv=gs://cpg-tob-wgs-test/scrna-seq/grch38_association_files/gene_location_files/GRCh38_geneloc_chr22.tsv \
-    --sample-mapping-file-path=gs://cpg-tob-wgs-test/scrna-seq/grch38_association_files/OneK1K_CPG_IDs.tsv
+    --sample-mapping-file-path=gs://cpg-tob-wgs-test/scrna-seq/grch38_association_files/OneK1K_CPG_IDs.tsv \
+    --expression-files-prefix=hope-test
 
 """
 
