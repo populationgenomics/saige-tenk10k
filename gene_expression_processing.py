@@ -30,6 +30,7 @@ import os
 import logging
 import math
 import sys
+from tkinter.tix import CELL
 
 import click
 import hail as hl
@@ -220,16 +221,18 @@ def expression_pipeline(
         )
         for chromosome in chromosomes.split(','):
             # get expression (cell type + chromosome)
-            expr_adata: sc.AnnData = get_chrom_celltype_expression(
+            gene_exp_prep_job = get_batch().new_python_job(name = f'gene expression preparation for {chromosome}, {celltype}')
+            gene_exp_prep_job.image(CELLREGMAP_IMAGE)
+            expr_adata = gene_exp_prep_job.call(get_chrom_celltype_expression,
                 gene_info_df=gene_info_df,
                 expression_files_prefix=expression_files_prefix,
                 chromosome=chromosome,
                 cell_type=celltype,
             )
             # remove lowly expressed genes
-            filter_adata: sc.AnnData = filter_lowly_expressed_genes(
-                expression_adata=expr_adata, min_pct=min_pct_expr
-            )
+            #filter_adata: sc.AnnData = filter_lowly_expressed_genes(
+           #     expression_adata=expr_adata, min_pct=min_pct_expr
+           # )
 
     # set jobs running
     get_batch().run(wait=False)
