@@ -94,9 +94,10 @@ def get_chrom_celltype_expression(
     expression_adata = scanpy.read(expression_h5ad_path)
 
     # select only genes on relevant chromosome
-    genes_chrom = gene_info_df[gene_info_df['chr'] == chromosome].gene_name
+    #genes_chrom = gene_info_df[gene_info_df['chr'] == chromosome].gene_name
     # return expression for the correct chromosomes only
-    return expression_adata[:, expression_adata.var_names.isin(genes_chrom)]
+    return expression_adata
+    #return expression_adata[:, expression_adata.var_names.isin(genes_chrom)]
 
 
 def get_celltype_covariates(
