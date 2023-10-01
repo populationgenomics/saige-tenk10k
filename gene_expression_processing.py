@@ -212,10 +212,7 @@ def expression_pipeline(
             # get expression (cell type + chromosome)
             j = b.new_python_job(name='Get expression (cell type + chr)')
             j.image(CELLREGMAP_IMAGE)
-          #  expr_adata = j.call(get_chrom_celltype_expression,gene_info_df=gene_info_df,
-           #     expression_files_prefix=expression_files_prefix,
-           ##      cell_type=celltype
-           # )
+            expr_adata = j.call(get_chrom_celltype_expression,gene_info_df,expression_files_prefix,chromosome,celltype)
             #f = b.new_python_job(name = 'remove lowly expressed genes')
            # filter_adata = f.call(filter_lowly_expressed_genes,expression_adata=expr_adata, min_pct=min_pct_expr)
 
