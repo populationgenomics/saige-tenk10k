@@ -221,13 +221,10 @@ def expression_pipeline(
                 chromosome=chromosome,
                 cell_type=celltype
             )
-            #remove lowly expressed genes
-            #filter_adata: scanpy.AnnData = filter_lowly_expressed_genes(
-            #    expression_adata=expr_adata, min_pct=min_pct_expr
-            #)
+            #f = b.new_python_job(name = 'remove lowly expressed genes')
+           # filter_adata = f.call(filter_lowly_expressed_genes,expression_adata=expr_adata, min_pct=min_pct_expr)
 
-   
-
+    b.run(wait=False)
 
 if __name__ == '__main__':
     expression_pipeline()  # pylint: disable=no-value-for-parameter
