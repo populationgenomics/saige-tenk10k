@@ -14,16 +14,13 @@ This script will:
 More details in README
 output files in tob_wgs_genetics/saige_qtl/input
 
-    --image australia-southeast1-docker.pkg.dev/cpg-common/images/cellregmap:0.0.1 \
+   
 
-
-analysis-runner \
-    --dataset tob-wgs \
-    --access-level test \
-    --output-dir 'tob_wgs_genetics/saige_qtl/hope-test-input' \
-    --description 'scRNA-seq processing batch job test' \
-    gene_expression_processing.py \
-    --celltypes=B_IN --chromosomes=chr22 \
+    analysis-runner --dataset "tob-wgs" \
+    --description "prepare expression files" \
+    --access-level "test" --image australia-southeast1-docker.pkg.dev/cpg-common/images/cellregmap:0.0.3 \
+    --output-dir "tob_wgs_genetics/saige_qtl/hope-test-input" \
+     gene_expression_processing.py  --celltypes=B_IN --chromosomes=chr22 \
     --gene-info-tsv=gs://cpg-tob-wgs-test/scrna-seq/grch38_association_files/gene_location_files/GRCh38_geneloc_chr22.tsv \
     --sample-mapping-file-path=gs://cpg-tob-wgs-test/scrna-seq/grch38_association_files/OneK1K_CPG_IDs.tsv \
     --expression-files-prefix=hope-test
@@ -38,14 +35,13 @@ import sys
 
 import click
 import hail as hl
-import hailtop.batch as hb
 import pandas as pd
 import scanpy as sc
 
 from cpg_utils import to_path
 
 from cpg_utils.hail_batch import copy_common_env, dataset_path, output_path
-from cpg_workflows.batch import get_batch
+
 
 
 CELLREGMAP_IMAGE = (
@@ -200,17 +196,6 @@ def expression_pipeline(
     smf_df = pd.read_csv(sample_mapping_file_path, sep='\t')
     gene_info_df = pd.read_csv(gene_info_tsv, sep='\t')
 
-    # Setup MAX concurrency by genes
-    _dependent_jobs: list[hb.batch.job.Job] = []
-
-    def manage_concurrency_for_job(job: hb.batch.job.Job):
-        """
-        To avoid having too many jobs running at once, we have to limit concurrency.
-        """
-        if len(_dependent_jobs) >= max_gene_concurrency:
-            job.depends_on(_dependent_jobs[-max_gene_concurrency])
-        _dependent_jobs.append(job)
-
     for celltype in celltypes.split(','):
         # get covariates (cell type specific)
         cov_df = get_celltype_covariates(
@@ -229,8 +214,7 @@ def expression_pipeline(
            #     expression_adata=expr_adata, min_pct=min_pct_expr
            # )
 
-    # set jobs running
-    get_batch().run(wait=False)
+   
 
 
 if __name__ == '__main__':
