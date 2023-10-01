@@ -14,13 +14,15 @@ This script will:
 More details in README
 output files in tob_wgs_genetics/saige_qtl/input
 
+    --image australia-southeast1-docker.pkg.dev/cpg-common/images/cellregmap:0.0.1 \
+
+
 analysis-runner \
     --dataset tob-wgs \
     --access-level test \
     --output-dir 'tob_wgs_genetics/saige_qtl/hope-test-input' \
-    --image australia-southeast1-docker.pkg.dev/cpg-common/images/cellregmap:0.0.1 \
     --description 'scRNA-seq processing batch job test' \
-    python3 gene_expression_processing.py \
+    gene_expression_processing.py \
     --celltypes=B_IN --chromosomes=chr22 \
     --gene-info-tsv=gs://cpg-tob-wgs-test/scrna-seq/grch38_association_files/gene_location_files/GRCh38_geneloc_chr22.tsv \
     --sample-mapping-file-path=gs://cpg-tob-wgs-test/scrna-seq/grch38_association_files/OneK1K_CPG_IDs.tsv \

@@ -13,12 +13,11 @@ This script will:
 
 More details in README
 output files in tob_wgs_genetics/saige_qtl/input
-
+ --image australia-southeast1-docker.pkg.dev/cpg-common/images/cellregmap:0.0.3 \
 analysis-runner \
     --dataset tob-wgs \
     --access-level test \
     --output-dir 'tob_wgs_genetics/saige_qtl/hope-test-input' \
-    --image australia-southeast1-docker.pkg.dev/cpg-common/images/cellregmap:0.0.3 \
     --description 'scRNA-seq processing batch job test' \
     gene_expression_processing_simple.py \
 
@@ -27,8 +26,6 @@ analysis-runner \
 from cpg_workflows.batch import get_batch
 
 
-
-@click.command()
 
 def main():
     b = get_batch()
