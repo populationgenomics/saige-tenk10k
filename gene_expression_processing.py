@@ -91,12 +91,7 @@ def get_chrom_celltype_expression(
     # first line is where the file is now,
     # but (second line) the files will eventually be in the below folder
     # and split by cell type (at least this all naive B cells only)
-    expression_h5ad_path = to_path(
-        dataset_path(
-            f'scrna-seq/CellRegMap_input_files/expression_objects/sce22.h5ad'
-        )
-    )
-    
+    expression_h5ad_path = 'gs://cpg-tob-wgs-test/scrna-seq/CellRegMap_input_files/expression_objects/sce22.h5ad'
     expression_adata = scanpy.read(expression_h5ad_path)
 
     # select only genes on relevant chromosome
