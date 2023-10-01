@@ -75,7 +75,6 @@ def get_chrom_celltype_expression(
     cell_type: str,
 ):
     import scanpy
-    import pandas
     """Extracts relevant expression info
 
     Input:
