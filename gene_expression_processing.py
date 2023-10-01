@@ -194,7 +194,7 @@ def expression_pipeline(
     
     b =get_batch()
     config = get_config()
-    scanpy_image = hb.build_python_image(config['workflow']['driver_image'],
+    scanpy_image = hb.build_python_image('australia-southeast1-docker.pkg.dev/cpg-common/images/scanpy',
                            requirements=['pandas', 'scanpy'])
 
     logging.info(f'Cell types to run: {celltypes}')
