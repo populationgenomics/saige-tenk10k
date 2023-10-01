@@ -18,6 +18,7 @@ analysis-runner \
     --dataset tob-wgs \
     --access-level test \
     --output-dir 'tob_wgs_genetics/saige_qtl/hope-test-input' \
+    --image australia-southeast1-docker.pkg.dev/cpg-common/images/cellregmap:0.0.3 \
     --description 'scRNA-seq processing batch job test' \
     python3 gene_expression_processing.py \
     --celltypes=B_IN --chromosomes=chr22 \
@@ -36,7 +37,7 @@ import click
 import hail as hl
 import hailtop.batch as hb
 import pandas as pd
-#import scanpy as sc
+import scanpy as sc
 
 from cpg_utils import to_path
 from cpg_utils.hail_batch import copy_common_env, dataset_path, output_path
@@ -56,7 +57,7 @@ CELLREGMAP_IMAGE = (
 )
 
 
-def filter_lowly_expressed_genes(expression_adata, min_pct=5) -> sc.AnnData:
+def filter_lowly_expressed_genes(expression_adata, min_pct=5) -> scanpy.AnnData:
     """Remove genes with low expression across cells
 
     Input: adata with all genes
