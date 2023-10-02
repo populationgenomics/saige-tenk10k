@@ -214,16 +214,16 @@ def expression_pipeline(
         )
         for chromosome in chromosomes.split(','):
             # get expression (cell type + chromosome)
-            expr_adata: sc.AnnData = get_chrom_celltype_expression(
-                gene_info_df=gene_info_df,
-                expression_files_prefix=expression_files_prefix,
-                chromosome=chromosome,
-                cell_type=celltype,
-            )
+           # expr_adata: sc.AnnData = get_chrom_celltype_expression(
+            #    gene_info_df=gene_info_df,
+           #     expression_files_prefix=expression_files_prefix,
+           #     chromosome=chromosome,
+           #     cell_type=celltype,
+          #  )
             # remove lowly expressed genes
-            filter_adata: sc.AnnData = filter_lowly_expressed_genes(
-                expression_adata=expr_adata, min_pct=min_pct_expr
-            )
+           # filter_adata: sc.AnnData = filter_lowly_expressed_genes(
+           #     expression_adata=expr_adata, min_pct=min_pct_expr
+          #  )
 
             j = b.new_python_job(name='Get expression (cell type + chr)')
             j.storage('20G')
