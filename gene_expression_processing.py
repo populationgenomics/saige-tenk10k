@@ -103,6 +103,8 @@ def get_chrom_celltype_expression(
     # return expression for the correct chromosomes only
     return expression_adata[:, expression_adata.var_names.isin(genes_chrom)]
 
+    
+
 
 def get_celltype_covariates(
     expression_files_prefix: str,
@@ -211,17 +213,19 @@ def expression_pipeline(
         )
         for chromosome in chromosomes.split(','):
             # get expression (cell type + chromosome)
-            j = b.new_python_job(name='Get expression (cell type + chr)')
-            j.storage('20G')
-            j.cpu(8)
-            j.image(config['workflow']['driver_image'])
-            expr_adata = j.call(get_chrom_celltype_expression,gene_info_df,expression_files_prefix,chromosome,celltype)
-            b.write_output(expr_adata.as_str(), output_path('tob_wgs_genetics/saige_qtl/hope-test-input/expr_adata.h5ad'))
-            #f = b.new_python_job(name = 'remove lowly expressed genes')
-            #f.storage('20G')
-            #f.cpu(8)
-            #f.image(config['workflow']['driver_image'])
-            #filter_adata = f.call(filter_lowly_expressed_genes,expr_adata, min_pct_expr)
+            expr_adata: sc.AnnData = get_chrom_celltype_expression(
+                gene_info_df=gene_info_df,
+                expression_files_prefix=expression_files_prefix,
+                chromosome=chromosome,
+                cell_type=celltype,
+            )
+           # j = b.new_python_job(name='Get expression (cell type + chr)')
+            #j.storage('20G')
+           # j.cpu(8)
+            #j.image(config['workflow']['driver_image'])
+            #expr_adata = j.call(get_chrom_celltype_expression,gene_info_df,expression_files_prefix,chromosome,celltype)
+            #b.write_output(expr_adata.as_str(), output_path('expr_adata.h5ad'))
+          
 
     b.run(wait=False)
 
