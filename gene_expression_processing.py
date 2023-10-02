@@ -59,7 +59,8 @@ def get_chrom_celltype_expression_and_filter(
     expression_files_prefix: str,  # tob_wgs_genetics/saige_qtl/input/
     chromosome: str,
     cell_type: str,
-    min_pct: int
+    min_pct: int,
+    local_ofile_path: hb.ResourceGroup
 ):
     """Extracts relevant expression info AND remove genes with low expression across cells 
 
@@ -95,9 +96,8 @@ def get_chrom_celltype_expression_and_filter(
     assert isinstance(expression_adata, scanpy.AnnData)
     print(expression_adata)
 
-    # write expression_adata to GCS path
-    #expression_h5ad_path = output_path(f'filtered_{cell_type}.h5ad')
-    expression_adata.write_h5ad('gs://cpg-tob-wgs-test/tob_wgs_genetics/saige_qtl/hope-test-input/filtered_B_IN.h5ad')
+    # write expression_adata to tmp file path
+    expression_adata.write_h5ad(local_ofile_path)
 
     return 'potato'
 
@@ -212,14 +212,11 @@ def expression_pipeline(
             j.storage('20G')
             j.cpu(8)
             j.image(config['workflow']['driver_image'])
-            filter_adata = j.call(get_chrom_celltype_expression_and_filter,gene_info_df,expression_files_prefix,chromosome,celltype,min_pct_expr)
+            j.declare_resource_group(ofile = {'h5ad': 'filtered.h5ad'})
+            filter_adata = j.call(get_chrom_celltype_expression_and_filter,gene_info_df,expression_files_prefix,chromosome,celltype,min_pct_expr,j.ofile)
+            b.write_output(j.ofile, output_path(f'filtered_{celltype}.h5ad'))
             
-            #f = b.new_python_job(name = 'filter lowly expressed genes')
-            #f.storage('20G')
-            #f.cpu(8)
-            #f.image(config['workflow']['driver_image'])
-           # filter_adata = f.call(filter_lowly_expressed_genes,expr_adata, min_pct_expr)
-            #b.write_output(filter_adata.as_str(), output_path('hope-test-filter_adata.txt'))
+            
                 
         
             # combine files for each gene
