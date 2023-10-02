@@ -54,12 +54,6 @@ config = get_config()
 SCANPY_IMAGE = config['images']['scanpy']
 
 
-def filter_lowly_expressed_genes(expression_adata, min_pct):
-
-
-    return expression_adata
-
-
 def get_chrom_celltype_expression_and_filter(
     gene_info_df,
     expression_files_prefix: str,  # tob_wgs_genetics/saige_qtl/input/
@@ -97,7 +91,7 @@ def get_chrom_celltype_expression_and_filter(
     #filter lowly expressed genes 
     n_all_cells = len(expression_adata.obs.index)
     min_cells = math.ceil((n_all_cells * min_pct) / 100)
-    expression_adata = scanpy.pp.filter_genes(expression_adata, min_cells=min_cells)
+    #expression_adata = scanpy.pp.filter_genes(expression_adata, min_cells=min_cells)
     #assert isinstance(expression_adata, scanpy.AnnData)
     print(expression_adata)
 
