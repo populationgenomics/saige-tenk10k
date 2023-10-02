@@ -196,7 +196,7 @@ def expression_pipeline(
     """
     Run expression processing pipeline
     """
-    
+    config = get_config()
     backend = hb.ServiceBackend(
         billing_project=get_config()['hail']['billing_project'],
         remote_tmpdir=remote_tmpdir(),
@@ -204,7 +204,7 @@ def expression_pipeline(
     b = hb.Batch(
         backend=backend, default_python_image=config['workflow']['driver_image'],
         default_memory='50G', default_cpu = 8, default_storage = '50G')
-    config = get_config()
+    
 
     logging.info(f'Cell types to run: {celltypes}')
     logging.info(f'Chromosomes to run: {chromosomes}')
