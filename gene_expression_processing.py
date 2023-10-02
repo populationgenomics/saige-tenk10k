@@ -197,13 +197,7 @@ def expression_pipeline(
     Run expression processing pipeline
     """
     config = get_config()
-    backend = hb.ServiceBackend(
-        billing_project=get_config()['hail']['billing_project'],
-        remote_tmpdir=remote_tmpdir(),
-    )
-    b = hb.Batch(
-        backend=backend, default_python_image=config['workflow']['driver_image'],
-        default_memory='50G', default_cpu = 8, default_storage = '50G')
+    b = get_batch()
     
 
     logging.info(f'Cell types to run: {celltypes}')
@@ -220,22 +214,22 @@ def expression_pipeline(
         )
         for chromosome in chromosomes.split(','):
             # get expression (cell type + chromosome)
-            expr_adata = get_chrom_celltype_expression(
-                gene_info_df=gene_info_df,
-                expression_files_prefix=expression_files_prefix,
-                chromosome=chromosome,
-                cell_type=celltype
-            )
+            #expr_adata = get_chrom_celltype_expression(
+            #    gene_info_df=gene_info_df,
+            #    expression_files_prefix=expression_files_prefix,
+            #    chromosome=chromosome,
+            #    cell_type=celltype
+            #)
             # remove lowly expressed genes
-            filter_adata = filter_lowly_expressed_genes(
-                expression_adata=expr_adata, min_pct=min_pct_expr
-            )
+            #filter_adata = filter_lowly_expressed_genes(
+            #    expression_adata=expr_adata, min_pct=min_pct_expr
+            #)
 
-            #j = b.new_python_job(name='Get expression (cell type + chr)')
-            #j.storage('20G')
-            #j.cpu(8)
-            #j.image(config['workflow']['driver_image'])
-            #j.call(get_chrom_celltype_expression,gene_info_df,expression_files_prefix,chromosome,celltype)
+            j = b.new_python_job(name='Get expression (cell type + chr)')
+            j.storage('20G')
+            j.cpu(8)
+            j.image(config['workflow']['driver_image'])
+            filter_adata = j.call(get_chrom_celltype_expression,gene_info_df,expression_files_prefix,chromosome,celltype)
             
             #f = b.new_python_job(name = 'filter lowly expressed genes')
             #f.storage('20G')
@@ -244,21 +238,26 @@ def expression_pipeline(
            # filter_adata = f.call(filter_lowly_expressed_genes,expr_adata, min_pct_expr)
             #b.write_output(filter_adata.as_str(), output_path('hope-test-filter_adata.txt'))
 
-
+            expression_h5ad_path = to_path(
+            dataset_path(
+                f'tob_wgs_genetics/saige_qtl/hope-test-input/filtered22_zipped.h5ad'
+            )
+            ).copy('here.h5ad')
+            expression_adata = scanpy.read(expression_h5ad_path)
             # combine files for each gene
             # pylint: disable=no-member
-         #   for gene in filter_adata.var_names:
-          #      pheno_cov_job = b.new_python_job(name=f'Create pheno cov job for {gene}')
-          #      pheno_cov_job.storage('35G')
-          #      pheno_cov_job.cpu(8)
-          #      pheno_cov_job.image(config['workflow']['driver_image'])
-#
+            for gene in filter_adata.var_names:
+                pheno_cov_job = b.new_python_job(name=f'Create pheno cov job for {gene}')
+                pheno_cov_job.storage('35G')
+                pheno_cov_job.cpu(8)
+                pheno_cov_job.image(config['workflow']['driver_image'])
+
                 # pass the output file path to the job, don't expect an object back
-           #     pheno_cov_job.call(
-            #        build_pheno_cov_filename,gene,cov_df,filter_adata,smf_df,output_path(
-            #            f'input_files/pheno_cov_files/{gene}_{celltype}.csv'
-            #        )
-            #    )
+                pheno_cov_job.call(
+                    build_pheno_cov_filename,gene,cov_df,filter_adata,smf_df,output_path(
+                        f'input_files/pheno_cov_files/{gene}_{celltype}.csv'
+                    )
+                )
 
           
 
