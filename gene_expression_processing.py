@@ -105,7 +105,7 @@ def get_chrom_celltype_expression(
     expression_adata = expression_adata[:, expression_adata.var_names.isin(genes_chrom)]
     n_all_cells = len(expression_adata.obs.index)
     min_cells = math.ceil((n_all_cells * 5) / 100)
-    expression_adata = scanpy.pp.filter_genes(expression_adata, min_cells=min_cells)
+    #expression_adata = scanpy.pp.filter_genes(expression_adata, min_cells=min_cells)
     output_name = output_path('filtered_sce22.h5ad')
     expression_adata.write_h5ad(output_name)
 
