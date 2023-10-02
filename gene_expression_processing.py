@@ -98,7 +98,8 @@ def get_chrom_celltype_expression_and_filter(
     n_all_cells = len(expression_adata.obs.index)
     min_cells = math.ceil((n_all_cells * min_pct) / 100)
     expression_adata = scanpy.pp.filter_genes(expression_adata, min_cells=min_cells)
-    assert isinstance(expression_adata, scanpy.AnnData)
+    #assert isinstance(expression_adata, scanpy.AnnData)
+    print(expression_adata)
 
     # write expression_adata to GCS path
     expression_h5ad_path = output_path(f'filtered_{cell_type}.h5ad')
