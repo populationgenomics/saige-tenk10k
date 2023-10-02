@@ -102,7 +102,11 @@ def get_chrom_celltype_expression(
     # select only genes on relevant chromosome
     genes_chrom = gene_info_df[gene_info_df['chr'] == chromosome].gene_name
     # return expression for the correct chromosomes only
-    return expression_adata[:, expression_adata.var_names.isin(genes_chrom)]
+    expression_adata = expression_adata[:, expression_adata.var_names.isin(genes_chrom)]
+    n_all_cells = len(expression_adata.obs.index)
+    min_cells = math.ceil((n_all_cells * 5) / 100)
+    expression_adata = scanpy.pp.filter_genes(expression_adata, min_cells=min_cells)
+    return(expression_adata)
 
     
 
@@ -214,29 +218,29 @@ def expression_pipeline(
         )
         for chromosome in chromosomes.split(','):
             # get expression (cell type + chromosome)
-           # expr_adata: sc.AnnData = get_chrom_celltype_expression(
-            #    gene_info_df=gene_info_df,
-           #     expression_files_prefix=expression_files_prefix,
-           #     chromosome=chromosome,
-           #     cell_type=celltype,
-          #  )
+            expr_adata = get_chrom_celltype_expression(
+                gene_info_df=gene_info_df,
+                expression_files_prefix=expression_files_prefix,
+                chromosome=chromosome,
+                cell_type=celltype
+            )
             # remove lowly expressed genes
            # filter_adata: sc.AnnData = filter_lowly_expressed_genes(
            #     expression_adata=expr_adata, min_pct=min_pct_expr
           #  )
 
-            j = b.new_python_job(name='Get expression (cell type + chr)')
-            j.storage('20G')
-            j.cpu(8)
-            j.image(config['workflow']['driver_image'])
-            expr_adata = j.call(get_chrom_celltype_expression,gene_info_df,expression_files_prefix,chromosome,celltype)
+           # j = b.new_python_job(name='Get expression (cell type + chr)')
+           # j.storage('20G')
+            #j.cpu(8)
+            #j.image(config['workflow']['driver_image'])
+           # expr_adata = j.call(get_chrom_celltype_expression,gene_info_df,expression_files_prefix,chromosome,celltype)
             
-            f = b.new_python_job(name = 'filter lowly expressed genes')
-            f.storage('20G')
-            f.cpu(8)
-            f.image(config['workflow']['driver_image'])
-            filter_adata = f.call(filter_lowly_expressed_genes,expr_adata, min_pct_expr)
-            b.write_output(filter_adata.as_str(), output_path('hope-test-filter_adata.txt'))
+            #f = b.new_python_job(name = 'filter lowly expressed genes')
+            #f.storage('20G')
+            #f.cpu(8)
+            #f.image(config['workflow']['driver_image'])
+           # filter_adata = f.call(filter_lowly_expressed_genes,expr_adata, min_pct_expr)
+            #b.write_output(filter_adata.as_str(), output_path('hope-test-filter_adata.txt'))
 
 
             # combine files for each gene
