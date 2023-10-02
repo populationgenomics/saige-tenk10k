@@ -40,7 +40,6 @@ import pandas as pd
 from cpg_workflows.batch import get_batch
 import hailtop.batch as hb
 import scanpy
-from hail import HailContext
 
 
 from cpg_utils import to_path
