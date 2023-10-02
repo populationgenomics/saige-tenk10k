@@ -64,7 +64,8 @@ def filter_lowly_expressed_genes(expression_adata, min_pct):
     n_all_cells = len(expression_adata.obs.index)
     min_cells = math.ceil((n_all_cells * min_pct) / 100)
     expression_adata = scanpy.pp.filter_genes(expression_adata, min_cells=min_cells)
-    assert isinstance(expression_adata, scanpy.AnnData)
+    print(expression_adata)
+    #assert isinstance(expression_adata, scanpy.AnnData)
 
     return expression_adata
 
@@ -224,12 +225,18 @@ def expression_pipeline(
                 expression_adata=expr_adata, min_pct=min_pct_expr
             )
 
-           # j = b.new_python_job(name='Get expression (cell type + chr)')
-            #j.storage('20G')
-           # j.cpu(8)
-            #j.image(config['workflow']['driver_image'])
-            #expr_adata = j.call(get_chrom_celltype_expression,gene_info_df,expression_files_prefix,chromosome,celltype)
-            #b.write_output(expr_adata.as_str(), output_path('expr_adata.h5ad'))
+            j = b.new_python_job(name='Get expression (cell type + chr)')
+            j.storage('20G')
+            j.cpu(8)
+            j.image(config['workflow']['driver_image'])
+            expr_adata = j.call(get_chrom_celltype_expression,gene_info_df,expression_files_prefix,chromosome,celltype)
+            
+            f = b.new_python_job(name = 'filter lowly expressed genes')
+            f.storage('20G')
+            f.cpu(8)
+            f.image(config['workflow']['driver_image'])
+            filter_adata = f.call(filter_lowly_expressed_genes,expr_adata, min_pct_expr)
+
           
 
     b.run(wait=False)
