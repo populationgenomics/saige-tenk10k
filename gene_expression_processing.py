@@ -237,6 +237,21 @@ def expression_pipeline(
             f.image(config['workflow']['driver_image'])
             filter_adata = f.call(filter_lowly_expressed_genes,expr_adata, min_pct_expr)
 
+            # combine files for each gene
+            # pylint: disable=no-member
+            for gene in filter_adata.var_names:
+                pheno_cov_job = b.new_python_job(name=f'Create pheno cov job for {gene}')
+                pheno_cov_job.storage('35G')
+                pheno_cov_job.cpu(8)
+                pheno_cov_job.image(config['workflow']['driver_image'])
+
+                # pass the output file path to the job, don't expect an object back
+                pheno_cov_job.call(
+                    build_pheno_cov_filename,gene,cov_df,filter_adata,smf_df,output_path(
+                        f'input_files/pheno_cov_files/{gene}_{celltype}.csv'
+                    )
+                )
+
           
 
     b.run(wait=False)
