@@ -20,7 +20,7 @@ output files in tob_wgs_genetics/saige_qtl/input
     --description "prepare expression files" \
     --access-level "test" \
     --output-dir "tob_wgs_genetics/saige_qtl/hope-test-input" \
-    --image australia-southeast1-docker.pkg.dev/cpg-common/images/cellregmap:0.0.3 \
+    --image australia-southeast1-docker.pkg.dev/cpg-common/images/scanpy:1.9.3 \
      gene_expression_processing.py  --celltypes=B_IN --chromosomes=chr22 \
     --gene-info-tsv=gs://cpg-tob-wgs-test/scrna-seq/grch38_association_files/gene_location_files/GRCh38_geneloc_chr22.tsv \
     --sample-mapping-file-path=gs://cpg-tob-wgs-test/scrna-seq/grch38_association_files/OneK1K_CPG_IDs.tsv \
@@ -50,7 +50,7 @@ from cpg_utils.hail_batch import copy_common_env, dataset_path, output_path
 config = get_config()
 
 
-CELLREGMAP_IMAGE = config['images']['cellregmap']
+SCANPY_IMAGE = config['images']['scanpy']
 
 
 def filter_lowly_expressed_genes(expression_adata, min_pct=5):
