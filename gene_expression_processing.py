@@ -225,11 +225,11 @@ def expression_pipeline(
             #    expression_adata=expr_adata, min_pct=min_pct_expr
             #)
 
-            j = b.new_python_job(name='Get expression (cell type + chr)')
-            j.storage('20G')
-            j.cpu(8)
-            j.image(config['workflow']['driver_image'])
-            filter_adata = j.call(get_chrom_celltype_expression,gene_info_df,expression_files_prefix,chromosome,celltype)
+            #j = b.new_python_job(name='Get expression (cell type + chr)')
+            #j.storage('20G')
+            #.cpu(8)
+            #j.image(config['workflow']['driver_image'])
+            #filter_adata = j.call(get_chrom_celltype_expression,gene_info_df,expression_files_prefix,chromosome,celltype)
             
             #f = b.new_python_job(name = 'filter lowly expressed genes')
             #f.storage('20G')
@@ -243,7 +243,7 @@ def expression_pipeline(
                 f'tob_wgs_genetics/saige_qtl/hope-test-input/filtered22_zipped.h5ad'
             )
             ).copy('here.h5ad')
-            expression_adata = scanpy.read(expression_h5ad_path)
+            filter_adata = scanpy.read(expression_h5ad_path)
             # combine files for each gene
             # pylint: disable=no-member
             for gene in filter_adata.var_names:
