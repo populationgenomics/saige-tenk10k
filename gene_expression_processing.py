@@ -216,8 +216,11 @@ def expression_pipeline(
             j.cpu(8)
             j.image(config['workflow']['driver_image'])
             expr_adata = j.call(get_chrom_celltype_expression,gene_info_df,expression_files_prefix,chromosome,celltype)
-            #f = b.new_python_job(name = 'remove lowly expressed genes')
-           # filter_adata = f.call(filter_lowly_expressed_genes,expression_adata=expr_adata, min_pct=min_pct_expr)
+            f = b.new_python_job(name = 'remove lowly expressed genes')
+            f.storage('20G')
+            f.cpu(8)
+            f.image(config['workflow']['driver_image'])
+            filter_adata = f.call(filter_lowly_expressed_genes,expression_adata=expr_adata, min_pct=min_pct_expr)
 
     b.run(wait=False)
 
