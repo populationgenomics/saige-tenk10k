@@ -53,7 +53,7 @@ config = get_config()
 SCANPY_IMAGE = config['images']['scanpy']
 
 
-def filter_lowly_expressed_genes(expression_adata, min_pct=5):
+def filter_lowly_expressed_genes(expression_adata, min_pct):
     import scanpy 
     """Remove genes with low expression across cells
 
@@ -220,7 +220,7 @@ def expression_pipeline(
             f.storage('20G')
             f.cpu(8)
             f.image(config['workflow']['driver_image'])
-            filter_adata = f.call(filter_lowly_expressed_genes,expression_adata=expr_adata, min_pct=min_pct_expr)
+            filter_adata = f.call(filter_lowly_expressed_genes,expr_adata, min_pct_expr)
 
     b.run(wait=False)
 
