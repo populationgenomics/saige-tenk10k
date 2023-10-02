@@ -56,27 +56,19 @@ SCANPY_IMAGE = config['images']['scanpy']
 
 
 def filter_lowly_expressed_genes(expression_adata, min_pct):
-    """Remove genes with low expression across cells
 
-    Input: adata with all genes
-
-    Output: adata filtered
-    """
-    n_all_cells = len(expression_adata.obs.index)
-    min_cells = math.ceil((n_all_cells * min_pct) / 100)
-    expression_adata = scanpy.pp.filter_genes(expression_adata, min_cells=min_cells)
-    assert isinstance(expression_adata, scanpy.AnnData)
 
     return expression_adata
 
 
-def get_chrom_celltype_expression(
+def get_chrom_celltype_expression_and_filter(
     gene_info_df,
     expression_files_prefix: str,  # tob_wgs_genetics/saige_qtl/input/
     chromosome: str,
     cell_type: str,
+    min_pct: int
 ):
-    """Extracts relevant expression info
+    """Extracts relevant expression info AND remove genes with low expression across cells 
 
     Input:
     - chromosome & cell type of interest
@@ -85,7 +77,7 @@ def get_chrom_celltype_expression(
     - path to dataframe containing gene info, for each gene (=row),
     specifies chrom, start, end and strand
 
-    Output: expression adata object for only relevant genes
+    Output: GCS path to FILTERED expression adata object for only relevant genes
     """
 
     # first line is where the file is now,
@@ -101,7 +93,19 @@ def get_chrom_celltype_expression(
     # select only genes on relevant chromosome
     genes_chrom = gene_info_df[gene_info_df['chr'] == chromosome].gene_name
     # return expression for the correct chromosomes only
-    return expression_adata[:, expression_adata.var_names.isin(genes_chrom)]
+    expression_adata = expression_adata[:, expression_adata.var_names.isin(genes_chrom)]
+    
+    #filter lowly expressed genes 
+    n_all_cells = len(expression_adata.obs.index)
+    min_cells = math.ceil((n_all_cells * min_pct) / 100)
+    expression_adata = scanpy.pp.filter_genes(expression_adata, min_cells=min_cells)
+    assert isinstance(expression_adata, scanpy.AnnData)
+
+    # write expression_adata to GCS path
+    expression_h5ad_path = output_path(f'filtered_{cell_type}.h5ad')
+    expression_adata.write_h5ad(expression_h5ad_path)
+
+    return expression_h5ad_path
 
 def get_celltype_covariates(
     expression_files_prefix: str,
@@ -209,22 +213,12 @@ def expression_pipeline(
         )
         for chromosome in chromosomes.split(','):
             # get expression (cell type + chromosome)
-            #expr_adata = get_chrom_celltype_expression(
-            #    gene_info_df=gene_info_df,
-            #    expression_files_prefix=expression_files_prefix,
-            #    chromosome=chromosome,
-            #    cell_type=celltype
-            #)
-            # remove lowly expressed genes
-            #filter_adata = filter_lowly_expressed_genes(
-            #    expression_adata=expr_adata, min_pct=min_pct_expr
-            #)
 
-            #j = b.new_python_job(name='Get expression (cell type + chr)')
-            #j.storage('20G')
-            #.cpu(8)
-            #j.image(config['workflow']['driver_image'])
-            #filter_adata = j.call(get_chrom_celltype_expression,gene_info_df,expression_files_prefix,chromosome,celltype)
+            j = b.new_python_job(name='Get expression (cell type + chr) AND filter')
+            j.storage('20G')
+            j.cpu(8)
+            j.image(config['workflow']['driver_image'])
+            filter_adata = j.call(get_chrom_celltype_expression_and_filter,gene_info_df,expression_files_prefix,chromosome,celltype,min_pct_expr)
             
             #f = b.new_python_job(name = 'filter lowly expressed genes')
             #f.storage('20G')
@@ -233,28 +227,22 @@ def expression_pipeline(
            # filter_adata = f.call(filter_lowly_expressed_genes,expr_adata, min_pct_expr)
             #b.write_output(filter_adata.as_str(), output_path('hope-test-filter_adata.txt'))
                 
-            expression_h5ad_path = to_path(
-            dataset_path(
-                f'tob_wgs_genetics/saige_qtl/hope-test-input/filtered22.h5ad'
-            )
-             ).copy('here.h5ad')
-            filter_adata = scanpy.read(expression_h5ad_path)
         
             # combine files for each gene
             # pylint: disable=no-member
-            for gene in filter_adata.var_names:
-                pheno_cov_job = b.new_python_job(name=f'Create pheno cov job for {gene}')
-                pheno_cov_job.storage('35G')
-                pheno_cov_job.cpu(8)
-                pheno_cov_job.image(config['workflow']['driver_image'])
+          #  for gene in filter_adata.var_names:
+          #      pheno_cov_job = b.new_python_job(name=f'Create pheno cov job for {gene}')
+          #      pheno_cov_job.storage('35G')
+          #      pheno_cov_job.cpu(8)
+          #      pheno_cov_job.image(config['workflow']['driver_image'])
 
                 # pass the output file path to the job, don't expect an object back
-                pheno_cov_job.call(
-                    build_pheno_cov_filename,gene,cov_df,filter_adata,smf_df,output_path(
+          #      pheno_cov_job.call(
+           #         build_pheno_cov_filename,gene,cov_df,filter_adata,smf_df,output_path(
           #            f'input_files/pheno_cov_files/{gene}_{celltype}.csv'
-                    )
-                )
-
+          #          )
+           #     )
+#
           
 
     b.run(wait=False)
