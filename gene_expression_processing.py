@@ -91,13 +91,13 @@ def get_chrom_celltype_expression_and_filter(
     #filter lowly expressed genes 
     n_all_cells = len(expression_adata.obs.index)
     min_cells_input = math.ceil((n_all_cells * min_pct) / 100)
-    #expression_adata = scanpy.pp.filter_genes(expression_adata, min_cells=min_cells_input)
-    #assert isinstance(expression_adata, scanpy.AnnData)
+    scanpy.pp.filter_genes(expression_adata, min_cells=min_cells_input)
+    assert isinstance(expression_adata, scanpy.AnnData)
     print(expression_adata)
 
     # write expression_adata to GCS path
     #expression_h5ad_path = output_path(f'filtered_{cell_type}.h5ad')
-    expression_adata.write_h5ad(f'gs://cpg-tob-wgs-test/tob_wgs_genetics/saige_qtl/hope-test-input/filtered_B_IN.h5ad')
+    expression_adata.write_h5ad('gs://cpg-tob-wgs-test/tob_wgs_genetics/saige_qtl/hope-test-input/filtered_B_IN.h5ad')
 
     return 'potato'
 
