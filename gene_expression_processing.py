@@ -219,6 +219,11 @@ def expression_pipeline(
                 chromosome=chromosome,
                 cell_type=celltype,
             )
+            # remove lowly expressed genes
+            filter_adata: sc.AnnData = filter_lowly_expressed_genes(
+                expression_adata=expr_adata, min_pct=min_pct_expr
+            )
+
            # j = b.new_python_job(name='Get expression (cell type + chr)')
             #j.storage('20G')
            # j.cpu(8)
