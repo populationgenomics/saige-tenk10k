@@ -20,6 +20,7 @@ output files in tob_wgs_genetics/saige_qtl/input
     --access-level "test" \
     --output-dir "tob_wgs_genetics/saige_qtl/hope-test-input" \
     --image australia-southeast1-docker.pkg.dev/cpg-common/images/scanpy:1.9.3 \
+    --memory 20G \
      gene_expression_processing_part2.py  --celltypes=B_IN --chromosomes=chr22 \
     --gene-info-tsv=gs://cpg-tob-wgs-test/scrna-seq/grch38_association_files/gene_location_files/GRCh38_geneloc_chr22.tsv \
     --sample-mapping-file-path=gs://cpg-tob-wgs-test/scrna-seq/grch38_association_files/OneK1K_CPG_IDs.tsv \
@@ -150,11 +151,12 @@ def main(
     # create phenotype covariate files
     gene_info_df = pd.read_csv(gene_info_tsv, sep='\t')
 
+    #read in filtered anndata file: (test by taking it out of the for loop)
+    filtered_h5ad_path = to_path((output_path(f'filtered_{celltype}_{chromosome}.h5ad'))).copy('here.h5ad')
+    filter_adata = scanpy.read(filtered_h5ad_path)
+
     for celltype in celltypes.split(','):
         for chromosome in chromosomes.split(','):
-            #read in filtered anndata file: 
-            filtered_h5ad_path = to_path((output_path(f'filtered_{celltype}_{chromosome}.h5ad'))).copy('here.h5ad')
-            filter_adata = scanpy.read(filtered_h5ad_path)
 
             # combine files for each gene
             # pylint: disable=no-member
