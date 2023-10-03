@@ -212,7 +212,6 @@ def expression_pipeline(
             j.cpu(8)
             j.image(config['workflow']['driver_image'])
             filter_adata = j.call(get_chrom_celltype_expression_and_filter,gene_info_df,expression_files_prefix,chromosome,celltype,min_pct_expr,j.ofile)
-            assert isinstance(j.ofile, JobResourceFile)
             j.ofile.add_extension('.h5ad')
             b.write_output(j.ofile, output_path(f'filtered_{celltype}.h5ad'))
            
