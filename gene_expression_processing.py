@@ -59,7 +59,8 @@ def get_chrom_celltype_expression_and_filter(
     expression_files_prefix: str,  # tob_wgs_genetics/saige_qtl/input/
     chromosome: str,
     cell_type: str,
-    min_pct: int
+    min_pct: int,
+    ofile_path: str
 ):
     """Extracts relevant expression info AND remove genes with low expression across cells 
 
@@ -95,9 +96,8 @@ def get_chrom_celltype_expression_and_filter(
     assert isinstance(expression_adata, scanpy.AnnData)
     print(expression_adata)
 
-    return expression_adata
     # write expression_adata to tmp file path
-    expression_adata.write_h5ad("tmp.h5ad")
+    expression_adata.write_h5ad(str(ofile_path))
 
 
 def get_celltype_covariates(
@@ -212,7 +212,10 @@ def expression_pipeline(
             j.cpu(8)
             j.image(config['workflow']['driver_image'])
             j.declare_resource_group(ofile = {'h5ad': 'filtered.h5ad'})
-            filter_adata = j.call(get_chrom_celltype_expression_and_filter,gene_info_df,expression_files_prefix,chromosome,celltype,min_pct_expr)
+            filter_adata = j.call(get_chrom_celltype_expression_and_filter,gene_info_df,expression_files_prefix,chromosome,celltype,min_pct_expr,j.ofile)
+            assert isinstance(j.ofile, JobResourceFile)
+            j.ofile.add_extension('.h5ad')
+            b.write_output(j.ofile, output_path(f'filtered_{celltype}.h5ad'))
            
             
             
