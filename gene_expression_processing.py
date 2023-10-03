@@ -215,7 +215,7 @@ def expression_pipeline(
             b.write_output(j.ofile, output_path(f'filtered_{celltype}_{chromosome}.h5ad'))
 
             #read in filtered anndata file: 
-            filtered_h5ad_path = (output_path(f'filtered_{celltype}.h5ad')).copy('here.h5ad')
+            filtered_h5ad_path = to_path((output_path(f'filtered_{celltype}.h5ad'))).copy('here.h5ad')
             filter_adata = scanpy.read(filtered_h5ad_path)
 
             # combine files for each gene
