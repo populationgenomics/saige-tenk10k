@@ -98,7 +98,6 @@ def get_chrom_celltype_expression_and_filter(
 
     # write expression_adata to tmp file path
     expression_adata.write_h5ad(str(ofile_path))
-    return expression_adata.var.names
 
 
 def get_celltype_covariates(
