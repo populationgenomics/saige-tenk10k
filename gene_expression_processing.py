@@ -98,6 +98,7 @@ def get_chrom_celltype_expression_and_filter(
 
     # write expression_adata to tmp file path
     expression_adata.write_h5ad(str(ofile_path))
+    return expression_adata.var.names
 
 
 def get_celltype_covariates(
@@ -199,10 +200,7 @@ def expression_pipeline(
     gene_info_df = pd.read_csv(gene_info_tsv, sep='\t')
 
     for celltype in celltypes.split(','):
-        # get covariates (cell type specific)
-        cov_df = get_celltype_covariates(
-            expression_files_prefix=expression_files_prefix, cell_type=celltype
-        )
+        
         for chromosome in chromosomes.split(','):
             # get expression (cell type + chromosome)
 
@@ -210,12 +208,12 @@ def expression_pipeline(
             j.storage('20G')
             j.cpu(8)
             j.image(config['workflow']['driver_image'])
-            filter_adata = j.call(get_chrom_celltype_expression_and_filter,gene_info_df,expression_files_prefix,chromosome,celltype,min_pct_expr,j.ofile)
+            filter_adata_genes = j.call(get_chrom_celltype_expression_and_filter,gene_info_df,expression_files_prefix,chromosome,celltype,min_pct_expr,j.ofile)
             j.ofile.add_extension('.h5ad')
             b.write_output(j.ofile, output_path(f'filtered_{celltype}_{chromosome}.h5ad'))
 
             #read in filtered anndata file: 
-            filtered_h5ad_path = to_path((output_path(f'filtered_{celltype}.h5ad'))).copy('here.h5ad')
+            filtered_h5ad_path = to_path((output_path(f'filtered_{celltype}_{chromosome}.h5ad'))).copy('here.h5ad')
             filter_adata = scanpy.read(filtered_h5ad_path)
 
             # combine files for each gene
