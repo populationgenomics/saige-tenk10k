@@ -40,6 +40,7 @@ import pandas as pd
 from cpg_workflows.batch import get_batch
 import hailtop.batch as hb
 import scanpy
+import json
 
 
 from cpg_utils import to_path
@@ -71,7 +72,7 @@ def get_celltype_covariates(
 
 
 def build_pheno_cov_filename(
-    gene_name, expression_adata, expression_files_prefix, celltype, sample_mapping_file_path, ofile_path: str  # sample mapping file
+    gene_name, expression_files_prefix, celltype,chromosome, sample_mapping_file_path, ofile_path: str  # sample mapping file
 ):
     """
     Combine files to build final input
@@ -82,6 +83,10 @@ def build_pheno_cov_filename(
     - Sample mapping file path
 
     """
+    #read in filtered anndata file: (test by taking it out of the for loop)
+    filtered_h5ad_path = to_path((output_path(f'filtered_{celltype}_{chromosome}.h5ad'))).copy('here.h5ad')
+    expression_adata = scanpy.read(filtered_h5ad_path)
+
     smf_df = pd.read_csv(sample_mapping_file_path, sep='\t')
     cov_df = get_celltype_covariates(expression_files_prefix, celltype)
     gene_adata = expression_adata[:, gene_name]
@@ -149,24 +154,20 @@ def main(
     logging.info(f'Chromosomes to run: {chromosomes}')
 
     # create phenotype covariate files
-    gene_info_df = pd.read_csv(gene_info_tsv, sep='\t')
-
-    #read in filtered anndata file: (test by taking it out of the for loop)
-    filtered_h5ad_path = to_path((output_path(f'filtered_{celltypes}_{chromosomes}.h5ad'))).copy('here.h5ad')
-    filter_adata = scanpy.read(filtered_h5ad_path)
+    #gene_info_df = pd.read_csv(gene_info_tsv, sep='\t')
 
     for celltype in celltypes.split(','):
         for chromosome in chromosomes.split(','):
-
+            genes = json.load(output_path(f'{chromosome}_{celltype}_filtered_genes.json'))   
             # combine files for each gene
             # pylint: disable=no-member
-            for gene in filter_adata.var_names:
+            for gene in genes:
                 pheno_cov_job = b.new_python_job(name=f'Build phenotype-covariate files for {gene} [{celltype};{chromosome}]')
                 pheno_cov_job.storage('35G')
                 pheno_cov_job.cpu(8)
                 pheno_cov_job.image(config['workflow']['driver_image'])
                 pheno_cov_job.call(
-                    build_pheno_cov_filename,gene,filter_adata,"", celltype, sample_mapping_file_path,pheno_cov_job.ofile)
+                    build_pheno_cov_filename,gene,"", celltype, chromosome, sample_mapping_file_path,pheno_cov_job.ofile)
                 pheno_cov_job.ofile.add_extension('.csv')
                 b.write_output(pheno_cov_job.ofile, output_path(
                       f'input_files/pheno_cov_files/{gene}_{celltype}.csv'
