@@ -35,7 +35,7 @@ import pandas as pd
 from cpg_workflows.batch import get_batch
 import hailtop.batch as hb
 import scanpy
-import numpy as np
+import json
 
 
 from cpg_utils import to_path
@@ -56,8 +56,7 @@ def get_chrom_celltype_expression_and_filter(
     chromosome: str,
     cell_type: str,
     min_pct: int,
-    h5ad_ofile_path: str,
-    genes_ofile_path: str
+    h5ad_ofile_path: str
 ):
     """Extracts relevant expression info AND remove genes with low expression across cells 
 
@@ -96,8 +95,10 @@ def get_chrom_celltype_expression_and_filter(
     # write expression_adata to tmp file path
     expression_adata.write_h5ad(str(h5ad_ofile_path))
 
-    # write genes array to tmp file path 
-    expression_adata.var_names.to_series().to_csv(str(genes_ofile_path), index=False, header=False)
+    # write genes array to GCS directly (because we can!)
+    with to_path(output_path(f'{chromosome}_{cell_type}_filtered_genes.json')).open('w') as write_handle:
+        json.dump(list(expression_adata.var_names), write_handle)
+
 
 
 @click.command()
