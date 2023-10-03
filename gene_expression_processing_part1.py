@@ -17,7 +17,8 @@ output files in tob_wgs_genetics/saige_qtl/input
     --access-level "test" \
     --output-dir "tob_wgs_genetics/saige_qtl/hope-test-input" \
     --image australia-southeast1-docker.pkg.dev/cpg-common/images/scanpy:1.9.3 \
-     gene_expression_processing.py  --celltypes=B_IN --chromosomes=chr22 \
+     gene_expression_processing_part1.py  --celltypes=B_IN --chromosomes=chr22 \
+    --gene-info-tsv=gs://cpg-tob-wgs-test/scrna-seq/grch38_association_files/gene_location_files/GRCh38_geneloc_chr22.tsv \
     --expression-files-prefix=hope-test
 
 """
@@ -116,6 +117,8 @@ def main(
 
     logging.info(f'Cell types to run: {celltypes}')
     logging.info(f'Chromosomes to run: {chromosomes}')
+
+    gene_info_df = pd.read_csv(gene_info_tsv, sep='\t')
 
     for celltype in celltypes.split(','):
         
