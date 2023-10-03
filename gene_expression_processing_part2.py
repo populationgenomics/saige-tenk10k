@@ -152,7 +152,7 @@ def main(
     gene_info_df = pd.read_csv(gene_info_tsv, sep='\t')
 
     #read in filtered anndata file: (test by taking it out of the for loop)
-    filtered_h5ad_path = to_path((output_path(f'filtered_{celltype}_{chromosome}.h5ad'))).copy('here.h5ad')
+    filtered_h5ad_path = to_path((output_path(f'filtered_{celltypes}_{chromosomes}.h5ad'))).copy('here.h5ad')
     filter_adata = scanpy.read(filtered_h5ad_path)
 
     for celltype in celltypes.split(','):
