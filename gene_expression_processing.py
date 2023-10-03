@@ -211,14 +211,8 @@ def expression_pipeline(
             j.storage('20G')
             j.cpu(8)
             j.image(config['workflow']['driver_image'])
+            j.declare_resource_group(ofile = {'h5ad': 'filtered.h5ad'})
             filter_adata = j.call(get_chrom_celltype_expression_and_filter,gene_info_df,expression_files_prefix,chromosome,celltype,min_pct_expr)
-
-            f = b.new_job(name='Write h5ad file to GCP')
-            f.declare_resource_group(ofile = {'h5ad': 'filtered.h5ad'})
-            f.storage('20G')
-            f.cpu(8)
-            f.command(f'h5dump -y -o {f.ofile.h5ad} {filter_adata}')
-            b.write_output(f.ofile, output_path(f'filtered_{celltype}.h5ad'))
            
             
             
