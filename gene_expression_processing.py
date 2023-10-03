@@ -118,18 +118,19 @@ def get_celltype_covariates(
 
 
 def build_pheno_cov_filename(
-    gene_name, expression_adata, cov_df, smf_df, out_path: str  # sample mapping file
+    gene_name, expression_adata, expression_files_prefix, celltype, sample_mapping_file_path, ofile_path: str  # sample mapping file
 ):
     """
     Combine files to build final input
     reduce to one file per gene
-    write the output to disc within this method
 
     Input:
-    - Expression dataframe
-    - Covariates dataframe
-    - Sample mapping file, mapping cells to donors
+    - Expression anndata (filtered)
+    - Sample mapping file path
+
     """
+    smf_df = pd.read_csv(sample_mapping_file_path, sep='\t')
+    cov_df = get_celltype_covariates(expression_files_prefix, celltype)
     gene_adata = expression_adata[:, gene_name]
     gene_mat = gene_adata.raw.X.todense()
     expression_df = pd.DataFrame(
@@ -137,8 +138,7 @@ def build_pheno_cov_filename(
     )
     pheno_cov_df = pd.concat([expression_df, cov_df, smf_df], axis=1)
 
-    with to_path(out_path).open('w') as pcf:
-        pheno_cov_df.to_csv(pcf, index=False)
+    pheno_cov_df.to_csv(str(ofile_path), index=False)
 
 def get_gene_cis_file(gene_info_df, gene: str, window_size: int):
     """Get gene cis window file"""
@@ -196,7 +196,6 @@ def expression_pipeline(
     logging.info(f'Chromosomes to run: {chromosomes}')
 
     # create phenotype covariate files
-    smf_df = pd.read_csv(sample_mapping_file_path, sep='\t')
     gene_info_df = pd.read_csv(gene_info_tsv, sep='\t')
 
     for celltype in celltypes.split(','):
@@ -207,33 +206,32 @@ def expression_pipeline(
         for chromosome in chromosomes.split(','):
             # get expression (cell type + chromosome)
 
-            j = b.new_python_job(name='Get expression (cell type + chr) AND filter')
+            j = b.new_python_job(name=f'Get expression (celltype:{celltype} and chromosome:{chromosome}), then filter lowly exp. genes')
             j.storage('20G')
             j.cpu(8)
             j.image(config['workflow']['driver_image'])
             filter_adata = j.call(get_chrom_celltype_expression_and_filter,gene_info_df,expression_files_prefix,chromosome,celltype,min_pct_expr,j.ofile)
             j.ofile.add_extension('.h5ad')
-            b.write_output(j.ofile, output_path(f'filtered_{celltype}.h5ad'))
-           
-            
-            
-                
-        
+            b.write_output(j.ofile, output_path(f'filtered_{celltype}_{chromosome}.h5ad'))
+
+            #read in filtered anndata file: 
+            filtered_h5ad_path = (output_path(f'filtered_{celltype}.h5ad')).copy('here.h5ad')
+            filter_adata = scanpy.read(filtered_h5ad_path)
+
             # combine files for each gene
             # pylint: disable=no-member
-          #  for gene in filter_adata.var_names:
-          #      pheno_cov_job = b.new_python_job(name=f'Create pheno cov job for {gene}')
-          #      pheno_cov_job.storage('35G')
-          #      pheno_cov_job.cpu(8)
-          #      pheno_cov_job.image(config['workflow']['driver_image'])
+            for gene in filter_adata.var_names:
+                pheno_cov_job = b.new_python_job(name=f'Build phenotype-covariate files for {gene} [{celltype};{chromosome}]')
+                pheno_cov_job.storage('35G')
+                pheno_cov_job.cpu(8)
+                pheno_cov_job.image(config['workflow']['driver_image'])
+                pheno_cov_job.call(
+                    build_pheno_cov_filename,gene,filter_adata,"", celltype, sample_mapping_file_path,pheno_cov_job.ofile)
+                pheno_cov_job.ofile.add_extension('.csv')
+                b.write_output(pheno_cov_job.ofile, output_path(
+                      f'input_files/pheno_cov_files/{gene}_{celltype}.csv'
+                    ))
 
-                # pass the output file path to the job, don't expect an object back
-          #      pheno_cov_job.call(
-           #         build_pheno_cov_filename,gene,cov_df,filter_adata,smf_df,output_path(
-          #            f'input_files/pheno_cov_files/{gene}_{celltype}.csv'
-          #          )
-           #     )
-#
           
 
     b.run(wait=False)
