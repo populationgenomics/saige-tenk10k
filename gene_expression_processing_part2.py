@@ -70,27 +70,28 @@ def get_celltype_covariates(
     Output: covariate df for cell type of interest
     """
     # FLAG TO FIX FILE PATH
-    expression_h5ad_path = to_path(
-        dataset_path(
-            f'scrna-seq/CellRegMap_input_files/expression_objects/sce22.h5ad'
-        )
-    ).copy('here.h5ad')
-    adata = scanpy.read(expression_h5ad_path)
-    df = pd.DataFrame(adata.obsm['X_pca'], index = list(adata.obs.index)) #creates Pandas DF containing the PC loadings for each cell, index = CELL ID 
-    df['OneK1K_ID'] = adata.obs['individual'] #adds in the Individual ID to the df 
-    df.reset_index(inplace=True) #makes the CELL ID into a column 
-    df_c = df[['index', 'OneK1K_ID', 0,1,2,3,4,5,6,7,8,9,10,11,12,13,14]] #select the first 15 PCs
-    df_c = df_c.rename(columns={0: "pce1", 1: "pce2",2: "pce3",3: "pce4",4: "pce5",5: "pce6",6: "pce7",7: "pce8",8: "pce9",9: "pce10",10: "pce11",11: "pce12",12: "pce13",13: "pce14",14: "pce15", "index":"Cell_ID"})
     
+    #code to generate the covariate df file on line 91
+    #expression_h5ad_path = to_path(
+    #    dataset_path(
+    #       f'scrna-seq/CellRegMap_input_files/expression_objects/sce22.h5ad'
+    #    )
+    # ).copy('here.h5ad')
+    #adata = scanpy.read(expression_h5ad_path)
+    #df = pd.DataFrame(adata.obsm['X_pca'], index = list(adata.obs.index)) #creates Pandas DF containing the PC loadings for each cell, index = CELL ID 
+    #df['OneK1K_ID'] = adata.obs['individual'] #adds in the Individual ID to the df 
+    #df.reset_index(inplace=True) #makes the CELL ID into a column 
+    #df_c = df[['index', 'OneK1K_ID', 0,1,2,3,4,5,6,7,8,9,10,11,12,13,14]] #select the first 15 PCs
+    #df_c = df_c.rename(columns={0: "pce1", 1: "pce2",2: "pce3",3: "pce4",4: "pce5",5: "pce6",6: "pce7",7: "pce8",8: "pce9",9: "pce10",10: "pce11",11: "pce12",12: "pce13",13: "pce14",14: "pce15", "index":"Cell_ID"})
     
     #978 rows x 7 cols ##FYI to Anna - we lose some individuals here because 978 != number of individuals in df_c
-    covariates = pd.read_csv("gs://cpg-tob-wgs-test/scrna-seq/grch38_association_files/covariates_files/covariates.tsv", sep = "\t") 
+    #covariates = pd.read_csv("gs://cpg-tob-wgs-test/scrna-seq/grch38_association_files/covariates_files/covariates.tsv", sep = "\t") 
 
-    return pd.merge(df_c, covariates, left_on = "OneK1K_ID", right_on= "sampleid", how = "inner").drop('sampleid', axis=1) #we lose some individuals (as above), inner join - remove any NA fields 
+    #return pd.merge(df_c, covariates, left_on = "OneK1K_ID", right_on= "sampleid", how = "inner").drop('sampleid', axis=1) #we lose some individuals (as above), inner join - remove any NA fields 
 
-    #covs_tsv_path = dataset_path('tob_wgs_genetics/saige_qtl/input/covariate_chr22_B_IN_tester_final.csv')
-    #covs_df = pd.read_csv(covs_tsv_path, sep=',', index_col=0)
-    #return covs_df
+    covs_tsv_path = dataset_path('tob_wgs_genetics/saige_qtl/input/covariate_chr22_B_IN_tester_final.csv')
+    covs_df = pd.read_csv(covs_tsv_path, sep=',', index_col=0)
+    return covs_df
 
 
 def build_pheno_cov_filename(
