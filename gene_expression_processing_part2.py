@@ -98,7 +98,7 @@ def build_pheno_cov_filename(
     index=expression_adata.obs.index,  #cell IDs
     columns=expression_adata.raw.var.index[np.where(expression_adata.raw.var.index == gene_name)]
 )
-    expression_df['OneK1K_ID'] = expression_df.obs['individual']
+    expression_df['OneK1K_ID'] = expression_adata.obs['individual']
 
     # Reset the index and make it a column
     expression_df.reset_index(inplace=True)
