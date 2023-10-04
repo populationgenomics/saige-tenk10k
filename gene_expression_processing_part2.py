@@ -40,6 +40,7 @@ from cpg_workflows.batch import get_batch
 import hailtop.batch as hb
 import scanpy
 import json
+import numpy as np
 
 
 from cpg_utils import to_path
@@ -65,7 +66,7 @@ def get_celltype_covariates(
 
     Output: covariate df for cell type of interest
     """
-    covs_tsv_path = dataset_path('tob_wgs_genetics/saige_qtl/input/covariate_chr22_B_IN_tester.csv')
+    covs_tsv_path = dataset_path('tob_wgs_genetics/saige_qtl/input/covariate_chr22_B_IN_tester_final.csv')
     covs_df = pd.read_csv(covs_tsv_path, sep=',', index_col=0)
     return covs_df
 
@@ -88,12 +89,26 @@ def build_pheno_cov_filename(
 
     smf_df = pd.read_csv(sample_mapping_file_path, sep='\t')
     cov_df = get_celltype_covariates(expression_files_prefix, celltype)
-    gene_adata = expression_adata[:, gene_name]
-    gene_mat = gene_adata.raw.X.todense()
+
+    gene_index = np.where(expression_adata.raw.var.index == gene_name)[0][0]
+    gene_mat = expression_adata.raw.X[:,gene_index].todense()
+
     expression_df = pd.DataFrame(
-        data=gene_mat.T, index=gene_adata.raw.var.index, columns=gene_adata.obs.index
-    )
-    pheno_cov_df = pd.concat([expression_df, cov_df, smf_df], axis=1)
+    data=gene_mat,
+    index=expression_adata.obs.index,  #cell IDs
+    columns=expression_adata.raw.var.index[np.where(expression_adata.raw.var.index == gene_name)]
+)
+    expression_df['OneK1K_ID'] = expression_df.obs['individual']
+
+    # Reset the index and make it a column
+    expression_df.reset_index(inplace=True)
+
+    # Rename the columns 
+    expression_df.columns = ['Cell_ID', f'{gene_name}_raw_count', 'OneK1K_ID']
+
+    expression_df = pd.merge(expression_df, smf_df, on='OneK1K_ID', how='left')
+
+    pheno_cov_df = pd.merge(expression_df, cov_df, on = "Cell_ID", how = "inner")
 
     pheno_cov_df.to_csv(str(ofile_path), index=False)
 
