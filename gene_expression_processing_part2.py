@@ -125,11 +125,19 @@ def get_gene_cis_file(gene_info_tsv, gene: str, window_size: int, ofile_path: st
     init_batch()
     # get chromosome
     chrom = gene_info_gene['chr'].values[0]
+    ## check with Anna - I take the union of the start and end coordinates if there are multiple entries for the same gene
+    if len(gene_info_gene)>1: 
+        start_coordinate = min(gene_info_gene['start'].values)
+        end_coordinate = max(gene_info_gene['end'].values)
+    else: 
+        start_coordinate = int(gene_info_gene['start'])
+        end_coordinate = int(gene_info_gene['end'])
+    
     # get gene body position (start and end) and add window
-    left_boundary = max(1, int(gene_info_gene['start']) - window_size)
+    left_boundary = max(1, start_coordinate - window_size)
     right_boundary = min(
-        int(gene_info_gene['end']) + window_size,
-        hl.get_reference('GRCh38').lengths[chrom],
+        end_coordinate + window_size,
+        hl.get_reference('GRCh38').lengths[chrom]
     )
     data = {'chromosome': chrom, 'start': left_boundary, 'end': right_boundary}
     # check if I need an index at all
