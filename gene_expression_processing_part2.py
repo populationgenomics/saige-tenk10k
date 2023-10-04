@@ -48,6 +48,7 @@ from cpg_utils.hail_batch import output_path
 
 from cpg_utils.hail_batch import dataset_path, output_path
 
+config = get_config()
 
 SCANPY_IMAGE = config['images']['scanpy']
 
