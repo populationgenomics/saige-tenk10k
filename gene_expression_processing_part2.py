@@ -46,7 +46,7 @@ from cpg_utils import to_path
 from cpg_utils.config import get_config
 from cpg_utils.hail_batch import output_path
 
-from cpg_utils.hail_batch import dataset_path, output_path
+from cpg_utils.hail_batch import dataset_path, output_path, init_batch
 
 config = get_config()
 
@@ -169,6 +169,7 @@ def main(
     """
     config = get_config()
     b = get_batch()
+    init_batch()
     
 
     logging.info(f'Cell types to run: {celltypes}')
@@ -220,3 +221,4 @@ def main(
 
 if __name__ == '__main__':
     main()  # pylint: disable=no-value-for-parameter
+    
