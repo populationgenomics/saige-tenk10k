@@ -2,18 +2,17 @@
 
 
 """
-Hail Batch workflow to create gene expression files.
+PART 2 of 2 of the 'Gene expression processing workflow'
+
 This script will:
 
 - build chromosome & cell type specific phenotype covariate files
-- use gene info to create cis-window files
+- create cis-window files for selected genes
 - export pheno_cov files as tsv files
 - export cis_window files as tsv files
 
 More details in README
 output files in tob_wgs_genetics/saige_qtl/input
-
-   
 
     analysis-runner --dataset "tob-wgs" \
     --description "prepare expression files" \
@@ -27,7 +26,6 @@ output files in tob_wgs_genetics/saige_qtl/input
 
 """
 
-import os
 import logging
 import sys
 
@@ -52,7 +50,6 @@ config = get_config()
 
 SCANPY_IMAGE = config['images']['scanpy']
 
-# use logging to print statements, display at info level
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s %(levelname)s %(module)s:%(lineno)d - %(message)s',
@@ -72,9 +69,28 @@ def get_celltype_covariates(
 
     Output: covariate df for cell type of interest
     """
-    covs_tsv_path = dataset_path('tob_wgs_genetics/saige_qtl/input/covariate_chr22_B_IN_tester_final.csv')
-    covs_df = pd.read_csv(covs_tsv_path, sep=',', index_col=0)
-    return covs_df
+    # FLAG TO FIX FILE PATH
+    expression_h5ad_path = to_path(
+        dataset_path(
+            f'scrna-seq/CellRegMap_input_files/expression_objects/sce22.h5ad'
+        )
+    ).copy('here.h5ad')
+    adata = scanpy.read(expression_h5ad_path)
+    df = pd.DataFrame(adata.obsm['X_pca'], index = list(adata.obs.index)) #creates Pandas DF containing the PC loadings for each cell, index = CELL ID 
+    df['OneK1K_ID'] = adata.obs['individual'] #adds in the Individual ID to the df 
+    df.reset_index(inplace=True) #makes the CELL ID into a column 
+    df_c = df[['index', 'OneK1K_ID', 0,1,2,3,4,5,6,7,8,9,10,11,12,13,14]] #select the first 15 PCs
+    df_c = df_c.rename(columns={0: "pce1", 1: "pce2",2: "pce3",3: "pce4",4: "pce5",5: "pce6",6: "pce7",7: "pce8",8: "pce9",9: "pce10",10: "pce11",11: "pce12",12: "pce13",13: "pce14",14: "pce15", "index":"Cell_ID"})
+    
+    
+    #978 rows x 7 cols ##FYI to Anna - we lose some individuals here because 978 != number of individuals in df_c
+    covariates = pd.read_csv("gs://cpg-tob-wgs-test/scrna-seq/grch38_association_files/covariates_files/covariates.tsv", sep = "\t") 
+
+    return pd.merge(df_c, covariates, left_on = "OneK1K_ID", right_on= "sampleid", how = "inner").drop('sampleid', axis=1) #we lose some individuals (as above), inner join - remove any NA fields 
+
+    #covs_tsv_path = dataset_path('tob_wgs_genetics/saige_qtl/input/covariate_chr22_B_IN_tester_final.csv')
+    #covs_df = pd.read_csv(covs_tsv_path, sep=',', index_col=0)
+    #return covs_df
 
 
 def build_pheno_cov_filename(
@@ -89,33 +105,36 @@ def build_pheno_cov_filename(
     - Sample mapping file path
 
     """
-    #read in filtered anndata file: (test by taking it out of the for loop)
+    #read in filtered anndata
     filtered_h5ad_path = to_path((output_path(f'filtered_{celltype}_{chromosome}.h5ad'))).copy('here.h5ad')
     expression_adata = scanpy.read(filtered_h5ad_path)
 
+    #read in sample mapping file and covariate files
     smf_df = pd.read_csv(sample_mapping_file_path, sep='\t')
     cov_df = get_celltype_covariates(expression_files_prefix, celltype)
 
+    #subset anndata by gene
     gene_index = np.where(expression_adata.raw.var.index == gene_name)[0][0]
     gene_mat = expression_adata.raw.X[:,gene_index].todense()
 
     expression_df = pd.DataFrame(
     data=gene_mat,
     index=expression_adata.obs.index,  #cell IDs
-    columns=expression_adata.raw.var.index[np.where(expression_adata.raw.var.index == gene_name)]
+    columns=expression_adata.raw.var.index[np.where(expression_adata.raw.var.index == gene_name)] #complicated way to extract gene name
 )
     expression_df['OneK1K_ID'] = expression_adata.obs['individual']
 
-    # Reset the index and make it a column
+    # Make the index (cell IDs) into a column
     expression_df.reset_index(inplace=True)
 
     # Rename the columns 
     expression_df.columns = ['Cell_ID', f'{gene_name}_raw_count', 'OneK1K_ID']
 
+    #Merge data frame with sample mapping info and covariate file
     expression_df = pd.merge(expression_df, smf_df, on='OneK1K_ID', how='left')
-
     pheno_cov_df = pd.merge(expression_df, cov_df, on = "Cell_ID", how = "inner")
 
+    #write to temp file path
     pheno_cov_df.to_csv(str(ofile_path), index=False)
 
 def get_gene_cis_file(gene_info_tsv, gene: str, window_size: int, ofile_path: str):
@@ -140,7 +159,7 @@ def get_gene_cis_file(gene_info_tsv, gene: str, window_size: int, ofile_path: st
         hl.get_reference('GRCh38').lengths[chrom]
     )
     data = {'chromosome': chrom, 'start': left_boundary, 'end': right_boundary}
-    # check if I need an index at all
+    # check if I need an index at all - Anna's comment??
     pd.DataFrame(data, index=[gene]).to_csv(str(ofile_path))
 
 
@@ -181,10 +200,7 @@ def main(
     
 
     logging.info(f'Cell types to run: {celltypes}')
-    logging.info(f'Chromosomes to run: {chromosomes}')
-
-    # create phenotype covariate files
-    #
+    logging.info(f'Chromosomes to run: {chromosomes}')    
 
     # Setup MAX concurrency by genes
     _dependent_jobs: list[hb.batch.job.Job] = []
@@ -199,6 +215,7 @@ def main(
 
     for celltype in celltypes.split(','):
         for chromosome in chromosomes.split(','):
+            
             #load array containing the genes from filtered anndata 
             with to_path(output_path(f'{chromosome}_{celltype}_filtered_genes.json')).open('r') as read_handle:
                 genes = json.load(read_handle)
@@ -217,6 +234,7 @@ def main(
                       f'input_files/pheno_cov_files/{gene}_{celltype}.csv'
                     ))
                 manage_concurrency_for_job(pheno_cov_job)
+               
                 # add gene cis window file
                 gene_cis_job = b.new_python_job(name=f'Build cis window files for {gene} [{celltype};{chromosome}]')
                 gene_cis_job.image(config['workflow']['driver_image'])

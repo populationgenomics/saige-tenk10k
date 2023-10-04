@@ -2,15 +2,12 @@
 
 
 """
-Hail Batch workflow to get_chrom_celltype_expression_and_filter.
-This script will:
+PART 1 of 2 of the 'Gene expression processing workflow' 
 
-- select genes to test based on expression (per cell type) and filter out lowly expressed genes 
+Aim: Get chromosome-level and cell-type specific expression data, and filter lowly expressed genes.
 
 More details in README
 output files in tob_wgs_genetics/saige_qtl/input
-
-   
 
     analysis-runner --dataset "tob-wgs" \
     --description "prepare expression files" \
@@ -23,14 +20,10 @@ output files in tob_wgs_genetics/saige_qtl/input
 
 """
 
-import os
 import logging
 import math
-import sys
-#from tkinter.tix import CELL
 
 import click
-import hail as hl
 import pandas as pd
 from cpg_workflows.batch import get_batch
 import hailtop.batch as hb
@@ -40,15 +33,13 @@ import json
 
 from cpg_utils import to_path
 from cpg_utils.config import get_config
-from cpg_utils.hail_batch import remote_tmpdir, output_path
+from cpg_utils.hail_batch import output_path
 
-from cpg_utils.hail_batch import copy_common_env, dataset_path, output_path
+from cpg_utils.hail_batch import dataset_path, output_path
 
 config = get_config()
 
-
 SCANPY_IMAGE = config['images']['scanpy']
-
 
 def get_chrom_celltype_expression_and_filter(
     gene_info_df,
@@ -70,9 +61,7 @@ def get_chrom_celltype_expression_and_filter(
     Output: GCS path to FILTERED expression adata object for only relevant genes
     """
 
-    # first line is where the file is now,
-    # but (second line) the files will eventually be in the below folder
-    # and split by cell type (at least this all naive B cells only)
+    # FIX FILE PATH
     expression_h5ad_path = to_path(
         dataset_path(
             f'scrna-seq/CellRegMap_input_files/expression_objects/sce22.h5ad'
@@ -81,8 +70,8 @@ def get_chrom_celltype_expression_and_filter(
     expression_adata = scanpy.read(expression_h5ad_path)
 
     # select only genes on relevant chromosome
+    ## FLAG - TO FIX: some genes are being excluded because of alternative names, notation (-, decimal, numbers) etc
     genes_chrom = gene_info_df[gene_info_df['chr'] == chromosome].gene_name
-    # return expression for the correct chromosomes only
     expression_adata = expression_adata[:, expression_adata.var_names.isin(genes_chrom)]
     
     #filter lowly expressed genes 
@@ -115,9 +104,7 @@ def main(
     expression_files_prefix: str,
     min_pct_expr: int,
 ):
-    """
-    Run expression processing pipeline
-    """
+    
     config = get_config()
     b = get_batch()
 
