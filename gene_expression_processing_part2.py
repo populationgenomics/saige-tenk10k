@@ -118,9 +118,9 @@ def build_pheno_cov_filename(
 
     pheno_cov_df.to_csv(str(ofile_path), index=False)
 
-def get_gene_cis_file(gene_info_df, gene: str, window_size: int):
+def get_gene_cis_file(gene_info_tsv, gene: str, window_size: int, ofile_path: str):
     """Get gene cis window file"""
-    
+    gene_info_df = pd.read_csv(gene_info_tsv, sep='\t')
     gene_info_gene = gene_info_df[gene_info_df['gene_name'] == gene]
     
     # get chromosome
@@ -133,7 +133,7 @@ def get_gene_cis_file(gene_info_df, gene: str, window_size: int):
     )
     data = {'chromosome': chrom, 'start': left_boundary, 'end': right_boundary}
     # check if I need an index at all
-    return pd.DataFrame(data, index=[gene])
+    pd.DataFrame(data, index=[gene]).to_csv(str(ofile_path))
 
 
 @click.command()
@@ -208,19 +208,14 @@ def main(
                       f'input_files/pheno_cov_files/{gene}_{celltype}.csv'
                     ))
                 manage_concurrency_for_job(pheno_cov_job)
-    
-    # create gene cis window files
-    gene_info_df = pd.read_csv(gene_info_tsv, sep='\t')
-    for gene in gene_info_df['gene_name'].values:
-        gene_cis_filename = to_path(
-            output_path(f'input_files/cis_window_files/{gene}_{cis_window_size}bp.csv')
-        )
-        gene_cis_df = get_gene_cis_file(
-            gene_info_df=gene_info_df, gene=gene, window_size=cis_window_size
-        )
-        with gene_cis_filename.open('w') as gcf:
-            gene_cis_df.to_csv(gcf, index=False)
-    
+                # add gene cis window file
+                gene_cis_job = b.new_python_job(name=f'Build cis window files for {gene} [{celltype};{chromosome}]')
+                gene_cis_job.image(config['workflow']['driver_image'])
+                gene_cis_job.call(
+                    get_gene_cis_file,gene_info_tsv,gene,cis_window_size,gene_cis_job.ofile
+                )
+                b.write_output(gene_cis_job.ofile, output_path(f'input_files/cis_window_files/{gene}_{cis_window_size}bp.csv'))
+            
     b.run(wait=False)
 
 if __name__ == '__main__':
