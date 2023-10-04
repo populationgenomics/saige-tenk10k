@@ -29,9 +29,7 @@ output files in tob_wgs_genetics/saige_qtl/input
 
 import os
 import logging
-import math
 import sys
-#from tkinter.tix import CELL
 
 import click
 import hail as hl
@@ -41,18 +39,25 @@ import hailtop.batch as hb
 import scanpy
 import json
 import numpy as np
+import hail as hl
 
 
 from cpg_utils import to_path
 from cpg_utils.config import get_config
-from cpg_utils.hail_batch import remote_tmpdir, output_path
+from cpg_utils.hail_batch import output_path
 
-from cpg_utils.hail_batch import copy_common_env, dataset_path, output_path
-
-config = get_config()
+from cpg_utils.hail_batch import dataset_path, output_path
 
 
 SCANPY_IMAGE = config['images']['scanpy']
+
+# use logging to print statements, display at info level
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s %(levelname)s %(module)s:%(lineno)d - %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S',
+    stream=sys.stderr,
+)
 
 def get_celltype_covariates(
     expression_files_prefix: str,
@@ -72,7 +77,7 @@ def get_celltype_covariates(
 
 
 def build_pheno_cov_filename(
-    gene_name, expression_files_prefix, celltype,chromosome, sample_mapping_file_path, ofile_path: str  # sample mapping file
+    gene_name, expression_files_prefix, celltype,chromosome, sample_mapping_file_path, ofile_path: str  
 ):
     """
     Combine files to build final input
@@ -114,10 +119,11 @@ def build_pheno_cov_filename(
 
 def get_gene_cis_file(gene_info_df, gene: str, window_size: int):
     """Get gene cis window file"""
-    # select the gene from df
-    gene_info_gene = gene_info_df[gene_info_df['gene'] == gene]
-    # get gene chromosome
-    chrom = gene_info_gene['chr']
+    
+    gene_info_gene = gene_info_df[gene_info_df['gene_name'] == gene]
+    
+    # get chromosome
+    chrom = gene_info_gene['chr'].values[0]
     # get gene body position (start and end) and add window
     left_boundary = max(1, int(gene_info_gene['start']) - window_size)
     right_boundary = min(
@@ -168,7 +174,18 @@ def main(
     logging.info(f'Chromosomes to run: {chromosomes}')
 
     # create phenotype covariate files
-    #gene_info_df = pd.read_csv(gene_info_tsv, sep='\t')
+    #
+
+    # Setup MAX concurrency by genes
+    _dependent_jobs: list[hb.batch.job.Job] = []
+
+    def manage_concurrency_for_job(job: hb.batch.job.Job):
+        """
+        To avoid having too many jobs running at once, we have to limit concurrency.
+        """
+        if len(_dependent_jobs) >= max_gene_concurrency:
+            job.depends_on(_dependent_jobs[-max_gene_concurrency])
+        _dependent_jobs.append(job)
 
     for celltype in celltypes.split(','):
         for chromosome in chromosomes.split(','):
@@ -180,8 +197,8 @@ def main(
             # pylint: disable=no-member
             for gene in genes:
                 pheno_cov_job = b.new_python_job(name=f'Build phenotype-covariate files for {gene} [{celltype};{chromosome}]')
-                pheno_cov_job.storage('35G')
-                pheno_cov_job.cpu(8)
+                pheno_cov_job.storage('16G')
+                pheno_cov_job.cpu(4)
                 pheno_cov_job.image(config['workflow']['driver_image'])
                 pheno_cov_job.call(
                     build_pheno_cov_filename,gene,"", celltype, chromosome, sample_mapping_file_path,pheno_cov_job.ofile)
@@ -189,7 +206,20 @@ def main(
                 b.write_output(pheno_cov_job.ofile, output_path(
                       f'input_files/pheno_cov_files/{gene}_{celltype}.csv'
                     ))
-
+                manage_concurrency_for_job(pheno_cov_job)
+    
+    # create gene cis window files
+    gene_info_df = pd.read_csv(gene_info_tsv, sep='\t')
+    for gene in gene_info_df['gene_name'].values:
+        gene_cis_filename = to_path(
+            output_path(f'input_files/cis_window_files/{gene}_{cis_window_size}bp.csv')
+        )
+        gene_cis_df = get_gene_cis_file(
+            gene_info_df=gene_info_df, gene=gene, window_size=cis_window_size
+        )
+        with gene_cis_filename.open('w') as gcf:
+            gene_cis_df.to_csv(gcf, index=False)
+    
     b.run(wait=False)
 
 if __name__ == '__main__':
