@@ -131,7 +131,7 @@ def build_run_single_variant_test_command(
     saige_command_step2_sv += f' --vcfFileIndex={vcf_file_index}'
     saige_command_step2_sv += f' --SAIGEOutputFile={saige_output_file}'
     saige_command_step2_sv += f' --chrom={chrom}'
-    saige_command_step2_sv += f'--rangestoIncludeFile={cis_window_file}'
+    saige_command_step2_sv += f' --rangestoIncludeFile={cis_window_file}'
     saige_command_step2_sv += f' --minMAF={min_maf}'
     saige_command_step2_sv += f' --minMAC={min_mac}'
     saige_command_step2_sv += f' --LOCO={loco_bool}'
@@ -202,7 +202,7 @@ def build_run_set_test_command(
     saige_command_step2 += f' --maxMAF_in_groupTest={max_maf_group}'
     saige_command_step2 += f' --minMAF_in_groupTest={min_maf_group}'
     # saige_command_step2 += f' --is_noadjCov={is_no_adj_cov}'
-    # saige_command_step2 += f' --is_sparseGRM={is_sparse_grm}'
+    # saige_command_step2 += f' --is_sparseGRM={is_sparse_grm}' #consider if related individuals
     saige_command_step2 += f' --markers_per_chunk={n_markers}'
     saige_command_step2 += f' --pval_cutoff_for_fastTest={pval_cutoff}'
     # saige_command_step2 += f' --is_EmpSPA={is_emp_spa}'
