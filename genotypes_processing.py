@@ -52,7 +52,7 @@ papi = ParticipantApi()
 
 
 DEFAULT_JOINT_CALL_MT = dataset_path('mt/v7.mt')
-HAIL_IMAGE = get_config()['workflow']['driver_image']
+HAIL_IMAGE = get_config()['images']['scanpy']
 
 
 # region SAMPLES_SUBSETTING_FUNCTIONS
