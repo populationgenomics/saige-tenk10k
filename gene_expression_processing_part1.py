@@ -85,7 +85,8 @@ def get_chrom_celltype_expression_and_filter(
 
     # Convert any aliases in expression_adata genes to canonical name
     expression_adata.var_names = [gene_dict.get(gene, gene) for gene in expression_adata.var_names]
-
+    expression_adata.raw.var.index = [gene_dict.get(gene, gene) for gene in expression_adata.raw.var.index] #repeat for the raw df
+    
     ## FLAG - TO FIX: some genes are being excluded because of alternative names, notation (-, decimal, numbers) etc
     genes_chrom = gene_info_df[gene_info_df['chr'] == chromosome].gene_name
     expression_adata = expression_adata[:, expression_adata.var_names.isin(genes_chrom)]
