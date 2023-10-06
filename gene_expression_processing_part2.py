@@ -225,8 +225,8 @@ def main(
             # pylint: disable=no-member
             for gene in genes:
                 pheno_cov_job = b.new_python_job(name=f'Build phenotype-covariate files for {gene} [{celltype};{chromosome}]')
-                pheno_cov_job.storage('16G')
-                pheno_cov_job.cpu(4)
+                pheno_cov_job.storage('8G')
+                pheno_cov_job.cpu(2)
                 pheno_cov_job.image(config['workflow']['driver_image'])
                 pheno_cov_job.call(
                     build_pheno_cov_filename,gene,"", celltype, chromosome, sample_mapping_file_path,pheno_cov_job.ofile)
