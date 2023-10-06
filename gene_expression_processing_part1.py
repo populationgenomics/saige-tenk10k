@@ -70,6 +70,22 @@ def get_chrom_celltype_expression_and_filter(
     expression_adata = scanpy.read(expression_h5ad_path)
 
     # select only genes on relevant chromosome
+    
+    #Convert any var.names in expression_adata into canonical gene name
+    gene_alias_list = pd.read_csv("gs://cpg-tob-wgs-test/scrna-seq/grch38_association_files/gene_location_files/aliases/chr22_aliases.tsv", sep='\t')
+    # Create a dictionary to map aliases to canonical names
+    gene_dict = {}
+    for index, row in gene_alias_list.iterrows():
+        aliases = row['Aliases']
+        if pd.notna(aliases):  # Check if the alias is not empty
+            aliases = aliases.split(',')  # Assuming aliases are separated by commas
+            canonical = row['Symbol']
+            for alias in aliases:
+                gene_dict[alias.strip()] = canonical
+
+    # Convert any aliases in expression_adata genes to canonical name
+    expression_adata.var_names = [gene_dict.get(gene, gene) for gene in expression_adata.var_names]
+
     ## FLAG - TO FIX: some genes are being excluded because of alternative names, notation (-, decimal, numbers) etc
     genes_chrom = gene_info_df[gene_info_df['chr'] == chromosome].gene_name
     expression_adata = expression_adata[:, expression_adata.var_names.isin(genes_chrom)]
