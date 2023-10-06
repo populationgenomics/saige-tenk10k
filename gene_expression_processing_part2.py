@@ -121,7 +121,7 @@ def build_pheno_cov_filename(
     expression_df = pd.DataFrame(
     data=gene_mat,
     index=expression_adata.obs.index,  #cell IDs
-    columns=expression_adata.raw.var.index[np.where(expression_adata.raw.var.index == gene_name)] #complicated way to extract gene name
+    columns=expression_adata.var_names[np.where(expression_adata.var_names == gene_name)] #complicated way to extract gene name
 )
     expression_df['OneK1K_ID'] = expression_adata.obs['individual']
 
