@@ -70,7 +70,7 @@ def get_chrom_celltype_expression_and_filter(
     expression_adata = scanpy.read(expression_h5ad_path)
 
     # select only genes on relevant chromosome
-    
+
     #Convert any var.names in expression_adata into canonical gene name
     gene_alias_list = pd.read_csv("gs://cpg-tob-wgs-test/scrna-seq/grch38_association_files/gene_location_files/aliases/chr22_aliases.tsv", sep='\t')
     # Create a dictionary to map aliases to canonical names
@@ -133,8 +133,8 @@ def main(
         
         for chromosome in chromosomes.split(','):
             j = b.new_python_job(name=f'Get expression (celltype:{celltype} and chromosome:{chromosome}), then filter lowly exp. genes')
-            j.storage('20G')
-            j.cpu(8)
+            j.storage('4G')
+            j.cpu(4)
             j.image(config['workflow']['driver_image'])
             j.call(get_chrom_celltype_expression_and_filter,gene_info_df,expression_files_prefix,chromosome,celltype,min_pct_expr,j.ofile)
             j.ofile.add_extension('.h5ad')
