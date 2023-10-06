@@ -22,16 +22,16 @@ from cpg_utils.hail_batch import get_config, remote_tmpdir
 SAIGE_QTL_IMAGE = 'australia-southeast1-docker.pkg.dev/cpg-common/images/saige-qtl'
 
 
-# Fit null model
+# Fit null model (step 1)
 def build_fit_null_command(
     pheno_file: str,
-    cov_col_list: str,  # PC1
-    sample_cov_col_list: str,  # age
-    sample_id_pheno: str,  # IND_ID
-    output_prefix: str,  # ./${gene_name}_B_IN_count
+    cov_col_list: str,  # PC1,age,sex
+    sample_cov_col_list: str,  # age,sex
+    sample_id_pheno: str,  # individual_id
+    output_prefix: str,  # ./${gene_name}_${celltype}_count
     plink_path: str,  # ./input/nfam_100_nindep_0_step1_includeMoreRareVariants_poly
-    pheno_col: str = 'y',
-    trait_type: str = 'count',
+    pheno_col: str = 'y', # ${gene_name}, can be random y because we are doing one gene 
+    trait_type: str = 'count', 
     skip_vre: str = 'FALSE',  # this is a boolean but that's encoded differently between R and python
     pheno_remove_zeros: str = 'FALSE',
     use_sparse_grm_null: str = 'FALSE',
@@ -53,7 +53,7 @@ def build_fit_null_command(
     - output prefix: where to save the fitted model (.rda)
     - Plink path: path to plink file (subset of ~2,000 markers for VRE)
     - pheno col: name of column specifying pheno (default: "y")
-    - trait type: count = Poisson, count_nb = Negative Binomial
+    - trait type: count = Poisson, count_nb = Negative Binomial, quantitative = Normal, binary = binary (?)
     - option to skip Variance Ratio estimation (discouraged)
     - option to add an offset to the fixed covariates (???)
     - option to transform (scale?) covariates?
@@ -85,7 +85,7 @@ def build_fit_null_command(
     return saige_command_step1
 
 
-# Run single variant association
+# Run single variant association (step 2)
 def build_run_single_variant_test_command(
     vcf_file: str,  # chr${i}.dose.filtered.R2_0.8.vcf.gz
     vcf_file_index: str,  # chr${i}.dose.filtered.R2_0.8.vcf.gz.tbi
@@ -144,7 +144,7 @@ def build_run_single_variant_test_command(
     return saige_command_step2_sv
 
 
-# Run gene set association
+# Run gene set association (for RVs) 
 def build_run_set_test_command(
     vcf_file: str,  # chr${i}.dose.filtered.R2_0.8.vcf.gz
     vcf_file_index: str,  # chr${i}.dose.filtered.R2_0.8.vcf.gz.tbi
