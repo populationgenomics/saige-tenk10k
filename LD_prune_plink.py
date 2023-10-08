@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# pylint: disable=broad-exception-raised,import-error,import-outside-toplevel,missing-module-docstring,no-value-for-parameter,too-many-arguments,too-many-branches,too-many-locals,too-many-statements,wrong-import-order,wrong-import-position
+# pylint: disable=broad-exception-raised,import-error,import-outside-toplevel,missing-module-docstring,no-value-for-parameter,too-many-arguments,too-many-branches,too-many-locals,too-many-statements,wrong-import-order,wrong-import-position, missing-function-docstring
 
 
 """
@@ -31,10 +31,11 @@ def ld_prune(
     vre_mac_threshold: int = 20,
     vre_n_markers: int = 2000,
 ):
-    """Subset hail matrix table
+    """
+    Subset hail matrix table
 
-    Outputs: 
-    plink file containing a random subset of 2,000 variants that are not in LD 
+    Outputs:
+    plink file containing a random subset of 2,000 variants that are not in LD
     """
     from hail.methods import export_plink
 
@@ -70,11 +71,8 @@ def ld_prune(
 
 @click.command()
 @click.option('--mt-path')
+def main(mt_path: str):
 
-def main(
-    mt_path: str
-):
-    
     vre_plink_path = output_path('vr_plink_20k_variants')
 
     ld_prune(
