@@ -52,8 +52,8 @@ papi = ParticipantApi()
 
 
 DEFAULT_JOINT_CALL_MT = dataset_path('mt/v7.mt')
-HAIL_IMAGE = get_config()['images']['scanpy']
-
+#Hail 0.2.124
+HAIL_IMAGE = "australia-southeast1-docker.pkg.dev/cpg-common/images/hail@sha256:fbcbd7beead6629214c0ff101cf457bc06f90e10648e16fc8de14e0ca7655757"
 
 # region SAMPLES_SUBSETTING_FUNCTIONS
 
@@ -219,6 +219,7 @@ def filter_variants(
     sc_samples_str: str,
     output_mt_path: str,  # 'tob_wgs/filtered.mt'
     vre_plink_path: str,  # 'tob_wgs/vr_plink_2000_variants
+    ld_prune_only: bool,
     vre_mac_threshold: int = 20,
     vre_n_markers: int = 2000,
 ):
@@ -246,45 +247,45 @@ def filter_variants(
     mt = hl.read_matrix_table(mt_path)
     logging.info(f'Number of total loci: {mt.count()[0]}')
     logging.info(f'Number of total samples: {mt.count()[1]}')
+    if ld_prune_only is False: 
+        # densify
+        mt = hl.experimental.densify(mt)
 
-    # densify
-    mt = hl.experimental.densify(mt)
+        # add sample filters
+        bm_samples = get_bone_marrow_sequencing_groups(mt=mt)
+        dup_samples = get_duplicated_samples(mt=mt)
+        out_samples = get_non_tob_samples(mt=mt)
+        qc_samples = get_low_qc_samples(mt=mt)
+        filter_samples = {*bm_samples, *dup_samples, *out_samples, *qc_samples}
+        logging.info(f'Total samples to filter: {len(filter_samples)}')
+        # use syntax from:
+        # https://hail.is/docs/0.2/hail.MatrixTable.html#hail.MatrixTable.filter_cols
+        set_to_remove = hl.literal(filter_samples)
+        mt = mt.filter_cols(~set_to_remove.contains(mt['s']))
+        logging.info(f'Number of samples after filtering: {mt.count()[1]}')
+        if mt.count_cols() == 0:
+            raise ValueError('No samples left after filtering')
 
-    # add sample filters
-    bm_samples = get_bone_marrow_sequencing_groups(mt=mt)
-    dup_samples = get_duplicated_samples(mt=mt)
-    out_samples = get_non_tob_samples(mt=mt)
-    qc_samples = get_low_qc_samples(mt=mt)
-    filter_samples = {*bm_samples, *dup_samples, *out_samples, *qc_samples}
-    logging.info(f'Total samples to filter: {len(filter_samples)}')
-    # use syntax from:
-    # https://hail.is/docs/0.2/hail.MatrixTable.html#hail.MatrixTable.filter_cols
-    set_to_remove = hl.literal(filter_samples)
-    mt = mt.filter_cols(~set_to_remove.contains(mt['s']))
-    logging.info(f'Number of samples after filtering: {mt.count()[1]}')
-    if mt.count_cols() == 0:
-        raise ValueError('No samples left after filtering')
+        # subset to relevant samples (samples we have scRNA-seq data for)
+        sc_samples = sc_samples_str.split(',')
+        logging.info(f'Number of sc samples: {len(sc_samples)}')
+        mt = mt.filter_cols(hl.set(sc_samples).contains(mt.s))
+        logging.info(f'Number of remaining samples: {mt.count()[1]}')
 
-    # subset to relevant samples (samples we have scRNA-seq data for)
-    sc_samples = sc_samples_str.split(',')
-    logging.info(f'Number of sc samples: {len(sc_samples)}')
-    mt = mt.filter_cols(hl.set(sc_samples).contains(mt.s))
-    logging.info(f'Number of remaining samples: {mt.count()[1]}')
+        # filter out low quality variants and consider biallelic SNPs only
+        # (no multi-allelic, no ref-only, no indels)
+        mt = mt.filter_rows(
+            (hl.len(hl.or_else(mt.filters, hl.empty_set(hl.tstr))) == 0)  # QC
+            & (hl.len(mt.alleles) == 2)  # remove hom-ref
+            & (mt.n_unsplit_alleles == 2)  # biallelic (exclude multiallelic)
+            & (hl.is_snp(mt.alleles[0], mt.alleles[1]))  # SNPs (exclude indels)
+        )
 
-    # filter out low quality variants and consider biallelic SNPs only
-    # (no multi-allelic, no ref-only, no indels)
-    mt = mt.filter_rows(
-        (hl.len(hl.or_else(mt.filters, hl.empty_set(hl.tstr))) == 0)  # QC
-        & (hl.len(mt.alleles) == 2)  # remove hom-ref
-        & (mt.n_unsplit_alleles == 2)  # biallelic (exclude multiallelic)
-        & (hl.is_snp(mt.alleles[0], mt.alleles[1]))  # SNPs (exclude indels)
-    )
+        mt = hl.variant_qc(mt)
 
-    mt = hl.variant_qc(mt)
-
-    mt.write(output_mt_path, overwrite=True)
-    logging.info(f'No QC-passing, biallelic SNPs: {mt.count()[0]}')
-
+        mt.write(output_mt_path, overwrite=True)
+        logging.info(f'No QC-passing, biallelic SNPs: {mt.count()[0]}')
+    
     # subset variants for variance ratio estimation
     # minor allele count (MAC) > {vre_n_markers}
     vre_mt = mt.filter_rows(mt.variant_qc.AC[0] > vre_mac_threshold)
@@ -319,35 +320,38 @@ def filter_variants(
     '--sample-mapping-file-tsv',
     default='scrna-seq/grch38_association_files/OneK1K_CPG_IDs.tsv',  # to be updated
 )
-@click.option('--mt-path', default=DEFAULT_JOINT_CALL_MT)
+@click.option('--mt-path', default=DEFAULT_JOINT_CALL_MT, help = 'Original joint call hail matrix table or if ld-prune-only, the filtered matrix table')
+@click.option('--ld-prune-only', is_flag=True, default=False, help = 'Set to True to only run LD pruning steps')
 def genotypes_pipeline(
     sample_mapping_file_tsv: str,
     mt_path: str,
+    ld_prune_only: bool = False
 ):
     """
     Run one-off QC filtering pipeline
     """
+    if ld_prune_only is False: 
+        # extract individuals for which we have single-cell (sc) data
+        sample_mapping_file = pd.read_csv(dataset_path(sample_mapping_file_tsv), sep='\t')
+        # we may want to exclude these from the smf directly
+        sample_mapping_file = remove_sc_outliers(sample_mapping_file)
+        # extract CPG IDs from file
+        sc_samples = ','.join(sample_mapping_file['InternalID'].unique())
 
-    # extract individuals for which we have single-cell (sc) data
-    sample_mapping_file = pd.read_csv(dataset_path(sample_mapping_file_tsv), sep='\t')
-    # we may want to exclude these from the smf directly
-    sample_mapping_file = remove_sc_outliers(sample_mapping_file)
-    # extract CPG IDs from file
-    sc_samples = ','.join(sample_mapping_file['InternalID'].unique())
-
-    # filter to QC-passing, biallelic SNPs
-    output_mt_path = output_path('qc_filtered.mt')
-    vre_plink_path = output_path('vr_plink_20k_variants')
-    # only exit if both files exist
-    if all(to_path(output).exists() for output in [output_mt_path, vre_plink_path]):
-        logging.info('File already exists no need to filter')
-        return
+        # filter to QC-passing, biallelic SNPs
+        output_mt_path = output_path('qc_filtered.mt')
+        vre_plink_path = output_path('vr_plink_20k_variants')
+        # only exit if both files exist
+        if all(to_path(output).exists() for output in [output_mt_path, vre_plink_path]):
+            logging.info('File already exists no need to filter')
+            return
 
     filter_variants(
         mt_path=mt_path,
         sc_samples_str=sc_samples,
         output_mt_path=output_mt_path,
         vre_plink_path=vre_plink_path,
+        ld_prune_only=ld_prune_only
     )
 
 
