@@ -325,7 +325,7 @@ def filter_variants(
 def genotypes_pipeline(
     sample_mapping_file_tsv: str,
     mt_path: str,
-    ld_prune_only: bool = False
+    ld_prune_only: bool
 ):
     """
     Run one-off QC filtering pipeline
