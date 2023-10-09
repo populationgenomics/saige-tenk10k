@@ -52,9 +52,6 @@ papi = ParticipantApi()
 
 
 DEFAULT_JOINT_CALL_MT = dataset_path('mt/v7.mt')
-#Hail 0.2.124
-HAIL_IMAGE = "australia-southeast1-docker.pkg.dev/cpg-common/images/hail@sha256:fbcbd7beead6629214c0ff101cf457bc06f90e10648e16fc8de14e0ca7655757"
-
 # region SAMPLES_SUBSETTING_FUNCTIONS
 
 
