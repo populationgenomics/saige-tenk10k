@@ -141,7 +141,9 @@ def build_pheno_cov_filename(
 def get_gene_cis_file(gene_info_tsv, gene: str, window_size: int, ofile_path: str):
     """Get gene cis window file"""
     gene_info_df = pd.read_csv(gene_info_tsv, sep='\t')
-    gene_info_gene = gene_info_df[gene_info_df['gene_name'] == gene]
+    gene_info_df['gene_id'] = gene_info_df['gene_id'].str.split('.').str[0] # remove the ENSG version number 
+
+    gene_info_gene = gene_info_df[gene_info_df['gene_id'] == gene]
     init_batch()
     # get chromosome
     chrom = gene_info_gene['chr'].values[0]
