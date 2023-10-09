@@ -330,13 +330,14 @@ def genotypes_pipeline(
     """
     Run one-off QC filtering pipeline
     """
+    # extract CPG IDs from file
+    sc_samples = ','.join(sample_mapping_file['InternalID'].unique())
+    
     if ld_prune_only is False: 
         # extract individuals for which we have single-cell (sc) data
         sample_mapping_file = pd.read_csv(dataset_path(sample_mapping_file_tsv), sep='\t')
         # we may want to exclude these from the smf directly
         sample_mapping_file = remove_sc_outliers(sample_mapping_file)
-        # extract CPG IDs from file
-        sc_samples = ','.join(sample_mapping_file['InternalID'].unique())
 
         # filter to QC-passing, biallelic SNPs
         output_mt_path = output_path('qc_filtered.mt')
