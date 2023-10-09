@@ -26,7 +26,6 @@ import random
 from cpg_utils import to_path
 from cpg_utils.hail_batch import (
     dataset_path,
-    get_config,
     init_batch,
     output_path,
 )
@@ -244,7 +243,7 @@ def filter_variants(
     mt = hl.read_matrix_table(mt_path)
     logging.info(f'Number of total loci: {mt.count()[0]}')
     logging.info(f'Number of total samples: {mt.count()[1]}')
-    if ld_prune_only is False: 
+    if ld_prune_only is False:
         # densify
         mt = hl.experimental.densify(mt)
 
@@ -282,7 +281,7 @@ def filter_variants(
 
         mt.write(output_mt_path, overwrite=True)
         logging.info(f'No QC-passing, biallelic SNPs: {mt.count()[0]}')
-    
+
     # subset variants for variance ratio estimation
     # minor allele count (MAC) > {vre_n_markers}
     vre_mt = mt.filter_rows(mt.variant_qc.AC[0] > vre_mac_threshold)
@@ -317,13 +316,18 @@ def filter_variants(
     '--sample-mapping-file-tsv',
     default='scrna-seq/grch38_association_files/OneK1K_CPG_IDs.tsv',  # to be updated
 )
-@click.option('--mt-path', default=DEFAULT_JOINT_CALL_MT, help = 'Original joint call hail matrix table or if ld-prune-only, the filtered matrix table')
-@click.option('--ld-prune-only', is_flag=True, default=False, help = 'Set to True to only run LD pruning steps')
-def genotypes_pipeline(
-    sample_mapping_file_tsv: str,
-    mt_path: str,
-    ld_prune_only: bool
-):
+@click.option(
+    '--mt-path',
+    default=DEFAULT_JOINT_CALL_MT,
+    help='Original hail matrix table or if ld-prune-only, the filtered matrix table',
+)
+@click.option(
+    '--ld-prune-only',
+    is_flag=True,
+    default=False,
+    help='Set to True to only run LD pruning steps',
+)
+def genotypes_pipeline(sample_mapping_file_tsv: str, mt_path: str, ld_prune_only: bool):
     """
     Run one-off QC filtering pipeline
     """
@@ -347,7 +351,7 @@ def genotypes_pipeline(
         sc_samples_str=sc_samples,
         output_mt_path=output_mt_path,
         vre_plink_path=vre_plink_path,
-        ld_prune_only=ld_prune_only
+        ld_prune_only=ld_prune_only,
     )
 
 
