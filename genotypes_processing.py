@@ -330,22 +330,20 @@ def genotypes_pipeline(
     """
     Run one-off QC filtering pipeline
     """
+    # extract individuals for which we have single-cell (sc) data
+    sample_mapping_file = pd.read_csv(dataset_path(sample_mapping_file_tsv), sep='\t')
+    # we may want to exclude these from the smf directly
+    sample_mapping_file = remove_sc_outliers(sample_mapping_file)
     # extract CPG IDs from file
     sc_samples = ','.join(sample_mapping_file['InternalID'].unique())
-    
-    if ld_prune_only is False: 
-        # extract individuals for which we have single-cell (sc) data
-        sample_mapping_file = pd.read_csv(dataset_path(sample_mapping_file_tsv), sep='\t')
-        # we may want to exclude these from the smf directly
-        sample_mapping_file = remove_sc_outliers(sample_mapping_file)
 
-        # filter to QC-passing, biallelic SNPs
-        output_mt_path = output_path('qc_filtered.mt')
-        vre_plink_path = output_path('vr_plink_20k_variants')
-        # only exit if both files exist
-        if all(to_path(output).exists() for output in [output_mt_path, vre_plink_path]):
-            logging.info('File already exists no need to filter')
-            return
+    # filter to QC-passing, biallelic SNPs
+    output_mt_path = output_path('qc_filtered.mt')
+    vre_plink_path = output_path('vr_plink_20k_variants')
+    # only exit if both files exist
+    if all(to_path(output).exists() for output in [output_mt_path, vre_plink_path]):
+        logging.info('File already exists no need to filter')
+        return
 
     filter_variants(
         mt_path=mt_path,
