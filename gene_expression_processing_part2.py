@@ -20,7 +20,6 @@ output files in tob_wgs_genetics/saige_qtl/input
     --output-dir "tob_wgs_genetics/saige_qtl/hope-test-input" \
     --image australia-southeast1-docker.pkg.dev/cpg-common/images/scanpy:1.9.3 \
      gene_expression_processing_part2.py  --celltypes=B_IN --chromosomes=chr22 \
-    --gene-info-tsv=gs://cpg-tob-wgs-test/scrna-seq/grch38_association_files/gene_location_files/GRCh38_geneloc_chr22.tsv \
     --sample-mapping-file-path=gs://cpg-tob-wgs-test/scrna-seq/grch38_association_files/OneK1K_CPG_IDs.tsv \
     --expression-files-prefix=hope-test
 
@@ -175,7 +174,6 @@ def get_gene_cis_file(chromosome:str, gene: str, window_size: int, ofile_path: s
 @click.command()
 @click.option('--celltypes')
 @click.option('--chromosomes')
-@click.option('--gene-info-tsv')
 @click.option('--expression-files-prefix')
 @click.option('--sample-mapping-file-path')
 @click.option('--min-pct-expr', type=int, default =5)
@@ -193,7 +191,6 @@ def get_gene_cis_file(chromosome:str, gene: str, window_size: int, ofile_path: s
 def main(
     celltypes: str,
     chromosomes: str,
-    gene_info_tsv: str,
     expression_files_prefix: str,
     sample_mapping_file_path: str,
     min_pct_expr: int,
