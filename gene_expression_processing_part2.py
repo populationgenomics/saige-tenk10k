@@ -138,23 +138,30 @@ def build_pheno_cov_filename(
     #write to temp file path
     pheno_cov_df.to_csv(str(ofile_path), index=False)
 
-def get_gene_cis_file(gene_info_tsv, gene: str, window_size: int, ofile_path: str):
-    """Get gene cis window file"""
-    gene_info_df = pd.read_csv(gene_info_tsv, sep='\t')
-    gene_info_df['gene_id'] = gene_info_df['gene_id'].str.split('.').str[0] # remove the ENSG version number 
+def gene_info(x):
+    # Extract ENSG and gene_level of evidence
+    g_name = list(filter(lambda x: 'gene_name' in x,  x.split(";")))[0].split("=")[1]
+    g_id = list(filter(lambda x: 'gene_id' in x,  x.split(";")))[0].split("=")[1]
+    g_id = g_id.split('.')[0] #removes the version number from ENSG ids 
+    g_leve = int(list(filter(lambda x: 'level' in x,  x.split(";")))[0].split("=")[1])
+    return (g_name,g_id, g_leve)
 
-    gene_info_gene = gene_info_df[gene_info_df['gene_id'] == gene]
-    init_batch()
-    # get chromosome
-    chrom = gene_info_gene['chr'].values[0]
-    ## check with Anna - I take the union of the start and end coordinates if there are multiple entries for the same gene
-    if len(gene_info_gene)>1: 
-        start_coordinate = min(gene_info_gene['start'].values)
-        end_coordinate = max(gene_info_gene['end'].values)
-    else: 
-        start_coordinate = int(gene_info_gene['start'])
-        end_coordinate = int(gene_info_gene['end'])
+def get_gene_cis_file(chromosome:str, gene: str, window_size: int, ofile_path: str):
+    """Get gene cis window file"""
+    gencode = pd.read_table("gs://cpg-tob-wgs-test/scrna-seq/grch38_association_files/gene_location_files/gencode.v42.annotation.gff3.gz", comment="#", sep = "\t", names = ['seqname', 'source', 'feature', 'start' , 'end', 'score', 'strand', 'frame', 'attribute'])
+    gencode_genes = gencode[(gencode.feature == "gene")][['seqname', 'start', 'end', 'attribute']].copy().reset_index().drop('index', axis=1)
+    gencode_genes["gene_name"],gencode_genes["ENSG"], gencode_genes["gene_level"] = zip(*gencode_genes.attribute.apply(lambda x: gene_info(x)))
     
+    #subset gencode annotation file for relevant chromosome
+    gencode_genes = gencode_genes[gencode_genes['seqname']==chromosome]
+
+    gene_info_gene = gencode_genes[gencode_genes['gene_name'] == gene]
+
+    init_batch()
+    # get chromosome, coordinates
+    chrom = gene_info_gene['seqname'].values[0]
+    start_coordinate = gene_info_gene['start'].values[0]
+    end_coordinate = gene_info_gene['end'].values[0]
     # get gene body position (start and end) and add window
     left_boundary = max(1, start_coordinate - window_size)
     right_boundary = min(
@@ -162,7 +169,6 @@ def get_gene_cis_file(gene_info_tsv, gene: str, window_size: int, ofile_path: st
         hl.get_reference('GRCh38').lengths[chrom]
     )
     data = {'chromosome': chrom, 'start': left_boundary, 'end': right_boundary}
-    # check if I need an index at all - Anna's comment??
     pd.DataFrame(data, index=[gene]).to_csv(str(ofile_path))
 
 
@@ -242,7 +248,7 @@ def main(
                 gene_cis_job = b.new_python_job(name=f'Build cis window files for {gene} [{celltype};{chromosome}]')
                 gene_cis_job.image(config['workflow']['driver_image'])
                 gene_cis_job.call(
-                    get_gene_cis_file,gene_info_tsv,gene,cis_window_size,gene_cis_job.ofile
+                    get_gene_cis_file,chromosome,gene,cis_window_size,gene_cis_job.ofile
                 )
                 b.write_output(gene_cis_job.ofile, output_path(f'input_files/cis_window_files/{gene}_{cis_window_size}bp.csv'))
             

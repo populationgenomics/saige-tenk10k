@@ -41,15 +41,13 @@ config = get_config()
 
 SCANPY_IMAGE = config['images']['scanpy']
 
-def extract_gene_info(attribute_str):
-    """ Extracts ENSG gene_ID and gene name from 'attribute' column in the GENCODE GTF file"""
-    gene_id_match = re.search(r'gene_id "(.*?)";', attribute_str)
-    gene_name_match = re.search(r'gene_name "(.*?)";', attribute_str)
-    
-    gene_id = gene_id_match.group(1) if gene_id_match else None
-    gene_name = gene_name_match.group(1) if gene_name_match else None
-    
-    return gene_id, gene_name
+def gene_info(x):
+# Extract ENSG and gene_level of evidence
+    g_name = list(filter(lambda x: 'gene_name' in x,  x.split(";")))[0].split("=")[1]
+    g_id = list(filter(lambda x: 'gene_id' in x,  x.split(";")))[0].split("=")[1]
+    g_id = g_id.split('.')[0] #removes the version number from ENSG ids 
+    g_leve = int(list(filter(lambda x: 'level' in x,  x.split(";")))[0].split("=")[1])
+    return (g_name,g_id, g_leve)
 
 def get_chrom_celltype_expression_and_filter(
     gene_info_df,
@@ -81,20 +79,16 @@ def get_chrom_celltype_expression_and_filter(
 
     # select only genes on relevant chromosome
 
-    # Downloads and wrangles GENCODE annotation to extract ENSG ID and gene name mappings 
-    gtf_data= pd.read_csv('gs://cpg-tob-wgs-test/scrna-seq/grch38_association_files/gene_location_files/gencode.v19.annotation.gtf', sep='\t', header=None)
-    gtf_data.columns = ["chr", "source", "feature", "start", "end", "score", "strand", "frame", "attribute"]
-    extracted_gtf_data = gtf_data["attribute"].apply(extract_gene_info) # extracts ENSG IDs and gene-name as a list of tuples
-    ensg_list = pd.DataFrame(extracted_gtf_data.to_list(), columns=["ENSG", "gene_name"])#converts list of tuples to dataframe
-    ensg_list = ensg_list.drop_duplicates()
-    ensg_list['ENSG'] = ensg_list['ENSG'].str.split('.').str[0] #removes version number from the ENSG name 
+    # Reads and wrangles GENCODE annotation to extract ENSG ID and gene name mappings 
+    gencode = pd.read_table("gs://cpg-tob-wgs-test/scrna-seq/grch38_association_files/gene_location_files/gencode.v42.annotation.gff3.gz", comment="#", sep = "\t", names = ['seqname', 'source', 'feature', 'start' , 'end', 'score', 'strand', 'frame', 'attribute'])
+    gencode_genes = gencode[(gencode.feature == "gene")][['seqname', 'start', 'end', 'attribute']].copy().reset_index().drop('index', axis=1) # subsets for gene annotations
+    gencode_genes["gene_name"],gencode_genes["ENSG"], gencode_genes["gene_level"] = zip(*gencode_genes.attribute.apply(lambda x: gene_info(x)))
 
-    # Convert any var.names in expression_adata into ENSG IDs
-    expression_adata.var_names =[ensg_list.loc[ensg_list['gene_name'] == gene, 'ENSG'].iloc[0] for gene in expression_adata.var_names]
-    expression_adata.raw.var.index = [ensg_list.loc[ensg_list['gene_name'] == gene, 'ENSG'].iloc[0] for gene in expression_adata.raw.var.index] #repeat for the raw df
+    #subset gencode annotation file for relevant chromosome
+    gencode_genes = gencode_genes[gencode_genes['seqname']==chromosome]
 
-    # Subset to genes on relevant chromosome
-    expression_adata = expression_adata[:, expression_adata.var_names.isin(ensg_list['ENSG'])]
+    # Intersects gene annotations in single cell dataset with gencode gene annotations
+    expression_adata = expression_adata[:, expression_adata.var_names.isin(gencode_genes['gene_name'])]
     
     #filter lowly expressed genes 
     n_all_cells = len(expression_adata.obs.index)
