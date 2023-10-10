@@ -14,7 +14,6 @@ output files in tob_wgs_genetics/saige_qtl/input
     --output-dir "tob_wgs_genetics/saige_qtl/hope-test-input" \
     --image australia-southeast1-docker.pkg.dev/cpg-common/images/scanpy:1.9.3 \
      gene_expression_processing_part1.py  --celltypes=B_IN --chromosomes=chr22 \
-    --gene-info-tsv=gs://cpg-tob-wgs-test/scrna-seq/grch38_association_files/gene_location_files/GRCh38_geneloc_chr22.tsv \
     --expression-files-prefix=hope-test
 
 """
@@ -50,7 +49,6 @@ def gene_info(x):
     return (g_name,g_id, g_leve)
 
 def get_chrom_celltype_expression_and_filter(
-    gene_info_df,
     expression_files_prefix: str,  # tob_wgs_genetics/saige_qtl/input/
     chromosome: str,
     cell_type: str,
@@ -115,7 +113,6 @@ def get_chrom_celltype_expression_and_filter(
 def main(
     celltypes: str,
     chromosomes: str,
-    gene_info_tsv: str,
     expression_files_prefix: str,
     min_pct_expr: int,
 ):
@@ -126,8 +123,6 @@ def main(
     logging.info(f'Cell types to run: {celltypes}')
     logging.info(f'Chromosomes to run: {chromosomes}')
 
-    gene_info_df = pd.read_csv(gene_info_tsv, sep='\t')
-
     for celltype in celltypes.split(','):
         
         for chromosome in chromosomes.split(','):
@@ -135,7 +130,7 @@ def main(
             j.storage('4G')
             j.cpu(4)
             j.image(config['workflow']['driver_image'])
-            j.call(get_chrom_celltype_expression_and_filter,gene_info_df,expression_files_prefix,chromosome,celltype,min_pct_expr,j.ofile)
+            j.call(get_chrom_celltype_expression_and_filter,expression_files_prefix,chromosome,celltype,min_pct_expr,j.ofile)
             j.ofile.add_extension('.h5ad')
             b.write_output(j.ofile, output_path(f'filtered_{celltype}_{chromosome}.h5ad'))
 
