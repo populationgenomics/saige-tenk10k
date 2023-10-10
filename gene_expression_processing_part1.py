@@ -27,7 +27,6 @@ from cpg_workflows.batch import get_batch
 import hailtop.batch as hb
 import scanpy
 import json
-import re
 
 
 from cpg_utils import to_path
@@ -41,7 +40,7 @@ config = get_config()
 SCANPY_IMAGE = config['images']['scanpy']
 
 def gene_info(x):
-# Extract ENSG and gene_level of evidence
+    # Extract ENSG and gene_level of evidence
     g_name = list(filter(lambda x: 'gene_name' in x,  x.split(";")))[0].split("=")[1]
     g_id = list(filter(lambda x: 'gene_id' in x,  x.split(";")))[0].split("=")[1]
     g_id = g_id.split('.')[0] #removes the version number from ENSG ids 
@@ -106,7 +105,6 @@ def get_chrom_celltype_expression_and_filter(
 @click.command()
 @click.option('--celltypes')
 @click.option('--chromosomes')
-@click.option('--gene-info-tsv')
 @click.option('--expression-files-prefix')
 @click.option('--min-pct-expr', type=int, default =5)
 
