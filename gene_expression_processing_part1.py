@@ -2,9 +2,9 @@
 # pylint: disable=no-value-for-parameter,import-error, line-too-long
 
 """
-PART 1 of 2 of the 'Gene expression processing workflow' 
+PART 1 of 2 of the 'Gene expression processing workflow'
 
-Aims: 
+Aims:
 - Get chromosome-level and cell-type specific expression data
 - and filter lowly expressed genes.
 
@@ -14,11 +14,10 @@ output files in tob_wgs_genetics/saige_qtl/input
     analysis-runner --dataset "tob-wgs" \
     --description "prepare expression files" \
     --access-level "test" \
-    --output-dir "tob_wgs_genetics/saige_qtl/hope-test-input" \
+    --output-dir "tob_wgs_genetics/saige_qtl/hope-test-input/v2" \
     --image australia-southeast1-docker.pkg.dev/cpg-common/images/scanpy:1.9.3 \
      gene_expression_processing_part1.py  \
-    --celltypes=B_IN,CD4_NC,CD4_ET,CD4_SOX4,CD8_ET,CD8_NC,CD8_S100B,\
-    NK,NK_R,Plasma,B_MEM,B_IN,MonoC,MonoNC,DC \
+    --celltypes=B_IN,CD4_NC,CD4_ET,CD4_SOX4,CD8_ET,CD8_NC,CD8_S100B,NK,NK_R,Plasma,B_MEM,B_IN,MonoC,MonoNC,DC \
     --chromosomes=chr22 \
     --gene-annotation-file=gs://cpg-tob-wgs-main/tob_wgs_genetics/gencode.v42.annotation.gff3.gz \
     --expression-files-prefix=scrna-seq/CellRegMap_input_files/expression_objects
@@ -42,7 +41,6 @@ from cpg_utils.hail_batch import dataset_path, output_path
 config = get_config()
 
 SCANPY_IMAGE = config['images']['scanpy']
-
 
 def gene_info(x):
     """Helper function to extract ENSG and gene_name from a GFF3 annotation file"""
@@ -78,37 +76,6 @@ def get_chrom_celltype_expression_and_filter(
         dataset_path(f'{expression_files_prefix}/sce{chromosome_number}.h5ad')
     ).copy('here.h5ad')
     expression_adata = scanpy.read(expression_h5ad_path)
-
-    # Manual editing of a mislabeled individual ID
-    condition = (expression_adata.obs['individual'] == '870_871') & (
-        expression_adata.obs['latent'] == 0
-    )
-    # Update the 'individual' attribute for cells that meet the condition
-    expression_adata.obs.loc[condition, 'individual'] = '966_967'
-
-    # cell_type - labels to number mapping
-    cell_type_mapping = {
-        'CD4_NC': 0,
-        'CD4_ET': 1,
-        'CD4_SOX4': 2,
-        'CD8_ET': 3,
-        'CD8_NC': 4,
-        'CD8_S100B': 5,
-        'DC': 6,
-        'Plasma': 8,
-        'MonoC': 9,
-        'MonoNC': 10,
-        'B_MEM': 12,
-        'B_IN': 13,
-        'NK': 14,
-        'NK_R': 15,
-    }
-
-    # filter expression_adata based on cell type
-    cell_type_numerical_label = cell_type_mapping[cell_type]
-    expression_adata = expression_adata[
-        expression_adata.obs.cell_type == cell_type_numerical_label
-    ]
 
     # Reads and wrangles GENCODE annotation to extract ENSG ID and gene name mappings
     gencode = pd.read_table(
