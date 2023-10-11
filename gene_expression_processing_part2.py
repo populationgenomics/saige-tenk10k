@@ -68,7 +68,7 @@ def get_celltype_covariates(
 
     Output: covariate df for cell type of interest
     """
-    # FIX
+    # FIX the code to get cell type specific covariates
 
     #code to generate the covariate df file on line 91
     #expression_h5ad_path = to_path(
@@ -112,6 +112,8 @@ def build_pheno_cov_filename(
     #read in sample mapping file and covariate files
     smf_df = pd.read_csv(sample_mapping_file_path, sep='\t')
     cov_df = get_celltype_covariates(expression_files_prefix, celltype)
+
+    ## TO FIX - we are not using raw data anymore
 
     #subset anndata by gene
     gene_index = np.where(expression_adata.raw.var.index == gene_name)[0][0]
@@ -192,7 +194,6 @@ def main(
     chromosomes: str,
     expression_files_prefix: str,
     sample_mapping_file_path: str,
-    min_pct_expr: int,
     cis_window_size: int,
     max_gene_concurrency=int
 ):
