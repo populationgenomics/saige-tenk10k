@@ -41,6 +41,7 @@ config = get_config()
 
 SCANPY_IMAGE = config['images']['scanpy']
 
+
 def gene_info(x):
     """Helper function to extract ENSG and gene_name from a GFF3 annotation file"""
     g_name = list(filter(lambda x: 'gene_name' in x, x.split(';')))[0].split('=')[1]
