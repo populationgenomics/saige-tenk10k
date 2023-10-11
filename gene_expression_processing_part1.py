@@ -33,7 +33,6 @@ import pandas as pd
 from cpg_workflows.batch import get_batch
 import scanpy
 
-
 from cpg_utils import to_path
 from cpg_utils.config import get_config
 from cpg_utils.hail_batch import dataset_path, output_path
