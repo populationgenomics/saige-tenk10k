@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# pylint: disable=no-value-for-parameter,import-error, line-too-long
 
 """
 PART 1 of 2 of the 'Gene expression processing workflow' 
@@ -207,4 +208,4 @@ def main(
     b.run(wait=False)
 
 if __name__ == '__main__':
-    main()  # pylint: disable=no-value-for-parameter,import-error, line-too-long
+    main()  
