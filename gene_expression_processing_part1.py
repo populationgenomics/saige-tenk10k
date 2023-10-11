@@ -16,7 +16,8 @@ output files in tob_wgs_genetics/saige_qtl/input
     --output-dir "tob_wgs_genetics/saige_qtl/hope-test-input" \
     --image australia-southeast1-docker.pkg.dev/cpg-common/images/scanpy:1.9.3 \
      gene_expression_processing_part1.py  \
-    --celltypes=B_IN,CD4_NC,CD4_ET,CD4_SOX4,CD8_ET,CD8_NC,CD8_S100B,NK,NK_R,Plasma,B_MEM,B_IN,MonoC,MonoNC,DC\
+    --celltypes=B_IN,CD4_NC,CD4_ET,CD4_SOX4,CD8_ET,CD8_NC,CD8_S100B,\
+    NK,NK_R,Plasma,B_MEM,B_IN,MonoC,MonoNC,DC \
     --chromosomes=chr22 \
     --gene-annotation-file=gs://cpg-tob-wgs-main/tob_wgs_genetics/gencode.v42.annotation.gff3.gz \
     --expression-files-prefix=scrna-seq/CellRegMap_input_files/expression_objects
@@ -132,7 +133,7 @@ def get_chrom_celltype_expression_and_filter(
         .drop('index', axis=1)
     )  # subsets for gene annotations
     gencode_genes['gene_name'], gencode_genes['ENSG'] = zip(
-        *gencode_genes.attribute.apply(lambda x: gene_info(x))
+        *gencode_genes.attribute.apply(gene_info)
     )
 
     # subset gencode annotation file for relevant chromosome
@@ -175,7 +176,6 @@ def main(
 ):
     """Extracts relevant expression info AND remove genes with low expression across by cell type and chromosome"""
 
-    config = get_config()
     b = get_batch()
 
     logging.info(f'Cell types to run: {celltypes}')
@@ -206,6 +206,5 @@ def main(
 
     b.run(wait=False)
 
-
 if __name__ == '__main__':
-    main()  # pylint: disable=no-value-for-parameter
+    main()  # pylint: disable=no-value-for-parameter,import-error, line-too-long
