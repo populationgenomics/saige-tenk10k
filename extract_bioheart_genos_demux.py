@@ -36,20 +36,21 @@ vds_path = BIOHEART_JOINT_CALL_VDS
 cv_demux_vcf_path = output_path('demux_vcf_common_variants')
 
 vds = hl.read_vds(vds_path)
-logging.info(f'Number of total loci: {vds.count()[0]}')
-logging.info(f'Number of total samples: {vds.count()[1]}')
+mt = vds.variant_data
+logging.info(f'Number of total loci: {mt.count()[0]}')
+logging.info(f'Number of total samples: {mt.count()[1]}')
 
-vds = vds.filter_rows(
-    (hl.len(hl.or_else(vds.filters, hl.empty_set(hl.tstr))) == 0)  # QC
-    & (hl.len(vds.alleles) == 2)  # remove hom-ref
-    & (vds.n_unsplit_alleles == 2)  # biallelic (exclude multiallelic)
-    & (hl.is_snp(vds.alleles[0], vds.alleles[1]))  # SNPs (exclude indels)
+mt = mt.filter_rows(
+    (hl.len(hl.or_else(mt.filters, hl.empty_set(hl.tstr))) == 0)  # QC
+    & (hl.len(mt.alleles) == 2)  # remove hom-ref
+    & (mt.n_unsplit_alleles == 2)  # biallelic (exclude multiallelic)
+    & (hl.is_snp(mt.alleles[0], mt.alleles[1]))  # SNPs (exclude indels)
 )
 
-vds = hl.variant_qc(vds)
+mt = hl.variant_qc(mt)
 
 # common variants only
-cv_vds = vds.filter_rows(vds.variant_qc.AF[0] > 0.05)
+cv_mt = mt.filter_rows(mt.variant_qc.AF[0] > 0.05)
 
 # export to plink common variants only for sparse GRM
-export_vcf(cv_vds, cv_demux_vcf_path, ind_id=cv_vds.s)
+export_vcf(cv_mt, cv_demux_vcf_path, ind_id=cv_mt.s)
