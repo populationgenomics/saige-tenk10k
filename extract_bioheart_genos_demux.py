@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# pylint: disable=import-error,wrong-import-position
+# pylint: disable=import-error,missing-module-docstring,wrong-import-position
 
 __author__ = 'annacuomo'
 
