@@ -1,7 +1,4 @@
 #!/usr/bin/env python3
-# pylint: disable=broad-exception-raised,import-error,import-outside-toplevel,missing-module-docstring,no-value-for-parameter,too-many-arguments,too-many-branches,too-many-locals,too-many-statements,wrong-import-order,wrong-import-position
-
-__author__ = 'annacuomo'
 
 """
 Hail Batch workflow to extract relevant variants to test.
@@ -16,13 +13,13 @@ More details in README
 output files in tob_wgs_genetics/saige_qtl/input
 """
 
-# import python modules
+import logging
+import random
 import sys
 
-import logging
-
-import random
-
+import click
+import hail as hl
+import pandas as pd
 from cpg_utils import to_path
 from cpg_utils.hail_batch import (
     dataset_path,
@@ -30,15 +27,9 @@ from cpg_utils.hail_batch import (
     init_batch,
     output_path,
 )
-
-import click
-import pandas as pd
-
-import hail as hl
-
-
 from metamist.apis import ParticipantApi, SequencingGroupApi
 
+__author__ = 'annacuomo'
 
 # use logging to print statements, display at info level
 logging.basicConfig(
@@ -97,7 +88,7 @@ def get_bone_marrow_sequencing_groups(mt: hl.MatrixTable) -> set:
     """
     )
     logging.getLogger().setLevel(logging.WARN)
-    sequencing_groups = query(_query)['project']['sequencingGroups']
+    sequencing_groups = query(_query)['project']['sequencingGroups']  # type: ignore
     logging.getLogger().setLevel(logging.INFO)
 
     bm_sequencing_groups = []
@@ -352,4 +343,4 @@ def genotypes_pipeline(
 
 
 if __name__ == '__main__':
-    genotypes_pipeline()
+    genotypes_pipeline()  # type: ignore
