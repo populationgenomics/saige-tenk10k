@@ -1,7 +1,4 @@
 #!/usr/bin/env python3
-# pylint: disable=import-error,missing-module-docstring,wrong-import-position
-
-__author__ = 'annacuomo'
 
 """
 This script will
@@ -25,6 +22,8 @@ from cpg_utils.hail_batch import (
 
 import hail as hl
 from hail.methods import export_vcf
+
+__author__ = 'annacuomo'
 
 BIOHEART_JOINT_CALL_VDS = dataset_path(
     'vds/0c401a0c6aee07549db7d85f88698fbaae4183_990.vds'
