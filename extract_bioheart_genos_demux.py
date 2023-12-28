@@ -37,7 +37,7 @@ init_batch()
 vds_path = BIOHEART_JOINT_CALL_VDS
 cv_demux_vcf_path = output_path('demux_vcf_common_variants')
 
-vds = hl.read_vds(vds_path)
+vds = hl.vds.read_vds(vds_path)
 mt = vds.variant_data
 logging.info(f'Number of total loci: {mt.count()[0]}')
 logging.info(f'Number of total samples: {mt.count()[1]}')
