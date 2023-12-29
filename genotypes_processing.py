@@ -268,7 +268,7 @@ def filter_variants(
         (hl.len(hl.or_else(mt.filters, hl.empty_set(hl.tstr))) == 0)  # QC
         & (hl.len(mt.alleles) == 2)  # remove hom-ref
         & (mt.n_unsplit_alleles == 2)  # biallelic (exclude multiallelic)
-        & (hl.is_snp(mt.alleles[0], mt.alleles[1])==False)  # SNPs (exclude indels)
+        & (hl.is_snp(mt.alleles[0], mt.alleles[1]))  # SNPs (exclude indels)
     )
 
     mt = hl.variant_qc(mt)

@@ -44,14 +44,14 @@ mt = hl.vds.to_dense_mt(vds)
 
 # filter out loci & variant QC
 mt = mt.filter_rows(
-    mt.was_split  # biallelic (exclude multiallelic)
-    & (hl.len(mt.alleles) == 1)  # remove hom-ref
+    ~(mt.was_split)  # biallelic (exclude multiallelic)
+    & (hl.len(mt.alleles) == 2)  # remove hom-ref
     & (hl.is_snp(mt.alleles[0], mt.alleles[1]))  # SNPs (exclude indels)
 )
 mt = hl.variant_qc(mt)
 
 # common variants only
-cv_mt = mt.filter_rows(mt.variant_qc.AF[1] < 0.05)
+cv_mt = mt.filter_rows(mt.variant_qc.AF[1] > 0.05)
 
 # remove fields not in the VCF
 cv_mt = cv_mt.drop('gvcf_info')
