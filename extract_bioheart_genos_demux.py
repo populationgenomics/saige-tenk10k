@@ -4,8 +4,13 @@
 """
 This script will
 
-- extract common variants
+- extract common, biallelic SNPs
 - export as VCF
+
+this excludes non-variable loci since they will not help
+in differentiating individuals, multi-allelic SNPs, as they
+are more likely to be artefact and harder to find in RNA data,
+and indels which are also not useful for demultiplexing
 
 this will be used to demultiplex scRNA-seq
 data so that we can map cells to donors.
