@@ -12,8 +12,6 @@ data so that we can map cells to donors.
 """
 
 # python modules
-import logging
-
 from cpg_utils.hail_batch import (
     dataset_path,
     get_config,
@@ -42,10 +40,8 @@ vds = hl.vds.read_vds(vds_path)
 # split multiallelic loci
 vds = hl.vds.split_multi(vds, filter_changed_loci=True)
 
-# denisfy to matrix table object
+# densify to matrix table object
 mt = hl.vds.to_dense_mt(vds)
-logging.info(f'Number of total loci: {mt.count()[0]}')
-logging.info(f'Number of total samples: {mt.count()[1]}')
 
 # filter out loci & variant QC
 mt = mt.filter_rows(
