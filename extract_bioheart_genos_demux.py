@@ -4,8 +4,13 @@
 """
 This script will
 
-- extract common variants
+- extract common, biallelic SNPs
 - export as VCF
+
+this excludes non-variable loci since they will not help
+in differentiating individuals, multi-allelic SNPs, as they
+are more likely to be artefact and harder to find in RNA data,
+and indels which are also not useful for demultiplexing
 
 this will be used to demultiplex scRNA-seq
 data so that we can map cells to donors.
@@ -33,7 +38,6 @@ HAIL_IMAGE = get_config()['images']['scanpy']
 init_batch()
 
 vds_path = BIOHEART_JOINT_CALL_VDS
-cv_demux_vcf_path = output_path('demux_vcf_common_variants.vcf.bgz')
 
 vds = hl.vds.read_vds(vds_path)
 
@@ -45,17 +49,18 @@ mt = hl.vds.to_dense_mt(vds)
 
 # filter out loci & variant QC
 mt = mt.filter_rows(
-    mt.was_split  # biallelic (exclude multiallelic)
+    ~(mt.was_split)  # biallelic (exclude multiallelic)
     & (hl.len(mt.alleles) == 2)  # remove hom-ref
     & (hl.is_snp(mt.alleles[0], mt.alleles[1]))  # SNPs (exclude indels)
 )
 mt = hl.variant_qc(mt)
 
 # common variants only
-cv_mt = mt.filter_rows(mt.variant_qc.AF[0] > 0.05)
+cv_mt = mt.filter_rows(mt.variant_qc.AF[1] > 0.05)
 
 # remove fields not in the VCF
 cv_mt = cv_mt.drop('gvcf_info')
 
 # export to plink common variants only for demultiplexing
+cv_demux_vcf_path = output_path('demux_vcf_common_variants.vcf.bgz')
 export_vcf(cv_mt, cv_demux_vcf_path)
