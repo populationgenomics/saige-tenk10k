@@ -42,17 +42,17 @@ vds = hl.vds.read_vds(vds_path)
 # split multiallelic loci
 vds = hl.vds.split_multi(vds, filter_changed_loci=True)
 
-# mt = vds.variant_data
+# denisfy to matrix table object
 mt = hl.vds.to_dense_mt(vds)
 logging.info(f'Number of total loci: {mt.count()[0]}')
 logging.info(f'Number of total samples: {mt.count()[1]}')
 
+# filter out loci & variant QC
 mt = mt.filter_rows(
     mt.was_split  # biallelic (exclude multiallelic)
     & (hl.len(mt.alleles) == 2)  # remove hom-ref
     & (hl.is_snp(mt.alleles[0], mt.alleles[1]))  # SNPs (exclude indels)
 )
-
 mt = hl.variant_qc(mt)
 
 # common variants only
