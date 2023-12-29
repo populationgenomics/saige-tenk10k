@@ -58,5 +58,8 @@ mt = hl.variant_qc(mt)
 # common variants only
 cv_mt = mt.filter_rows(mt.variant_qc.AF[0] > 0.05)
 
+# remove fields not in the VCF
+cv_mt = cv_mt.drop('gvcf_info')
+
 # export to plink common variants only for demultiplexing
 export_vcf(cv_mt, cv_demux_vcf_path)
