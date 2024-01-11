@@ -116,7 +116,7 @@ def build_run_single_variant_test_command(
     - cis window: file with chrom | start | end to specify window
     - GMMAT model file: null model fit from previous step (.rda)
     - Variance Ratio file: as estimated from previous step (.txt)
-    - group annotation: select only specific annotations from group file (e.g., lof)
+    - group annotation: select only some annos from group file (e.g., lof)
     - group file: for each gene/set,
         one row specifying variants,
         one row specifying each variant's anno,
@@ -239,16 +239,18 @@ config = get_config()
 
 
 @click.command()
-@click.option('--vcf-file-path', default='input/genotype_10markers.vcf.gz')
 @click.option(
     '--pheno-cov-filename',
     default='input/seed_1_100_nindep_100_ncell_100_lambda_2_tauIntraSample_0.5_Poisson.txt',
 )
-@click.option('--gene-name', default='gene_1')
-@click.option('--chrom', default='2')
+@click.option('--vcf-file-path', default='input/genotype_10markers.vcf.gz')
 @click.option('--covs-list', default='X1,X2,pf1,pf2')
 @click.option('--sample-covs-list', default='X1,X2')
-@click.option('--null-output-path', default='')
+@click.option('--sample-id', default='IND_ID')
+@click.option(
+    '--null-output-path',
+    default='output/nindep_100_ncell_100_lambda_2_tauIntraSample_0.5_gene_1',
+)
 @click.option(
     '--sv-output-path',
     default='output/nindep_100_ncell_100_lambda_2_tauIntraSample_0.5_gene_1_cis',
@@ -257,6 +259,9 @@ config = get_config()
     '--gene-pvals-output-path',
     default='output/nindep_100_ncell_100_lambda_2_tauIntraSample_0.5_gene_1_cis_genePval',
 )
+@click.option('--plink-path', default='input/n.indep_100_n.cell_1_01.step1')
+@click.option('--gene-name', default='gene_1')
+@click.option('--chrom', default='2')
 @click.option('--cis-window-file', default='input/gene_1_cis_region.txt')
 def association_pipeline(
     pheno_cov_filename_tsv: str,
