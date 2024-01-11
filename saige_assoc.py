@@ -32,7 +32,8 @@ def build_fit_null_command(
     plink_path: str,  # ./input/nfam_100_nindep_0_step1_includeMoreRareVariants_poly
     pheno_col: str = 'y',  # ${gene_name}, can be random y because we are doing one gene
     trait_type: str = 'count',
-    skip_vre: str = 'FALSE',  # this is a boolean but that's encoded differently between R and python
+    # this is a boolean but that's encoded differently between R and python
+    skip_vre: str = 'FALSE',
     pheno_remove_zeros: str = 'FALSE',
     use_sparse_grm_null: str = 'FALSE',
     use_grm_null: str = 'FALSE',
@@ -53,7 +54,7 @@ def build_fit_null_command(
     - output prefix: where to save the fitted model (.rda)
     - Plink path: path to plink file (subset of ~2,000 markers for VRE)
     - pheno col: name of column specifying pheno (default: "y")
-    - trait type: count = Poisson, count_nb = Negative Binomial, quantitative = Normal, binary = binary (?)
+    - trait type: count = Poisson, count_nb = Negative Binomial, quantitative = Normal
     - option to skip Variance Ratio estimation (discouraged)
     - option to add an offset to the fixed covariates (???)
     - option to transform (scale?) covariates?
@@ -191,7 +192,10 @@ def build_obtain_gene_level_pvals_command(
 #     GMMAT model file: null model fit from previous step (.rda)
 #     Variance Ratio file: as estimated from previous step (.txt)
 #     group annotation: select only specific annotations from group file (e.g., lof)
-#     group file: for each gene/set, one row specifying variants, one row specifying each variant's anno, one optional row with all weights
+#     group file: for each gene/set,
+#                 one row specifying variants,
+#                 one row specifying each variant's anno,
+#                 one optional row with all weights
 #     allele order: specifying whether alt-first or ref-first in genotype files
 #     min MAF: minimum variant minor allele frequency to include
 #     min MAC: minimum variant minor allele count to include
@@ -249,7 +253,7 @@ config = get_config()
     '--gene-pvals-output-path',
     default='output/nindep_100_ncell_100_lambda_2_tauIntraSample_0.5_gene_1_cis_genePval',
 )
-@click.optino('--cis-window-file', default='input/gene_1_cis_region.txt')
+@click.option('--cis-window-file', default='input/gene_1_cis_region.txt')
 def association_pipeline(
     pheno_cov_filename_tsv: str,
     vcf_file_path: str,
