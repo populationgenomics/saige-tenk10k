@@ -237,6 +237,7 @@ config = get_config()
     default='input/seed_1_100_nindep_100_ncell_100_lambda_2_tauIntraSample_0.5_Poisson.txt',
 )
 @click.option('--gene-name', default='gene_1')
+@click.option('--chrom', default='2')
 @click.option('--covs-list', default='X1,X2,pf1,pf2')
 @click.option('--sample-covs-list', default='X1,X2')
 @click.option('--null-output-path', default='')
@@ -248,6 +249,7 @@ config = get_config()
     '--gene-pvals-output-path',
     default='output/nindep_100_ncell_100_lambda_2_tauIntraSample_0.5_gene_1_cis_genePval',
 )
+@click.optino('--cis-window-file', default='input/gene_1_cis_region.txt')
 def association_pipeline(
     pheno_cov_filename_tsv: str,
     vcf_file_path: str,
@@ -259,6 +261,8 @@ def association_pipeline(
     gene_pvals_output_path: str,
     plink_path: str,
     gene_name: str,
+    chrom: str,
+    cis_window_file: str,
     # chromosomes: str,
     # celltypes: str,
 ):
@@ -277,12 +281,12 @@ def association_pipeline(
     fit_null_job.image(SAIGE_QTL_IMAGE)
     cmd = build_fit_null_command(
         pheno_file=pheno_cov_filename_tsv,
-        pheno_col=gene_name,
         cov_col_list=covs_list,
         sample_cov_col_list=sample_covs_list,
         sample_id_pheno=sample_id,
         output_prefix=null_output_path,
         plink_path=plink_path,
+        pheno_col=gene_name,
     )
     fit_null_job.command(cmd)
 
@@ -294,6 +298,10 @@ def association_pipeline(
         vcf_file=vcf_file_path,
         vcf_file_index=f'{vcf_file_path}.csi',
         saige_output_file=sv_output_path,
+        chrom=chrom,
+        cis_window_file=cis_window_file,
+        gmmat_model_path=f'{null_output_path}.rda',
+        variance_ratio_path=f'{null_output_path}.varianceRatio.txt',
     )
     run_sv_assoc_job.command(cmd)
 
