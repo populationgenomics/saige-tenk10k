@@ -231,9 +231,15 @@ config = get_config()
 
 
 @click.command()
-@click.option('--vcf-file-path', default='myVCF')
-@click.option('--pheno-cov-filename', default='myPhenoCov')
-@click.option('--covs-list', default='age,sex')
+@click.option('--vcf-file-path', default='input/genotype_10markers.vcf.gz')
+@click.option('--vcf-index-file-path', default='input/genotype_10markers.vcf.gz.csi')
+@click.option(
+    '--pheno-cov-filename',
+    default='input/seed_1_100_nindep_100_ncell_100_lambda_2_tauIntraSample_0.5_Poisson.txt',
+)
+@click.option('--pheno-col', default='gene_1')
+@click.option('--covs-list', default='X1,X2,pf1,pf2')
+@click.option('--covs-list', default='X1,X2,pf1,pf2')
 @click.option('--saige-output-path')
 def association_pipeline(
     pheno_cov_filename_tsv: str,
@@ -256,45 +262,58 @@ def association_pipeline(
     )
     batch = hb.Batch('SAIGE-QTL pipeline', backend=sb)
 
-    celltypes_list = celltypes.split(' ')
-    chromosomes_list = chromosomes.split(' ')
+    # step 1 (fit null)
+    fit_null_job = batch.new_job(name='fit null')
+    fit_null_job.image(SAIGE_QTL_IMAGE)
+    cmd = build_fit_null_command(
+        pheno_file=pheno_cov_filename_tsv,
+        cov_col_list=covs_list,
+        sample_id_pheno=sample_id,
+        output_prefix=output_path,
+        plink_path=plink_path,
+        pheno_col=pheno_col,
+    )
+    fit_null_job.command(cmd)
 
-    for celltype in celltypes_list:
-        for chromosome in chromosomes_list:
-            # get genes
-            for gene in genes:
+    # celltypes_list = celltypes.split(' ')
+    # chromosomes_list = chromosomes.split(' ')
 
-                fit_null_job = batch.new_job(name='fit null')
-                fit_null_job.image(SAIGE_QTL_IMAGE)
-                cmd = build_fit_null_command(
-                    pheno_file=pheno_cov_filename_tsv,
-                    cov_col_list=covs_list,
-                    sample_id_pheno=sample_id,
-                    output_prefix=output_path,
-                    plink_path=plink_path,
-                    pheno_col=pheno_col,
-                )
-                fit_null_job.command(cmd)
+    # for celltype in celltypes_list:
+    #     for chromosome in chromosomes_list:
+    #         # get genes
+    #         for gene in genes:
 
-                run_sv_assoc_job = batch.new_job(name='single variant test')
-                run_sv_assoc_job.image(SAIGE_QTL_IMAGE)
-                run_sv_assoc_job.depends_on(fit_null_job)
-                cmd = build_run_single_variant_test_command(
-                    vcf_file=vcf_file_path,
-                    vcf_file_index=f'{vcf_file_path}.tbi',
-                    saige_output_file=output_path,
-                )
-                run_sv_assoc_job.command(cmd)
+    #             fit_null_job = batch.new_job(name='fit null')
+    #             fit_null_job.image(SAIGE_QTL_IMAGE)
+    #             cmd = build_fit_null_command(
+    #                 pheno_file=pheno_cov_filename_tsv,
+    #                 cov_col_list=covs_list,
+    #                 sample_id_pheno=sample_id,
+    #                 output_prefix=output_path,
+    #                 plink_path=plink_path,
+    #                 pheno_col=pheno_col,
+    #             )
+    #             fit_null_job.command(cmd)
 
-                run_set_assoc_job = batch.new_job(name='settest')
-                run_set_assoc_job.image(SAIGE_QTL_IMAGE)
-                run_set_assoc_job.depends_on(fit_null_job)
-                cmd = build_run_set_test_command(
-                    vcf_file=vcf_file_path,
-                    vcf_file_index=f'{vcf_file_path}.tbi',
-                    saige_output_file=output_path,
-                )
-                run_set_assoc_job.command(cmd)
+    #             run_sv_assoc_job = batch.new_job(name='single variant test')
+    #             run_sv_assoc_job.image(SAIGE_QTL_IMAGE)
+    #             run_sv_assoc_job.depends_on(fit_null_job)
+    #             cmd = build_run_single_variant_test_command(
+    #                 vcf_file=vcf_file_path,
+    #                 vcf_file_index=f'{vcf_file_path}.tbi',
+    #                 saige_output_file=output_path,
+    #             )
+    #             run_sv_assoc_job.command(cmd)
+
+    #             run_set_assoc_job = batch.new_job(name='settest')
+    #             run_set_assoc_job.image(SAIGE_QTL_IMAGE)
+    #             run_set_assoc_job.depends_on(fit_null_job)
+    #             cmd = build_run_set_test_command(
+    #                 vcf_file=vcf_file_path,
+    #                 vcf_file_index=f'{vcf_file_path}.tbi',
+    #                 saige_output_file=output_path,
+    #             )
+    #             run_set_assoc_job.command(cmd)
 
     # set jobs running
     batch.run(wait=False)
