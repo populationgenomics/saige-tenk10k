@@ -144,7 +144,7 @@ def build_run_single_variant_test_command(
     return saige_command_step2_sv
 
 
-def build_obtain_gene_level_pvals_commans(
+def build_obtain_gene_level_pvals_command(
     gene_name: str,
     saige_sv_output_file: str,
     saige_gene_pval_output_file: str,
@@ -236,19 +236,29 @@ config = get_config()
     '--pheno-cov-filename',
     default='input/seed_1_100_nindep_100_ncell_100_lambda_2_tauIntraSample_0.5_Poisson.txt',
 )
-@click.option('--pheno-col', default='gene_1')
+@click.option('--gene-name', default='gene_1')
 @click.option('--covs-list', default='X1,X2,pf1,pf2')
 @click.option('--sample-covs-list', default='X1,X2')
-@click.option('--saige-output-path')
+@click.option('--null-output-path', default='')
+@click.option(
+    '--sv-output-path',
+    default='output/nindep_100_ncell_100_lambda_2_tauIntraSample_0.5_gene_1_cis',
+)
+@click.option(
+    '--gene-pvals-output-path',
+    default='output/nindep_100_ncell_100_lambda_2_tauIntraSample_0.5_gene_1_cis_genePval',
+)
 def association_pipeline(
     pheno_cov_filename_tsv: str,
     vcf_file_path: str,
     covs_list: str,
     sample_covs_list: str,
     sample_id: str,
-    output_path: str,
+    null_output_path: str,
+    sv_output_path: str,
+    gene_pvals_output_path: str,
     plink_path: str,
-    pheno_col: str,
+    gene_name: str,
     # chromosomes: str,
     # celltypes: str,
 ):
@@ -267,25 +277,36 @@ def association_pipeline(
     fit_null_job.image(SAIGE_QTL_IMAGE)
     cmd = build_fit_null_command(
         pheno_file=pheno_cov_filename_tsv,
-        pheno_col=pheno_col,
+        pheno_col=gene_name,
         cov_col_list=covs_list,
         sample_cov_col_list=sample_covs_list,
         sample_id_pheno=sample_id,
-        output_prefix=output_path,
+        output_prefix=null_output_path,
         plink_path=plink_path,
     )
     fit_null_job.command(cmd)
 
-    # step 2 (cis eQTL test)
+    # step 2 (cis eQTL single variant test)
     run_sv_assoc_job = batch.new_job(name='single variant test')
     run_sv_assoc_job.image(SAIGE_QTL_IMAGE)
     run_sv_assoc_job.depends_on(fit_null_job)
     cmd = build_run_single_variant_test_command(
         vcf_file=vcf_file_path,
         vcf_file_index=f'{vcf_file_path}.csi',
-        saige_output_file=output_path,
+        saige_output_file=sv_output_path,
     )
     run_sv_assoc_job.command(cmd)
+
+    # step3 (gene-level pvalues)
+    get_gene_pvals_job = batch.new_job(name='gene level pvalues')
+    get_gene_pvals_job.image(SAIGE_QTL_IMAGE)
+    get_gene_pvals_job.depends_on(run_sv_assoc_job)
+    cmd = build_obtain_gene_level_pvals_command(
+        gene_name=gene_name,
+        saige_sv_output_file=sv_output_path,
+        saige_gene_pval_output_file=gene_pvals_output_path,
+    )
+    get_gene_pvals_job.command(cmd)
 
     # celltypes_list = celltypes.split(' ')
     # chromosomes_list = chromosomes.split(' ')
