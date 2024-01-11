@@ -10,7 +10,7 @@ Hail Batch workflow to perform association tests using SAIGE-QTL
     - pheno_cov filename, genotypes with annotations
 - builds saige commands (just add to str)
 - run saige commands (execute Rscript from command line)
-- aggregate & summarise results
+- aggregate & summarise results (not yet)
 
 """
 
@@ -19,7 +19,7 @@ import click
 import hailtop.batch as hb
 from cpg_utils.hail_batch import get_config, remote_tmpdir
 
-
+# this needs to be updated
 SAIGE_QTL_IMAGE = 'australia-southeast1-docker.pkg.dev/cpg-common/images/saige-qtl'
 
 
@@ -156,8 +156,13 @@ def build_obtain_gene_level_pvals_command(
 ):
     """Build SAIGE command to obtain gene-level pvals
     Only for single-variant tests (Step3)
+    combines single-variant p-values to obtain one gene
+    level p-valye
 
     Input:
+    - ouput of previous step, association file (txt)
+    - gene we need to aggregate results for (across SNPs)
+    - path for output file
     """
     saige_command_step3 = 'Rscript step3_gene_pvalue_qtl.R'
     saige_command_step3 += f' --assocFile={saige_sv_output_file}'
