@@ -1,6 +1,11 @@
 #!/usr/bin/env python3
 # pylint: disable=too-many-arguments
 
+import click
+
+import hailtop.batch as hb
+from cpg_utils.hail_batch import get_config, remote_tmpdir
+
 __author__ = 'annacuomo'
 
 """
@@ -13,11 +18,6 @@ Hail Batch workflow to perform association tests using SAIGE-QTL
 - aggregate & summarise results (not yet)
 
 """
-
-import click
-
-import hailtop.batch as hb
-from cpg_utils.hail_batch import get_config, remote_tmpdir
 
 # this needs to be updated
 SAIGE_QTL_IMAGE = 'australia-southeast1-docker.pkg.dev/cpg-common/images/saige-qtl'
@@ -232,7 +232,7 @@ def build_obtain_gene_level_pvals_command(
 #     saige_command_step2 += f' --maxMAF_in_groupTest={max_maf_group}'
 #     saige_command_step2 += f' --minMAF_in_groupTest={min_maf_group}'
 #     # saige_command_step2 += f' --is_noadjCov={is_no_adj_cov}'
-#     # saige_command_step2 += f' --is_sparseGRM={is_sparse_grm}' #if related individuals
+#     # saige_command_step2 += f' --is_sparseGRM={is_sparse_grm}' # related individuals
 #     saige_command_step2 += f' --markers_per_chunk={n_markers}'
 #     saige_command_step2 += f' --pval_cutoff_for_fastTest={pval_cutoff}'
 #     # saige_command_step2 += f' --is_EmpSPA={is_emp_spa}'
