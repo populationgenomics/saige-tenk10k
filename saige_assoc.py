@@ -1,13 +1,6 @@
 #!/usr/bin/env python3
 # pylint: disable=too-many-arguments
 
-import click
-
-import hailtop.batch as hb
-from cpg_utils.hail_batch import get_config, remote_tmpdir
-
-__author__ = 'annacuomo'
-
 """
 Hail Batch workflow to perform association tests using SAIGE-QTL
 
@@ -18,6 +11,14 @@ Hail Batch workflow to perform association tests using SAIGE-QTL
 - aggregate & summarise results (not yet)
 
 """
+
+import click
+
+import hailtop.batch as hb
+from cpg_utils.hail_batch import get_config, remote_tmpdir
+
+__author__ = 'annacuomo'
+
 
 # this needs to be updated
 SAIGE_QTL_IMAGE = 'australia-southeast1-docker.pkg.dev/cpg-common/images/saige-qtl'
