@@ -117,7 +117,10 @@ def build_run_single_variant_test_command(
     - GMMAT model file: null model fit from previous step (.rda)
     - Variance Ratio file: as estimated from previous step (.txt)
     - group annotation: select only specific annotations from group file (e.g., lof)
-    - group file: for each gene/set, one row specifying variants, one row specifying each variant's anno, one optional row with all weights
+    - group file: for each gene/set,
+        one row specifying variants,
+        one row specifying each variant's anno,
+        one optional row with all weights
     - allele order: specifying whether alt-first or ref-first in genotype files
     - min MAF: minimum variant minor allele frequency to include
     - min MAC: minimum variant minor allele count to include
@@ -224,7 +227,7 @@ def build_obtain_gene_level_pvals_command(
 #     saige_command_step2 += f' --maxMAF_in_groupTest={max_maf_group}'
 #     saige_command_step2 += f' --minMAF_in_groupTest={min_maf_group}'
 #     # saige_command_step2 += f' --is_noadjCov={is_no_adj_cov}'
-#     # saige_command_step2 += f' --is_sparseGRM={is_sparse_grm}' #consider if related individuals
+#     # saige_command_step2 += f' --is_sparseGRM={is_sparse_grm}' #if related individuals
 #     saige_command_step2 += f' --markers_per_chunk={n_markers}'
 #     saige_command_step2 += f' --pval_cutoff_for_fastTest={pval_cutoff}'
 #     # saige_command_step2 += f' --is_EmpSPA={is_emp_spa}'
