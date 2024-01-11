@@ -232,25 +232,25 @@ config = get_config()
 
 @click.command()
 @click.option('--vcf-file-path', default='input/genotype_10markers.vcf.gz')
-@click.option('--vcf-index-file-path', default='input/genotype_10markers.vcf.gz.csi')
 @click.option(
     '--pheno-cov-filename',
     default='input/seed_1_100_nindep_100_ncell_100_lambda_2_tauIntraSample_0.5_Poisson.txt',
 )
 @click.option('--pheno-col', default='gene_1')
 @click.option('--covs-list', default='X1,X2,pf1,pf2')
-@click.option('--covs-list', default='X1,X2,pf1,pf2')
+@click.option('--sample-covs-list', default='X1,X2')
 @click.option('--saige-output-path')
 def association_pipeline(
     pheno_cov_filename_tsv: str,
     vcf_file_path: str,
     covs_list: str,
+    sample_covs_list: str,
     sample_id: str,
     output_path: str,
     plink_path: str,
     pheno_col: str,
-    chromosomes: str,
-    celltypes: str,
+    # chromosomes: str,
+    # celltypes: str,
 ):
     """
     Run association for one gene
@@ -267,13 +267,25 @@ def association_pipeline(
     fit_null_job.image(SAIGE_QTL_IMAGE)
     cmd = build_fit_null_command(
         pheno_file=pheno_cov_filename_tsv,
+        pheno_col=pheno_col,
         cov_col_list=covs_list,
+        sample_cov_col_list=sample_covs_list,
         sample_id_pheno=sample_id,
         output_prefix=output_path,
         plink_path=plink_path,
-        pheno_col=pheno_col,
     )
     fit_null_job.command(cmd)
+
+    # step 2 (cis eQTL test)
+    run_sv_assoc_job = batch.new_job(name='single variant test')
+    run_sv_assoc_job.image(SAIGE_QTL_IMAGE)
+    run_sv_assoc_job.depends_on(fit_null_job)
+    cmd = build_run_single_variant_test_command(
+        vcf_file=vcf_file_path,
+        vcf_file_index=f'{vcf_file_path}.csi',
+        saige_output_file=output_path,
+    )
+    run_sv_assoc_job.command(cmd)
 
     # celltypes_list = celltypes.split(' ')
     # chromosomes_list = chromosomes.split(' ')
