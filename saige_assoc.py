@@ -289,11 +289,7 @@ def association_pipeline(
     Run association for one gene
     """
 
-    sb = hb.ServiceBackend(
-        billing_project=get_config()['hail']['billing_project'],
-        remote_tmpdir=remote_tmpdir(),
-    )
-    batch = hb.Batch('SAIGE-QTL pipeline', backend=sb)
+    batch = get_batch('SAIGE-QTL pipeline')
 
     # step 1 (fit null)
     fit_null_job = batch.new_job(name='fit null')
