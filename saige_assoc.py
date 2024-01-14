@@ -158,7 +158,7 @@ def build_obtain_gene_level_pvals_command(
     """Build SAIGE command to obtain gene-level pvals
     Only for single-variant tests (Step3)
     combines single-variant p-values to obtain one gene
-    level p-valye
+    level p-value
 
     Input:
     - ouput of previous step, association file (txt)
