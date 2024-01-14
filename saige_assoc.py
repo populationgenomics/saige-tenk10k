@@ -14,8 +14,8 @@ Hail Batch workflow to perform association tests using SAIGE-QTL
 
 import click
 
-import hailtop.batch as hb
-from cpg_utils.hail_batch import get_config, remote_tmpdir
+from cpg_utils.config import get_config
+from cpg_utils.hail_batch import get_batch
 
 __author__ = 'annacuomo'
 
