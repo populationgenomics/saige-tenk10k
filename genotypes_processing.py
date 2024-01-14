@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# pylint: disable=import-error,import-outside-toplevel,no-value-for-parameter
 
 """
 Hail Batch workflow to extract relevant variants to test.
