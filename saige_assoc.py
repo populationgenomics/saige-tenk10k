@@ -67,25 +67,26 @@ def build_fit_null_command(
     Output:
     Rscript command (str) ready to run (bash)
     """
-    saige_command_step1 = 'Rscript step1_fitNULLGLMM_qtl.R'
-    saige_command_step1 += f' --useSparseGRMtoFitNULL={use_sparse_grm_null}'
-    saige_command_step1 += f' --useGRMtoFitNULL={use_grm_null}'
-    saige_command_step1 += f' --phenoFile={pheno_file}'
-    saige_command_step1 += f' --phenoCol={pheno_col}'
-    saige_command_step1 += f' --covarColList={cov_col_list}'
-    saige_command_step1 += f' --sampleCovarColList={sample_cov_col_list}'
-    saige_command_step1 += f' --sampleIDColinphenoFile={sample_id_pheno}'
-    saige_command_step1 += f' --traitType={trait_type}'
-    saige_command_step1 += f' --outputPrefix={output_prefix}'
-    saige_command_step1 += f' --skipVarianceRatioEstimation={skip_vre}'
-    saige_command_step1 += f' --isRemoveZerosinPheno={pheno_remove_zeros}'
-    saige_command_step1 += f' --isCovariateOffset={is_cov_offset}'
-    saige_command_step1 += f' --isCovariateTransform={is_cov_transform}'
-    saige_command_step1 += f' --skipModelFitting={skip_model_fitting}'
-    saige_command_step1 += f' --tol={tol}'
-    saige_command_step1 += f' --plinkFile={plink_path}'
-    saige_command_step1 += f' --IsOverwriteVarianceRatioFile={is_overwrite_vre_file}'
-    return saige_command_step1
+    return f"""
+        Rscript step1_fitNULLGLMM_qtl.R \
+        --useSparseGRMtoFitNULL={use_sparse_grm_null} \
+        --useGRMtoFitNULL={use_grm_null} \
+        --phenoFile={pheno_file} \
+        --phenoCol={pheno_col} \
+        --covarColList={cov_col_list} \
+        --sampleCovarColList={sample_cov_col_list} \
+        --sampleIDColinphenoFile={sample_id_pheno} \
+        --traitType={trait_type} \
+        --outputPrefix={output_prefix} \
+        --skipVarianceRatioEstimation={skip_vre} \
+        --isRemoveZerosinPheno={pheno_remove_zeros} \
+        --isCovariateOffset={is_cov_offset} \
+        --isCovariateTransform={is_cov_transform} \
+        --skipModelFitting={skip_model_fitting} \
+        --tol={tol} \
+        --plinkFile={plink_path} \
+        --IsOverwriteVarianceRatioFile={is_overwrite_vre_file}
+    """
 
 
 # Run single variant association (step 2)
