@@ -132,22 +132,23 @@ def build_run_single_variant_test_command(
     Output:
     Rscript command (str) ready to run
     """
-    saige_command_step2_sv = 'Rscript step2_tests_qtl.R'
-    saige_command_step2_sv += f' --vcfFile={vcf_file}'
-    saige_command_step2_sv += f' --vcfFileIndex={vcf_file_index}'
-    saige_command_step2_sv += f' --SAIGEOutputFile={saige_output_file}'
-    saige_command_step2_sv += f' --chrom={chrom}'
-    saige_command_step2_sv += f' --minMAF={min_maf}'
-    saige_command_step2_sv += f' --minMAC={min_mac}'
-    saige_command_step2_sv += f' --LOCO={loco_bool}'
-    saige_command_step2_sv += f' --GMMATmodelFile={gmmat_model_path}'
-    saige_command_step2_sv += f' --SPAcutoff={spa_cutoff}'
-    saige_command_step2_sv += f' --varianceRatioFile={variance_ratio_path}'
-    # saige_command_step2_sv += f' --is_fastTest={is_fast_test}'
-    saige_command_step2_sv += f' --rangestoIncludeFile={cis_window_file}'
-    saige_command_step2_sv += f' --markers_per_chunk={n_markers}'
-    # saige_command_step2_sv += f' --pval_cutoff_for_fastTest={pval_cutoff}'
-    return saige_command_step2_sv
+    return f"""
+        Rscript step2_tests_qtl.R \
+        --vcfFile={vcf_file} \
+        --vcfFileIndex={vcf_file_index} \
+        --SAIGEOutputFile={saige_output_file} \
+        --chrom={chrom} \
+        --minMAF={min_maf} \
+        --minMAC={min_mac} \
+        --LOCO={loco_bool} \
+        --GMMATmodelFile={gmmat_model_path} \
+        --SPAcutoff={spa_cutoff} \
+        --varianceRatioFile={variance_ratio_path} \
+        --rangestoIncludeFile={cis_window_file} \
+        --markers_per_chunk={n_markers}
+    """
+    # --is_fastTest={is_fast_test}
+    # --pval_cutoff_for_fastTest={pval_cutoff}
 
 
 def build_obtain_gene_level_pvals_command(
