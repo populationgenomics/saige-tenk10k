@@ -210,6 +210,9 @@ def association_pipeline(
     gene_name: str,
     chrom: str,
     cis_window_file: str,
+    fit_null_mem: str,
+    run_sv_assoc_mem: str,
+    get_gene_pvals_mem: str,
 ):
     """
     Run association for one gene
@@ -220,6 +223,7 @@ def association_pipeline(
     # step 1 (fit null)
     fit_null_job = batch.new_job(name='fit null')
     fit_null_job.image(SAIGE_QTL_IMAGE)
+    fit_null_job.storage(fit_null_mem)
     cmd = build_fit_null_command(
         pheno_file=pheno_cov_filename_tsv,
         cov_col_list=covs_list,
@@ -234,6 +238,7 @@ def association_pipeline(
     # step 2 (cis eQTL single variant test)
     run_sv_assoc_job = batch.new_job(name='single variant test')
     run_sv_assoc_job.image(SAIGE_QTL_IMAGE)
+    run_sv_assoc_job.storage(run_sv_assoc_mem)
     run_sv_assoc_job.depends_on(fit_null_job)
     cmd = build_run_single_variant_test_command(
         vcf_file=vcf_file_path,
@@ -249,6 +254,7 @@ def association_pipeline(
     # step3 (gene-level pvalues)
     get_gene_pvals_job = batch.new_job(name='gene level pvalues')
     get_gene_pvals_job.image(SAIGE_QTL_IMAGE)
+    get_gene_pvals_job.storage(get_gene_pvals_mem)
     get_gene_pvals_job.depends_on(run_sv_assoc_job)
     cmd = build_obtain_gene_level_pvals_command(
         gene_name=gene_name,
