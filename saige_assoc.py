@@ -17,7 +17,7 @@ analysis-runner \
     --description "SAIGE-QTL association pipeline" \
     --dataset "bioheart" \
     --access-level "test" \
-    --output-dir "saige-qtl/repo-example-inputs/" \
+    --output-dir "saige-qtl/repo-example-inputs/output/" \
     --image australia-southeast1-docker.pkg.dev/cpg-common/images/saige-qtl \
     python3 saige_assoc.py
 
@@ -194,15 +194,15 @@ config = get_config()
 @click.option('--sample-id', default='IND_ID')
 @click.option(
     '--null-output-path',
-    default='output/nindep_100_ncell_100_lambda_2_tauIntraSample_0.5_gene_1',
+    default='nindep_100_ncell_100_lambda_2_tauIntraSample_0.5_gene_1',
 )
 @click.option(
     '--sv-output-path',
-    default='output/nindep_100_ncell_100_lambda_2_tauIntraSample_0.5_gene_1_cis',
+    default='nindep_100_ncell_100_lambda_2_tauIntraSample_0.5_gene_1_cis',
 )
 @click.option(
     '--gene-pvals-output-path',
-    default='output/nindep_100_ncell_100_lambda_2_tauIntraSample_0.5_gene_1_cis_genePval',
+    default='nindep_100_ncell_100_lambda_2_tauIntraSample_0.5_gene_1_cis_genePval',
 )
 @click.option('--plink-path', default='/usr/local/bin/n.indep_100_n.cell_1_01.step1')
 @click.option('--gene-name', default='gene_1')
