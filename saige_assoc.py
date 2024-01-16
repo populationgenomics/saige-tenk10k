@@ -157,6 +157,7 @@ def build_run_single_variant_test_command(
     """
 
 
+# Combine single variant associations at gene level (step 3)
 def build_obtain_gene_level_pvals_command(
     gene_name: str,
     saige_sv_output_file: str,
