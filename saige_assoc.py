@@ -197,6 +197,9 @@ config = get_config()
 @click.option('--gene-name', default='gene_1')
 @click.option('--chrom', default='2')
 @click.option('--cis-window-file', default='input/gene_1_cis_region.txt')
+@click.option('--fit-null-mem', default='10Gi')
+@click.option('--run-sv-assoc-mem', default='10Gi')
+@click.option('--get-gene-pvals-mem', default='10Gi')
 def association_pipeline(
     pheno_cov_filename_tsv: str,
     vcf_file_path: str,
