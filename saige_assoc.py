@@ -185,9 +185,9 @@ config = get_config()
 @click.command()
 @click.option(
     '--pheno-cov-filename',
-    default='input/seed_1_100_nindep_100_ncell_100_lambda_2_tauIntraSample_0.5_Poisson.txt',
+    default='/usr/local/bin/seed_1_100_nindep_100_ncell_100_lambda_2_tauIntraSample_0.5_Poisson.txt',
 )
-@click.option('--vcf-file-path', default='input/genotype_10markers.vcf.gz')
+@click.option('--vcf-file-path', default='/usr/local/bin/genotype_10markers.vcf.gz')
 @click.option('--covs-list', default='X1,X2,pf1,pf2')
 @click.option('--sample-covs-list', default='X1,X2')
 @click.option('--sample-id', default='IND_ID')
@@ -203,10 +203,10 @@ config = get_config()
     '--gene-pvals-output-path',
     default='output/nindep_100_ncell_100_lambda_2_tauIntraSample_0.5_gene_1_cis_genePval',
 )
-@click.option('--plink-path', default='input/n.indep_100_n.cell_1_01.step1')
+@click.option('--plink-path', default='/usr/local/bin/n.indep_100_n.cell_1_01.step1')
 @click.option('--gene-name', default='gene_1')
 @click.option('--chrom', default='2')
-@click.option('--cis-window-file', default='input/gene_1_cis_region.txt')
+@click.option('--cis-window-file', default='/usr/local/bin/gene_1_cis_region.txt')
 @click.option('--fit-null-mem', default='10Gi')
 @click.option('--run-sv-assoc-mem', default='10Gi')
 @click.option('--get-gene-pvals-mem', default='10Gi')
