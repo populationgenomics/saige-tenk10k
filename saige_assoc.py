@@ -18,8 +18,7 @@ analysis-runner \
     --dataset "bioheart" \
     --access-level "test" \
     --output-dir "saige-qtl/repo-example-inputs/output/" \
-    --image australia-southeast1-docker.pkg.dev/cpg-common/images/saige-qtl \
-    python3 saige_assoc.py
+     python3 saige_assoc.py
 
 """
 
@@ -31,7 +30,7 @@ from cpg_utils.hail_batch import get_batch
 __author__ = 'annacuomo'
 
 
-SAIGE_QTL_IMAGE = 'australia-southeast1-docker.pkg.dev/cpg-common/images/saige-qtl'
+SAIGE_QTL_IMAGE = 'australia-southeast1-docker.pkg.dev/cpg-common/images/saige-qtl:8d840248fc025d5f58577ef03a6c23634ee941e5'
 
 
 # Fit null model (step 1)
