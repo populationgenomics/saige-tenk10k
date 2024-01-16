@@ -10,6 +10,17 @@ Hail Batch workflow to perform association tests using SAIGE-QTL
 - run saige commands (execute Rscript from command line)
 - aggregate & summarise results (not yet)
 
+
+To run:
+
+analysis-runner \
+    --description "SAIGE-QTL association pipeline" \
+    --dataset "bioheart" \
+    --access-level "test" \
+    --output-dir "saige-qtl/repo-example-inputs/" \
+    --image australia-southeast1-docker.pkg.dev/cpg-common/images/saige-qtl \
+    python3 saige_assoc.py
+
 """
 
 import click
