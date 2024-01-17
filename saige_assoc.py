@@ -25,7 +25,7 @@ analysis-runner \
 import click
 
 from cpg_utils.config import get_config
-from cpg_utils.hail_batch import get_batch
+from cpg_utils.hail_batch import get_batch, output_path
 
 __author__ = 'annacuomo'
 
@@ -193,15 +193,17 @@ config = get_config()
 @click.option('--sample-id', default='IND_ID')
 @click.option(
     '--null-output-path',
-    default='nindep_100_ncell_100_lambda_2_tauIntraSample_0.5_gene_1',
+    default=output_path('nindep_100_ncell_100_lambda_2_tauIntraSample_0.5_gene_1'),
 )
 @click.option(
     '--sv-output-path',
-    default='nindep_100_ncell_100_lambda_2_tauIntraSample_0.5_gene_1_cis',
+    default=output_path('nindep_100_ncell_100_lambda_2_tauIntraSample_0.5_gene_1_cis'),
 )
 @click.option(
     '--gene-pvals-output-path',
-    default='nindep_100_ncell_100_lambda_2_tauIntraSample_0.5_gene_1_cis_genePval',
+    default=output_path(
+        'nindep_100_ncell_100_lambda_2_tauIntraSample_0.5_gene_1_cis_genePval'
+    ),
 )
 @click.option('--plink-path', default='/usr/local/bin/n.indep_100_n.cell_1_01.step1')
 @click.option('--gene-name', default='gene_1')
