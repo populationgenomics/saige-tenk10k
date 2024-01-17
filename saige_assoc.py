@@ -102,6 +102,7 @@ def build_fit_null_command(
 def build_run_single_variant_test_command(
     vcf_file: str,
     vcf_file_index: str,
+    vcf_field: str,
     saige_output_file: str,
     chrom: str,
     cis_window_file: str,
@@ -143,6 +144,7 @@ def build_run_single_variant_test_command(
         Rscript /usr/local/bin/step2_tests_qtl.R \
         --vcfFile={vcf_file} \
         --vcfFileIndex={vcf_file_index} \
+        --vcfField={vcf_field} \
         --SAIGEOutputFile={saige_output_file} \
         --chrom={chrom} \
         --minMAF={min_maf} \
@@ -188,6 +190,7 @@ config = get_config()
     default='/usr/local/bin/seed_1_100_nindep_100_ncell_100_lambda_2_tauIntraSample_0.5_Poisson.txt',
 )
 @click.option('--vcf-file-path', default='/usr/local/bin/genotype_10markers.vcf.gz')
+@click.option('--vcf-field', default='GT')
 @click.option('--covs-list', default='X1,X2,pf1,pf2')
 @click.option('--sample-covs-list', default='X1,X2')
 @click.option('--sample-id', default='IND_ID')
@@ -215,6 +218,7 @@ config = get_config()
 def association_pipeline(
     pheno_cov_filename: str,
     vcf_file_path: str,
+    vcf_field: str,
     covs_list: str,
     sample_covs_list: str,
     sample_id: str,
@@ -268,6 +272,7 @@ def association_pipeline(
     cmd = build_run_single_variant_test_command(
         vcf_file=vcf_file_path,
         vcf_file_index=f'{vcf_file_path}.csi',
+        vcf_field=vcf_field,
         saige_output_file=run_sv_assoc_job.output,
         chrom=chrom,
         cis_window_file=cis_window_file,
