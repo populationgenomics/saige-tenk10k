@@ -211,7 +211,7 @@ config = get_config()
 @click.option('--run-sv-assoc-mem', default='10Gi')
 @click.option('--get-gene-pvals-mem', default='10Gi')
 def association_pipeline(
-    pheno_cov_filename_tsv: str,
+    pheno_cov_filename: str,
     vcf_file_path: str,
     covs_list: str,
     sample_covs_list: str,
@@ -238,7 +238,7 @@ def association_pipeline(
     fit_null_job.image(SAIGE_QTL_IMAGE)
     fit_null_job.storage(fit_null_mem)
     cmd = build_fit_null_command(
-        pheno_file=pheno_cov_filename_tsv,
+        pheno_file=pheno_cov_filename,
         cov_col_list=covs_list,
         sample_cov_col_list=sample_covs_list,
         sample_id_pheno=sample_id,
