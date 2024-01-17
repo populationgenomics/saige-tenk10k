@@ -77,7 +77,7 @@ def build_fit_null_command(
     Rscript command (str) ready to run (bash)
     """
     return f"""
-        Rscript step1_fitNULLGLMM_qtl.R \
+        Rscript /usr/local/bin/step1_fitNULLGLMM_qtl.R \
         --useSparseGRMtoFitNULL={use_sparse_grm_null} \
         --useGRMtoFitNULL={use_grm_null} \
         --phenoFile={pheno_file} \
@@ -140,7 +140,7 @@ def build_run_single_variant_test_command(
     Rscript command (str) ready to run
     """
     return f"""
-        Rscript step2_tests_qtl.R \
+        Rscript /usr/local/bin/step2_tests_qtl.R \
         --vcfFile={vcf_file} \
         --vcfFileIndex={vcf_file_index} \
         --SAIGEOutputFile={saige_output_file} \
@@ -172,7 +172,7 @@ def build_obtain_gene_level_pvals_command(
     - gene we need to aggregate results for (across SNPs)
     - path for output file
     """
-    saige_command_step3 = 'Rscript step3_gene_pvalue_qtl.R'
+    saige_command_step3 = '/usr/local/bin/Rscript step3_gene_pvalue_qtl.R'
     saige_command_step3 += f' --assocFile={saige_sv_output_file}'
     saige_command_step3 += f' --geneName={gene_name}'
     saige_command_step3 += f' --genePval_outputFile={saige_gene_pval_output_file}'
