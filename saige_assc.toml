@@ -1,0 +1,16 @@
+[saige]
+
+# any settings to do with this workflow in general
+
+
+[saige.job_specs.fit_null]
+storage = "10Gi"
+memory = "10Gi"
+
+[saige.job_specs.run_sv_assoc]
+storage = "10Gi"
+memory = "10Gi"
+
+[saige.job_specs.gene_pvals]
+storage = "10Gi"
+memory = "10Gi"
