@@ -237,16 +237,26 @@ def association_pipeline(
     fit_null_job = batch.new_job(name='fit null')
     fit_null_job.image(SAIGE_QTL_IMAGE)
     fit_null_job.storage(fit_null_mem)
+    fit_null_job.declare_resource_group(
+        output={
+            'rda': f'{null_output_path}.rda',
+            'varianceRatio': f'{null_output_path}.varianceRatio.txt',
+        }
+    )
     cmd = build_fit_null_command(
         pheno_file=pheno_cov_filename,
         cov_col_list=covs_list,
         sample_cov_col_list=sample_covs_list,
         sample_id_pheno=sample_id,
-        output_prefix=null_output_path,
+        output_prefix=fit_null_job.output,
         plink_path=plink_path,
         pheno_col=gene_name,
     )
     fit_null_job.command(cmd)
+
+    # copy the output file to persistent storage?
+    if null_output_path.startswith('gs://'):
+        batch.write_output(fit_null_job.output, null_output_path)
 
     # step 2 (cis eQTL single variant test)
     run_sv_assoc_job = batch.new_job(name='single variant test')
@@ -256,13 +266,15 @@ def association_pipeline(
     cmd = build_run_single_variant_test_command(
         vcf_file=vcf_file_path,
         vcf_file_index=f'{vcf_file_path}.csi',
-        saige_output_file=sv_output_path,
+        saige_output_file=run_sv_assoc_job.output,
         chrom=chrom,
         cis_window_file=cis_window_file,
-        gmmat_model_path=f'{null_output_path}.rda',
-        variance_ratio_path=f'{null_output_path}.varianceRatio.txt',
+        gmmat_model_path=fit_null_job.output['rda'],
+        variance_ratio_path=fit_null_job.output['varianceRatio'],
     )
     run_sv_assoc_job.command(cmd)
+    if sv_output_path.startswith('gs://'):
+        batch.write_output(run_sv_assoc_job.output, sv_output_path)
 
     # step3 (gene-level pvalues)
     get_gene_pvals_job = batch.new_job(name='gene level pvalues')
@@ -271,10 +283,12 @@ def association_pipeline(
     get_gene_pvals_job.depends_on(run_sv_assoc_job)
     cmd = build_obtain_gene_level_pvals_command(
         gene_name=gene_name,
-        saige_sv_output_file=sv_output_path,
-        saige_gene_pval_output_file=gene_pvals_output_path,
+        saige_sv_output_file=run_sv_assoc_job.output,
+        saige_gene_pval_output_file=get_gene_pvals_job.output,
     )
     get_gene_pvals_job.command(cmd)
+    if gene_pvals_output_path.startswith('gs://'):
+        batch.write_output(get_gene_pvals_job.output, gene_pvals_output_path)
 
     # set jobs running
     batch.run(wait=False)
