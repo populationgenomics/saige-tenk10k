@@ -275,10 +275,10 @@ def association_pipeline(
     run_sv_assoc_job.image(SAIGE_QTL_IMAGE)
     run_sv_assoc_job.storage(run_sv_assoc_mem)
     run_sv_assoc_job.depends_on(fit_null_job)
-    vcf_file_local = run_sv_assoc_job.read_input(vcf_file_path)
+    vcf_group = batch.read_input_group(vcf=vcf_file_path, index=f'{vcf_file_path}.csi')
     cmd = build_run_single_variant_test_command(
-        vcf_file=vcf_file_local,
-        vcf_file_index=f'{vcf_file_local}.csi',
+        vcf_file=vcf_group.vcf,
+        vcf_file_index=vcf_group.index,
         vcf_field=vcf_field,
         saige_output_file=run_sv_assoc_job.output,
         chrom=chrom,
