@@ -190,7 +190,12 @@ config = get_config()
     default='/usr/local/bin/seed_1_100_nindep_100_ncell_100_lambda_2_tauIntraSample_0.5_Poisson.txt',
 )
 # @click.option('--vcf-file-path', default='/usr/local/bin/genotype_10markers.vcf.gz')
-@click.option('--vcf-file-path', default=dataset_path('saige-qtl/repo-example-inputs/input/n.indep_100_n.cell_1.vcf.gz'))
+@click.option(
+    '--vcf-file-path',
+    default=dataset_path(
+        'saige-qtl/repo-example-inputs/input/n.indep_100_n.cell_1.vcf.gz'
+    ),
+)
 @click.option('--vcf-field', default='GT')
 @click.option('--covs-list', default='X1,X2,pf1,pf2')
 @click.option('--sample-covs-list', default='X1,X2')
