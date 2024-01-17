@@ -241,8 +241,8 @@ def association_pipeline(
     fit_null_job.storage(fit_null_mem)
     fit_null_job.declare_resource_group(
         output={
-            'rda': f'{root}.rda',
-            'varianceRatio': f'{root}.varianceRatio.txt',
+            'rda': '{root}.rda',
+            'varianceRatio': '{root}.varianceRatio.txt',
         }
     )
     cmd = build_fit_null_command(
