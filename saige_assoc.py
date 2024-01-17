@@ -174,7 +174,7 @@ def build_obtain_gene_level_pvals_command(
     - gene we need to aggregate results for (across SNPs)
     - path for output file
     """
-    saige_command_step3 = '/usr/local/bin/Rscript step3_gene_pvalue_qtl.R'
+    saige_command_step3 = 'Rscript /usr/local/bin/step3_gene_pvalue_qtl.R'
     saige_command_step3 += f' --assocFile={saige_sv_output_file}'
     saige_command_step3 += f' --geneName={gene_name}'
     saige_command_step3 += f' --genePval_outputFile={saige_gene_pval_output_file}'
