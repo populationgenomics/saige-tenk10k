@@ -179,7 +179,7 @@ def build_obtain_gene_level_pvals_command(
     return saige_command_step3
 
 
-def apply_job_settings(job, job_name:str):
+def apply_job_settings(job, job_name: str):
     """
     Apply settings to a job based on the name
 
@@ -247,7 +247,7 @@ def association_pipeline(
     plink_path: str,
     gene_name: str,
     chrom: str,
-    cis_window_file: str
+    cis_window_file: str,
 ):
     """
     Run association for one gene
