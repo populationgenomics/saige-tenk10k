@@ -218,9 +218,9 @@ config = get_config()
 @click.option('--gene-name', default='gene_1')
 @click.option('--chrom', default='2')
 @click.option('--cis-window-file', default='/usr/local/bin/gene_1_cis_region.txt')
-@click.option('--fit-null-mem', default='10Gi')
-@click.option('--run-sv-assoc-mem', default='10Gi')
-@click.option('--get-gene-pvals-mem', default='10Gi')
+@click.option('--fit-null-storage', default='10Gi')
+@click.option('--run-sv-assoc-storage', default='10Gi')
+@click.option('--get-gene-pvals-storage', default='10Gi')
 def association_pipeline(
     pheno_cov_filename: str,
     vcf_file_path: str,
@@ -235,9 +235,9 @@ def association_pipeline(
     gene_name: str,
     chrom: str,
     cis_window_file: str,
-    fit_null_mem: str,
-    run_sv_assoc_mem: str,
-    get_gene_pvals_mem: str,
+    fit_null_storage: str,
+    run_sv_assoc_storage: str,
+    get_gene_pvals_storage: str,
 ):
     """
     Run association for one gene
@@ -248,7 +248,7 @@ def association_pipeline(
     # step 1 (fit null)
     fit_null_job = batch.new_job(name='fit null')
     fit_null_job.image(SAIGE_QTL_IMAGE)
-    fit_null_job.storage(fit_null_mem)
+    fit_null_job.storage(fit_null_storage)
     fit_null_job.declare_resource_group(
         output={
             'rda': '{root}.rda',
@@ -273,7 +273,7 @@ def association_pipeline(
     # step 2 (cis eQTL single variant test)
     run_sv_assoc_job = batch.new_job(name='single variant test')
     run_sv_assoc_job.image(SAIGE_QTL_IMAGE)
-    run_sv_assoc_job.storage(run_sv_assoc_mem)
+    run_sv_assoc_job.storage(run_sv_assoc_storage)
     run_sv_assoc_job.depends_on(fit_null_job)
     vcf_group = batch.read_input_group(vcf=vcf_file_path, index=f'{vcf_file_path}.csi')
     cmd = build_run_single_variant_test_command(
@@ -293,7 +293,7 @@ def association_pipeline(
     # step3 (gene-level pvalues)
     get_gene_pvals_job = batch.new_job(name='gene level pvalues')
     get_gene_pvals_job.image(SAIGE_QTL_IMAGE)
-    get_gene_pvals_job.storage(get_gene_pvals_mem)
+    get_gene_pvals_job.storage(get_gene_pvals_storage)
     get_gene_pvals_job.depends_on(run_sv_assoc_job)
     cmd = build_obtain_gene_level_pvals_command(
         gene_name=gene_name,
