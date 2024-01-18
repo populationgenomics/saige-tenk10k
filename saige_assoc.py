@@ -24,6 +24,9 @@ analysis-runner \
 """
 
 import click
+import os
+
+import pandas as pd
 
 from cpg_utils.config import get_config
 from cpg_utils.hail_batch import dataset_path, get_batch, output_path, image_path
@@ -200,40 +203,40 @@ def apply_job_settings(job, job_name: str):
             job.cpu(cpu)
 
 
-@click.command()
-@click.option(
-    '--pheno-cov-filename',
-    default='/usr/local/bin/seed_1_100_nindep_100_ncell_100_lambda_2_tauIntraSample_0.5_Poisson.txt',
-)
-# @click.option('--vcf-file-path', default='/usr/local/bin/genotype_10markers.vcf.gz')
-@click.option(
-    '--vcf-file-path',
-    default=dataset_path(
-        'saige-qtl/repo-example-inputs/input/n.indep_100_n.cell_1.vcf.gz'
-    ),
-)
-@click.option('--vcf-field', default='GT')
-@click.option('--covs-list', default='X1,X2,pf1,pf2')
-@click.option('--sample-covs-list', default='X1,X2')
-@click.option('--sample-id', default='IND_ID')
-@click.option(
-    '--null-output-path',
-    default=output_path('nindep_100_ncell_100_lambda_2_tauIntraSample_0.5_gene_1'),
-)
-@click.option(
-    '--sv-output-path',
-    default=output_path('nindep_100_ncell_100_lambda_2_tauIntraSample_0.5_gene_1_cis'),
-)
-@click.option(
-    '--gene-pvals-output-path',
-    default=output_path(
-        'nindep_100_ncell_100_lambda_2_tauIntraSample_0.5_gene_1_cis_genePval'
-    ),
-)
-@click.option('--plink-path', default='/usr/local/bin/n.indep_100_n.cell_1_01.step1')
-@click.option('--gene-name', default='gene_1')
-@click.option('--chrom', default='2')
-@click.option('--cis-window-file', default='/usr/local/bin/gene_1_cis_region.txt')
+# @click.command()
+# @click.option(
+#     '--pheno-cov-filename',
+#     default='/usr/local/bin/seed_1_100_nindep_100_ncell_100_lambda_2_tauIntraSample_0.5_Poisson.txt',
+# )
+# # @click.option('--vcf-file-path', default='/usr/local/bin/genotype_10markers.vcf.gz')
+# @click.option(
+#     '--vcf-file-path',
+#     default=dataset_path(
+#         'saige-qtl/repo-example-inputs/input/n.indep_100_n.cell_1.vcf.gz'
+#     ),
+# )
+# @click.option('--vcf-field', default='GT')
+# @click.option('--covs-list', default='X1,X2,pf1,pf2')
+# @click.option('--sample-covs-list', default='X1,X2')
+# @click.option('--sample-id', default='IND_ID')
+# @click.option(
+#     '--null-output-path',
+#     default=output_path('nindep_100_ncell_100_lambda_2_tauIntraSample_0.5_gene_1'),
+# )
+# @click.option(
+#     '--sv-output-path',
+#     default=output_path('nindep_100_ncell_100_lambda_2_tauIntraSample_0.5_gene_1_cis'),
+# )
+# @click.option(
+#     '--gene-pvals-output-path',
+#     default=output_path(
+#         'nindep_100_ncell_100_lambda_2_tauIntraSample_0.5_gene_1_cis_genePval'
+#     ),
+# )
+# @click.option('--plink-path', default='/usr/local/bin/n.indep_100_n.cell_1_01.step1')
+# @click.option('--gene-name', default='gene_1')
+# @click.option('--chrom', default='2')
+# @click.option('--cis-window-file', default='/usr/local/bin/gene_1_cis_region.txt')
 def association_pipeline(
     pheno_cov_filename: str,
     vcf_file_path: str,
@@ -276,7 +279,7 @@ def association_pipeline(
     )
     fit_null_job.command(cmd)
 
-    # copy the output file to persistent storage?
+    # copy the output file to persistent storage
     if null_output_path.startswith('gs://'):
         batch.write_output(fit_null_job.output, null_output_path)
 
@@ -318,5 +321,58 @@ def association_pipeline(
     batch.run(wait=False)
 
 
+@click.command()
+@click.option('--celltypes', help='add as one string, separated by comma')
+@click.option('--chromosomes', help='add as one string, separated by comma')
+@click.option(
+    '--pheno-cov-files-path', default=output_path('input_files/pheno_cov_files/')
+)
+@click.option(
+    '--cis-window-files-path', default=output_path('input_files/cis_window_files/')
+)
+@click.option(
+    '--max-parallel-jobs',
+    type=int,
+    default=50,
+    help=('To avoid exceeding Google Cloud quotas, set this concurrency as a limit.'),
+)
+@click.option('--cis-window-size', type=int, default=100000)
+def main(
+    celltypes: str,
+    chromosomes: str,
+    pheno_cov_files_path: str,
+    cis_window_files_path: str,
+    gene_info_tsv: str,
+    max_parallel_jobs: int = 50,
+):
+    """
+    Run SAIGE-QTL pipeline for all cell types
+    """
+    gene_info_df = pd.read_csv(gene_info_tsv, sep='\t')
+
+    for celltype in celltypes.split(','):
+        for chromosome in chromosomes.split(','):
+
+            genes = gene_info_df[gene_info_df['chrom'] == chromosome]['gene']
+
+            for gene in genes:
+                pheno_cov_path = dataset_path(
+                    os.path.join(
+                        pheno_cov_files_path,
+                        f'{gene}_{celltype}.tsv',
+                    )
+                )
+                cis_window_path = dataset_path(
+                    os.path.join(
+                        cis_window_files_path,
+                        f'{gene}.tsv',
+                    )
+                )
+                association_pipeline(
+                    pheno_cov_filename=pheno_cov_path,
+                    cis_window_file=cis_window_path,
+                )
+
+
 if __name__ == '__main__':
-    association_pipeline()  # pylint: disable=no-value-for-parameter
+    main()  # pylint: disable=no-value-for-parameter
