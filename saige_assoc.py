@@ -340,8 +340,13 @@ def association_pipeline(
 def main(
     celltypes: str,
     chromosomes: str,
+    # outputs from gene_expression processing
     pheno_cov_files_path: str,
     cis_window_files_path: str,
+    # outputs from genotype processing
+    vcf_file_path: str,
+    vre_plink_path: str,
+    # other
     gene_info_tsv: str,
     covs: str,
     sample_covs: str,
@@ -375,9 +380,11 @@ def main(
                     vcf_file_path=vcf_file_path,
                     covs_list=covs,
                     sample_covs_list=sample_covs,
-                    null_output_path=output_path(),
-                    sv_output_path=output_path(),
-                    gene_pvals_output_path=output_path(),
+                    null_output_path=output_path(f'output_files/{gene}'),
+                    sv_output_path=output_path(f'output_files/{gene}_cis'),
+                    gene_pvals_output_path=output_path(
+                        f'output_files/{gene}_cis_gene_pval'
+                    ),
                     plink_path=vre_plink_path,
                     gene_name=gene,
                     chrom=chromosome,
