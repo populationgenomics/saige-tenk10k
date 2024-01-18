@@ -240,7 +240,6 @@ def apply_job_settings(job, job_name: str):
 def association_pipeline(
     pheno_cov_filename: str,
     vcf_file_path: str,
-    vcf_field: str,
     covs_list: str,
     sample_covs_list: str,
     sample_id: str,
@@ -251,6 +250,7 @@ def association_pipeline(
     gene_name: str,
     chrom: str,
     cis_window_file: str,
+    vcf_field: str = 'GT',
 ):
     """
     Run association for one gene
@@ -343,6 +343,8 @@ def main(
     pheno_cov_files_path: str,
     cis_window_files_path: str,
     gene_info_tsv: str,
+    covs: str,
+    sample_covs: str,
     max_parallel_jobs: int = 50,
 ):
     """
@@ -370,6 +372,15 @@ def main(
                 )
                 association_pipeline(
                     pheno_cov_filename=pheno_cov_path,
+                    vcf_file_path=vcf_file_path,
+                    covs_list=covs,
+                    sample_covs_list=sample_covs,
+                    null_output_path=output_path(),
+                    sv_output_path=output_path(),
+                    gene_pvals_output_path=output_path(),
+                    plink_path=vre_plink_path,
+                    gene_name=gene,
+                    chrom=chromosome,
                     cis_window_file=cis_window_path,
                 )
 
