@@ -348,6 +348,7 @@ def main(
     vre_plink_path: str,
     # other
     gene_info_tsv: str,
+    sample_id: str,
     covs: str,
     sample_covs: str,
     max_parallel_jobs: int = 50,
@@ -362,6 +363,7 @@ def main(
 
             genes = gene_info_df[gene_info_df['chrom'] == chromosome]['gene']
 
+            # extract relevant gene-related files
             for gene in genes:
                 pheno_cov_path = dataset_path(
                     os.path.join(
@@ -380,6 +382,7 @@ def main(
                     vcf_file_path=vcf_file_path,
                     covs_list=covs,
                     sample_covs_list=sample_covs,
+                    sample_id=sample_id,
                     null_output_path=output_path(f'output_files/{gene}'),
                     sv_output_path=output_path(f'output_files/{gene}_cis'),
                     gene_pvals_output_path=output_path(
