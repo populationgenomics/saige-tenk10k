@@ -14,6 +14,7 @@ Hail Batch workflow to perform association tests using SAIGE-QTL
 To run:
 
 analysis-runner \
+    --config saige_assc.toml \
     --description "SAIGE-QTL association pipeline" \
     --dataset "bioheart" \
     --access-level "test" \
@@ -25,12 +26,9 @@ analysis-runner \
 import click
 
 from cpg_utils.config import get_config
-from cpg_utils.hail_batch import dataset_path, get_batch, output_path
+from cpg_utils.hail_batch import dataset_path, get_batch, output_path, image_path
 
 __author__ = 'annacuomo'
-
-
-SAIGE_QTL_IMAGE = 'australia-southeast1-docker.pkg.dev/cpg-common/images/saige-qtl:8d840248fc025d5f58577ef03a6c23634ee941e5'
 
 
 # Fit null model (step 1)
@@ -181,7 +179,25 @@ def build_obtain_gene_level_pvals_command(
     return saige_command_step3
 
 
-config = get_config()
+def apply_job_settings(job, job_name: str):
+    """
+    Apply settings to a job based on the name
+
+    Args:
+        job (hb.batch.job): job to apply settings to
+        job_name (str): name used to find settings
+    """
+    # if this job has a section in config
+    if job_settings := get_config()['saige']['job_specs'].get(job_name):
+        # if memory setting in config - apply it
+        if memory := job_settings.get('memory'):
+            job.memory(memory)
+        # if storage setting in config - apply it
+        if storage := job_settings.get('storage'):
+            job.storage(storage)
+        # if cpu setting in config - apply it
+        if cpu := job_settings.get('cpu'):
+            job.cpu(cpu)
 
 
 @click.command()
@@ -218,9 +234,6 @@ config = get_config()
 @click.option('--gene-name', default='gene_1')
 @click.option('--chrom', default='2')
 @click.option('--cis-window-file', default='/usr/local/bin/gene_1_cis_region.txt')
-@click.option('--fit-null-storage', default='10Gi')
-@click.option('--run-sv-assoc-storage', default='10Gi')
-@click.option('--get-gene-pvals-storage', default='10Gi')
 def association_pipeline(
     pheno_cov_filename: str,
     vcf_file_path: str,
@@ -235,9 +248,6 @@ def association_pipeline(
     gene_name: str,
     chrom: str,
     cis_window_file: str,
-    fit_null_storage: str,
-    run_sv_assoc_storage: str,
-    get_gene_pvals_storage: str,
 ):
     """
     Run association for one gene
@@ -247,8 +257,8 @@ def association_pipeline(
 
     # step 1 (fit null)
     fit_null_job = batch.new_job(name='fit null')
-    fit_null_job.image(SAIGE_QTL_IMAGE)
-    fit_null_job.storage(fit_null_storage)
+    fit_null_job.image(image_path('saige-qtl'))
+    apply_job_settings(fit_null_job, 'fit_null')
     fit_null_job.declare_resource_group(
         output={
             'rda': '{root}.rda',
@@ -272,8 +282,8 @@ def association_pipeline(
 
     # step 2 (cis eQTL single variant test)
     run_sv_assoc_job = batch.new_job(name='single variant test')
-    run_sv_assoc_job.image(SAIGE_QTL_IMAGE)
-    run_sv_assoc_job.storage(run_sv_assoc_storage)
+    run_sv_assoc_job.image(image_path('saige-qtl'))
+    apply_job_settings(run_sv_assoc_job, 'run_sv_assoc')
     run_sv_assoc_job.depends_on(fit_null_job)
     vcf_group = batch.read_input_group(vcf=vcf_file_path, index=f'{vcf_file_path}.csi')
     cmd = build_run_single_variant_test_command(
@@ -292,8 +302,8 @@ def association_pipeline(
 
     # step3 (gene-level pvalues)
     get_gene_pvals_job = batch.new_job(name='gene level pvalues')
-    get_gene_pvals_job.image(SAIGE_QTL_IMAGE)
-    get_gene_pvals_job.storage(get_gene_pvals_storage)
+    get_gene_pvals_job.image(image_path('saige-qtl'))
+    apply_job_settings(get_gene_pvals_job, 'gene_pvals')
     get_gene_pvals_job.depends_on(run_sv_assoc_job)
     cmd = build_obtain_gene_level_pvals_command(
         gene_name=gene_name,
