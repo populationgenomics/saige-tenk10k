@@ -205,6 +205,7 @@ def apply_job_settings(job, job_name: str):
 
 
 def association_pipeline(
+    batch,
     pheno_cov_filename: str,
     vcf_file_path: str,
     covs_list: str,
@@ -218,7 +219,6 @@ def association_pipeline(
     chrom: str,
     cis_window_file: str,
     vcf_field: str = 'GT',
-    max_parallel_jobs: int = 50,
 ):
     """
     Run association for one gene
@@ -253,10 +253,7 @@ def association_pipeline(
         batch.write_output(gene_job.output, null_output_path)
 
     # step 2 (cis eQTL single variant test)
-    vcf_group = batch.read_input_group(
-        vcf=vcf_file_path,
-        index=f'{vcf_file_path}.csi'
-    )
+    vcf_group = batch.read_input_group(vcf=vcf_file_path, index=f'{vcf_file_path}.csi')
     gene_job.command(
         build_run_single_variant_test_command(
             vcf_file=vcf_group.vcf,
@@ -278,7 +275,7 @@ def association_pipeline(
         build_obtain_gene_level_pvals_command(
             gene_name=gene_name,
             saige_sv_output_file=gene_job.output_single_variant,
-            saige_gene_pval_output_file=gene_job.get_gene_pvals
+            saige_gene_pval_output_file=gene_job.get_gene_pvals,
         )
     )
 
@@ -322,7 +319,6 @@ def main(
     Run SAIGE-QTL pipeline for all cell types
     """
 
-
     gene_info_df = pd.read_csv(gene_info_tsv, sep='\t')
 
     batch = get_batch('SAIGE-QTL pipeline')
@@ -360,6 +356,7 @@ def main(
                 # todo - check if these outputs already exist, if so don't make a new job
 
                 job = association_pipeline(
+                    batch=batch,
                     pheno_cov_filename=pheno_cov_path,
                     vcf_file_path=vcf_file_path,
                     covs_list=covs,
