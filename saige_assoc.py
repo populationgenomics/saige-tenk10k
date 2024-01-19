@@ -205,8 +205,6 @@ def apply_job_settings(job, job_name: str):
 
 
 def association_pipeline(
-    batch,
-    jobs,
     pheno_cov_filename: str,
     vcf_file_path: str,
     covs_list: str,
@@ -226,88 +224,66 @@ def association_pipeline(
     Run association for one gene
     """
 
-    def manage_concurrency_for_job(job: hb.batch.job.Job):
-        """
-        To avoid having too many jobs running at once, we have to limit concurrency.
-        """
-        if len(jobs) >= max_parallel_jobs:
-            job.depends_on(jobs[-max_parallel_jobs])
-        jobs.append(job)
-
-    gene_job = batch.new_job(name="saige-qtl")
+    gene_job = get_batch().new_job(name="saige-qtl")
     gene_job.image(image_path('saige-qtl'))
     apply_job_settings(gene_job, 'fit_null')
-    cmd_fit_null = build_fit_null_command(
-        pheno_file=pheno_cov_filename,
-        cov_col_list=covs_list,
-        sample_cov_col_list=sample_covs_list,
-        sample_id_pheno=sample_id,
-        output_prefix=fit_null_job.output,
-        plink_path=plink_path,
-        pheno_col=gene_name,
+
+    # create output group for first command in gene job
+    gene_job.declare_resource_group(
+        output={
+            'rda': '{root}.rda',
+            'varianceRatio': '{root}.varianceRatio.txt',
+        }
     )
 
-    # # step 1 (fit null)
-    # fit_null_job = batch.new_job(name='fit null')
-    # fit_null_job.image(image_path('saige-qtl'))
-    # apply_job_settings(fit_null_job, 'fit_null')
-    # fit_null_job.declare_resource_group(
-    #     output={
-    #         'rda': '{root}.rda',
-    #         'varianceRatio': '{root}.varianceRatio.txt',
-    #     }
-    # )
-    # cmd = build_fit_null_command(
-    #     pheno_file=pheno_cov_filename,
-    #     cov_col_list=covs_list,
-    #     sample_cov_col_list=sample_covs_list,
-    #     sample_id_pheno=sample_id,
-    #     output_prefix=fit_null_job.output,
-    #     plink_path=plink_path,
-    #     pheno_col=gene_name,
-    # )
-    # fit_null_job.command(cmd)
-    # manage_concurrency_for_job(fit_null_job)
+    gene_job.command(
+        build_fit_null_command(
+            pheno_file=pheno_cov_filename,
+            cov_col_list=covs_list,
+            sample_cov_col_list=sample_covs_list,
+            sample_id_pheno=sample_id,
+            output_prefix=gene_job.output,
+            plink_path=plink_path,
+            pheno_col=gene_name,
+        )
+    )
 
     # copy the output file to persistent storage
     if null_output_path.startswith('gs://'):
-        batch.write_output(fit_null_job.output, null_output_path)
+        batch.write_output(gene_job.output, null_output_path)
 
     # step 2 (cis eQTL single variant test)
-    run_sv_assoc_job = batch.new_job(name='single variant test')
-    run_sv_assoc_job.image(image_path('saige-qtl'))
-    apply_job_settings(run_sv_assoc_job, 'run_sv_assoc')
-    run_sv_assoc_job.depends_on(fit_null_job)
-    vcf_group = batch.read_input_group(vcf=vcf_file_path, index=f'{vcf_file_path}.csi')
-    cmd = build_run_single_variant_test_command(
-        vcf_file=vcf_group.vcf,
-        vcf_file_index=vcf_group.index,
-        vcf_field=vcf_field,
-        saige_output_file=run_sv_assoc_job.output,
-        chrom=chrom,
-        cis_window_file=cis_window_file,
-        gmmat_model_path=fit_null_job.output['rda'],
-        variance_ratio_path=fit_null_job.output['varianceRatio'],
+    vcf_group = batch.read_input_group(
+        vcf=vcf_file_path,
+        index=f'{vcf_file_path}.csi'
     )
-    run_sv_assoc_job.command(cmd)
+    gene_job.command(
+        build_run_single_variant_test_command(
+            vcf_file=vcf_group.vcf,
+            vcf_file_index=vcf_group.index,
+            vcf_field=vcf_field,
+            saige_output_file=gene_job.output_single_variant,
+            chrom=chrom,
+            cis_window_file=cis_window_file,
+            gmmat_model_path=gene_job.output['rda'],
+            variance_ratio_path=gene_job.output['varianceRatio'],
+        )
+    )
+
     if sv_output_path.startswith('gs://'):
-        batch.write_output(run_sv_assoc_job.output, sv_output_path)
-    manage_concurrency_for_job(run_sv_assoc_job)
+        batch.write_output(gene_job.output_single_variant, sv_output_path)
 
     # step3 (gene-level pvalues)
-    get_gene_pvals_job = batch.new_job(name='gene level pvalues')
-    get_gene_pvals_job.image(image_path('saige-qtl'))
-    apply_job_settings(get_gene_pvals_job, 'gene_pvals')
-    get_gene_pvals_job.depends_on(run_sv_assoc_job)
-    cmd = build_obtain_gene_level_pvals_command(
-        gene_name=gene_name,
-        saige_sv_output_file=run_sv_assoc_job.output,
-        saige_gene_pval_output_file=get_gene_pvals_job.output,
+    gene_job.command(
+        build_obtain_gene_level_pvals_command(
+            gene_name=gene_name,
+            saige_sv_output_file=gene_job.output_single_variant,
+            saige_gene_pval_output_file=gene_job.get_gene_pvals
+        )
     )
-    get_gene_pvals_job.command(cmd)
+
     if gene_pvals_output_path.startswith('gs://'):
-        batch.write_output(get_gene_pvals_job.output, gene_pvals_output_path)
-    manage_concurrency_for_job(get_gene_pvals_job)
+        batch.write_output(gene_job.get_gene_pvals, gene_pvals_output_path)
 
 
 @click.command()
@@ -345,10 +321,20 @@ def main(
     """
     Run SAIGE-QTL pipeline for all cell types
     """
+
+
     gene_info_df = pd.read_csv(gene_info_tsv, sep='\t')
 
     batch = get_batch('SAIGE-QTL pipeline')
     jobs = list[hb.batch.job.Job] = []
+
+    def manage_concurrency_for_job(job: hb.batch.job.Job):
+        """
+        To avoid having too many jobs running at once, we have to limit concurrency.
+        """
+        if len(jobs) >= max_parallel_jobs:
+            job.depends_on(jobs[-max_parallel_jobs])
+        jobs.append(job)
 
     for chromosome in chromosomes.split(','):
 
@@ -370,9 +356,10 @@ def main(
                         f'{gene}.tsv',
                     )
                 )
-                association_pipeline(
-                    batch=batch,
-                    jobs=jobs,
+
+                # todo - check if these outputs already exist, if so don't make a new job
+
+                job = association_pipeline(
                     pheno_cov_filename=pheno_cov_path,
                     vcf_file_path=vcf_file_path,
                     covs_list=covs,
@@ -388,6 +375,7 @@ def main(
                     chrom=chromosome,
                     cis_window_file=cis_window_path,
                 )
+                manage_concurrency_for_job(job)
     # set jobs running
     batch.run(wait=False)
 
