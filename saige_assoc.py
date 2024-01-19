@@ -26,6 +26,7 @@ analysis-runner \
 import click
 import os
 
+import hailtop.batch as hb
 import pandas as pd
 
 from cpg_utils.config import get_config
@@ -239,6 +240,7 @@ def apply_job_settings(job, job_name: str):
 # @click.option('--cis-window-file', default='/usr/local/bin/gene_1_cis_region.txt')
 def association_pipeline(
     batch,
+    jobs,
     pheno_cov_filename: str,
     vcf_file_path: str,
     covs_list: str,
@@ -252,6 +254,7 @@ def association_pipeline(
     chrom: str,
     cis_window_file: str,
     vcf_field: str = 'GT',
+    max_parallel_jobs: int = 50,
 ):
     """
     Run association for one gene
@@ -317,6 +320,8 @@ def association_pipeline(
         batch.write_output(get_gene_pvals_job.output, gene_pvals_output_path)
 
 
+
+
 @click.command()
 @click.option('--celltypes', help='add as one string, separated by comma')
 @click.option('--chromosomes', help='add as one string, separated by comma')
@@ -355,7 +360,15 @@ def main(
     gene_info_df = pd.read_csv(gene_info_tsv, sep='\t')
 
     batch = get_batch('SAIGE-QTL pipeline')
-    jobs = []
+    jobs = list[hb.batch.job.Job] = []
+
+    def manage_concurrency_for_job(job: hb.batch.job.Job):
+        """
+        To avoid having too many jobs running at once, we have to limit concurrency.
+        """
+        if len(jobs) >= max_parallel_jobs:
+            job.depends_on(jobs[-max_parallel_jobs])
+        jobs.append(job)
 
     for chromosome in chromosomes.split(','):
 
@@ -379,6 +392,7 @@ def main(
                 )
                 association_pipeline(
                     batch=batch,
+                    jobs=jobs,
                     pheno_cov_filename=pheno_cov_path,
                     vcf_file_path=vcf_file_path,
                     covs_list=covs,
