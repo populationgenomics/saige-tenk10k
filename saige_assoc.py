@@ -238,6 +238,7 @@ def apply_job_settings(job, job_name: str):
 # @click.option('--chrom', default='2')
 # @click.option('--cis-window-file', default='/usr/local/bin/gene_1_cis_region.txt')
 def association_pipeline(
+    batch,
     pheno_cov_filename: str,
     vcf_file_path: str,
     covs_list: str,
@@ -255,8 +256,6 @@ def association_pipeline(
     """
     Run association for one gene
     """
-
-    batch = get_batch('SAIGE-QTL pipeline')
 
     # step 1 (fit null)
     fit_null_job = batch.new_job(name='fit null')
@@ -317,9 +316,6 @@ def association_pipeline(
     if gene_pvals_output_path.startswith('gs://'):
         batch.write_output(get_gene_pvals_job.output, gene_pvals_output_path)
 
-    # set jobs running
-    batch.run(wait=False)
-
 
 @click.command()
 @click.option('--celltypes', help='add as one string, separated by comma')
@@ -358,10 +354,14 @@ def main(
     """
     gene_info_df = pd.read_csv(gene_info_tsv, sep='\t')
 
-    for celltype in celltypes.split(','):
-        for chromosome in chromosomes.split(','):
+    batch = get_batch('SAIGE-QTL pipeline')
+    jobs = []
 
-            genes = gene_info_df[gene_info_df['chrom'] == chromosome]['gene']
+    for chromosome in chromosomes.split(','):
+
+        genes = gene_info_df[gene_info_df['chrom'] == chromosome]['gene']
+
+        for celltype in celltypes.split(','):
 
             # extract relevant gene-related files
             for gene in genes:
@@ -378,6 +378,7 @@ def main(
                     )
                 )
                 association_pipeline(
+                    batch=batch,
                     pheno_cov_filename=pheno_cov_path,
                     vcf_file_path=vcf_file_path,
                     covs_list=covs,
@@ -393,6 +394,8 @@ def main(
                     chrom=chromosome,
                     cis_window_file=cis_window_path,
                 )
+    # set jobs running
+    batch.run(wait=False)
 
 
 if __name__ == '__main__':
