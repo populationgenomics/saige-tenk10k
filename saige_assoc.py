@@ -234,17 +234,10 @@ def association_pipeline(
             job.depends_on(jobs[-max_parallel_jobs])
         jobs.append(job)
 
-    # step 1 (fit null)
-    fit_null_job = batch.new_job(name='fit null')
-    fit_null_job.image(image_path('saige-qtl'))
-    apply_job_settings(fit_null_job, 'fit_null')
-    fit_null_job.declare_resource_group(
-        output={
-            'rda': '{root}.rda',
-            'varianceRatio': '{root}.varianceRatio.txt',
-        }
-    )
-    cmd = build_fit_null_command(
+    gene_job = batch.new_job(name="saige-qtl")
+    gene_job.image(image_path('saige-qtl'))
+    apply_job_settings(gene_job, 'fit_null')
+    cmd_fit_null = build_fit_null_command(
         pheno_file=pheno_cov_filename,
         cov_col_list=covs_list,
         sample_cov_col_list=sample_covs_list,
@@ -253,8 +246,28 @@ def association_pipeline(
         plink_path=plink_path,
         pheno_col=gene_name,
     )
-    fit_null_job.command(cmd)
-    manage_concurrency_for_job(fit_null_job)
+
+    # # step 1 (fit null)
+    # fit_null_job = batch.new_job(name='fit null')
+    # fit_null_job.image(image_path('saige-qtl'))
+    # apply_job_settings(fit_null_job, 'fit_null')
+    # fit_null_job.declare_resource_group(
+    #     output={
+    #         'rda': '{root}.rda',
+    #         'varianceRatio': '{root}.varianceRatio.txt',
+    #     }
+    # )
+    # cmd = build_fit_null_command(
+    #     pheno_file=pheno_cov_filename,
+    #     cov_col_list=covs_list,
+    #     sample_cov_col_list=sample_covs_list,
+    #     sample_id_pheno=sample_id,
+    #     output_prefix=fit_null_job.output,
+    #     plink_path=plink_path,
+    #     pheno_col=gene_name,
+    # )
+    # fit_null_job.command(cmd)
+    # manage_concurrency_for_job(fit_null_job)
 
     # copy the output file to persistent storage
     if null_output_path.startswith('gs://'):
