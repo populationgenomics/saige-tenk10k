@@ -204,40 +204,6 @@ def apply_job_settings(job, job_name: str):
             job.cpu(cpu)
 
 
-# @click.command()
-# @click.option(
-#     '--pheno-cov-filename',
-#     default='/usr/local/bin/seed_1_100_nindep_100_ncell_100_lambda_2_tauIntraSample_0.5_Poisson.txt',
-# )
-# # @click.option('--vcf-file-path', default='/usr/local/bin/genotype_10markers.vcf.gz')
-# @click.option(
-#     '--vcf-file-path',
-#     default=dataset_path(
-#         'saige-qtl/repo-example-inputs/input/n.indep_100_n.cell_1.vcf.gz'
-#     ),
-# )
-# @click.option('--vcf-field', default='GT')
-# @click.option('--covs-list', default='X1,X2,pf1,pf2')
-# @click.option('--sample-covs-list', default='X1,X2')
-# @click.option('--sample-id', default='IND_ID')
-# @click.option(
-#     '--null-output-path',
-#     default=output_path('nindep_100_ncell_100_lambda_2_tauIntraSample_0.5_gene_1'),
-# )
-# @click.option(
-#     '--sv-output-path',
-#     default=output_path('nindep_100_ncell_100_lambda_2_tauIntraSample_0.5_gene_1_cis'),
-# )
-# @click.option(
-#     '--gene-pvals-output-path',
-#     default=output_path(
-#         'nindep_100_ncell_100_lambda_2_tauIntraSample_0.5_gene_1_cis_genePval'
-#     ),
-# )
-# @click.option('--plink-path', default='/usr/local/bin/n.indep_100_n.cell_1_01.step1')
-# @click.option('--gene-name', default='gene_1')
-# @click.option('--chrom', default='2')
-# @click.option('--cis-window-file', default='/usr/local/bin/gene_1_cis_region.txt')
 def association_pipeline(
     batch,
     jobs,
@@ -260,6 +226,14 @@ def association_pipeline(
     Run association for one gene
     """
 
+    def manage_concurrency_for_job(job: hb.batch.job.Job):
+        """
+        To avoid having too many jobs running at once, we have to limit concurrency.
+        """
+        if len(jobs) >= max_parallel_jobs:
+            job.depends_on(jobs[-max_parallel_jobs])
+        jobs.append(job)
+
     # step 1 (fit null)
     fit_null_job = batch.new_job(name='fit null')
     fit_null_job.image(image_path('saige-qtl'))
@@ -280,6 +254,7 @@ def association_pipeline(
         pheno_col=gene_name,
     )
     fit_null_job.command(cmd)
+    manage_concurrency_for_job(fit_null_job)
 
     # copy the output file to persistent storage
     if null_output_path.startswith('gs://'):
@@ -304,6 +279,7 @@ def association_pipeline(
     run_sv_assoc_job.command(cmd)
     if sv_output_path.startswith('gs://'):
         batch.write_output(run_sv_assoc_job.output, sv_output_path)
+    manage_concurrency_for_job(run_sv_assoc_job)
 
     # step3 (gene-level pvalues)
     get_gene_pvals_job = batch.new_job(name='gene level pvalues')
@@ -318,8 +294,7 @@ def association_pipeline(
     get_gene_pvals_job.command(cmd)
     if gene_pvals_output_path.startswith('gs://'):
         batch.write_output(get_gene_pvals_job.output, gene_pvals_output_path)
-
-
+    manage_concurrency_for_job(get_gene_pvals_job)
 
 
 @click.command()
@@ -361,14 +336,6 @@ def main(
 
     batch = get_batch('SAIGE-QTL pipeline')
     jobs = list[hb.batch.job.Job] = []
-
-    def manage_concurrency_for_job(job: hb.batch.job.Job):
-        """
-        To avoid having too many jobs running at once, we have to limit concurrency.
-        """
-        if len(jobs) >= max_parallel_jobs:
-            job.depends_on(jobs[-max_parallel_jobs])
-        jobs.append(job)
 
     for chromosome in chromosomes.split(','):
 
