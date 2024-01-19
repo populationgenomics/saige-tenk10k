@@ -205,7 +205,6 @@ def apply_job_settings(job, job_name: str):
 
 
 def association_pipeline(
-    batch,
     pheno_cov_filename: str,
     vcf_file_path: str,
     covs_list: str,
@@ -224,7 +223,9 @@ def association_pipeline(
     Run association for one gene
     """
 
-    gene_job = get_batch().new_job(name="saige-qtl")
+    batch = get_batch()
+
+    gene_job = batch.new_job(name="saige-qtl")
     gene_job.image(image_path('saige-qtl'))
     apply_job_settings(gene_job, 'fit_null')
 
@@ -356,7 +357,6 @@ def main(
                 # todo - check if these outputs already exist, if so don't make a new job
 
                 job = association_pipeline(
-                    batch=batch,
                     pheno_cov_filename=pheno_cov_path,
                     vcf_file_path=vcf_file_path,
                     covs_list=covs,
