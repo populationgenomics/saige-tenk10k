@@ -24,7 +24,7 @@ analysis-runner \
 
 """
 
-# python modules
+from cpg_utils import to_path
 from cpg_utils.config import get_config
 from cpg_utils.hail_batch import dataset_path, get_batch, init_batch, output_path
 
@@ -34,6 +34,13 @@ from hail.methods import export_vcf
 
 
 BCFTOOLS_IMAGE = get_config()['images']['bcftools']
+
+
+def can_reuse(path: str):
+    if path and to_path(path).exists():
+        return True
+    return False
+
 
 # inputs:
 @click.option('--vds-version', help=' e.g., 1-0 ')
@@ -51,43 +58,46 @@ def main(vds_version, chromosomes):
 
     for chromosome in chromosomes.split(','):
 
-        # consider only relevant chromosome
-        chrom_vds = hl.vds.filter_chromosomes(vds, keep=chromosome)
-
-        # split multiallelic loci
-        chrom_vds = hl.vds.split_multi(chrom_vds, filter_changed_loci=True)
-
-        # densify to matrix table object
-        mt = hl.vds.to_dense_mt(chrom_vds)
-
-        # filter out loci & variant QC
-        mt = mt.filter_rows(
-            ~(mt.was_split)  # biallelic (exclude multiallelic)
-            & (hl.len(mt.alleles) == 2)  # remove hom-ref
-            & (hl.is_snp(mt.alleles[0], mt.alleles[1]))  # SNPs (exclude indels)
-        )
-        mt = hl.variant_qc(mt)
-
-        # common variants only
-        cv_mt = mt.filter_rows(mt.variant_qc.AF[1] > 0.05)
-
-        # remove fields not in the VCF
-        cv_mt = cv_mt.drop('gvcf_info')
-
-        # export to plink common variants only
+        # create path and check if it exists already
         cv_vcf_path = output_path(
             f'vds{vds_version}/{chromosome}_common_variants.vcf.bgz'
         )
-        export_vcf(cv_mt, cv_vcf_path)
+        if not can_reuse(cv_vcf_path):
 
-        # add index file (.csi) using bcftools
-        vcf_input = get_batch().read_input(cv_vcf_path)
-        bcftools_job = get_batch().new_job(name='index vcf')
-        bcftools_job.image(BCFTOOLS_IMAGE)
-        bcftools_job.cpu(4)
-        bcftools_job.storage('15G')
-        bcftools_job.command(f"bcftools index -c {vcf_input} -o {bcftools_job.csi}")
-        get_batch().write_output(bcftools_job.csi, f'{cv_vcf_path}.csi')
+            # consider only relevant chromosome
+            chrom_vds = hl.vds.filter_chromosomes(vds, keep=chromosome)
+
+            # split multiallelic loci
+            chrom_vds = hl.vds.split_multi(chrom_vds, filter_changed_loci=True)
+
+            # densify to matrix table object
+            mt = hl.vds.to_dense_mt(chrom_vds)
+
+            # filter out loci & variant QC
+            mt = mt.filter_rows(
+                ~(mt.was_split)  # biallelic (exclude multiallelic)
+                & (hl.len(mt.alleles) == 2)  # remove hom-ref
+                & (hl.is_snp(mt.alleles[0], mt.alleles[1]))  # SNPs (exclude indels)
+            )
+            mt = hl.variant_qc(mt)
+
+            # common variants only
+            cv_mt = mt.filter_rows(mt.variant_qc.AF[1] > 0.05)
+
+            # remove fields not in the VCF
+            cv_mt = cv_mt.drop('gvcf_info')
+
+            # export to plink common variants only
+            export_vcf(cv_mt, cv_vcf_path)
+
+            # add index file (.csi) using bcftools
+            vcf_input = get_batch().read_input(cv_vcf_path)
+            bcftools_job = get_batch().new_job(name='index vcf')
+            bcftools_job.image(BCFTOOLS_IMAGE)
+            bcftools_job.cpu(4)
+            bcftools_job.storage('15G')
+            bcftools_job.command(f"bcftools index -c {vcf_input} -o {bcftools_job.csi}")
+            get_batch().write_output(bcftools_job.csi, f'{cv_vcf_path}.csi')
     get_batch().run(wait=False)
 
 
