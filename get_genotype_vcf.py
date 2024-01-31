@@ -29,8 +29,9 @@ from cpg_utils.config import get_config
 from cpg_utils.hail_batch import dataset_path, get_batch, init_batch, output_path
 
 import click
+import random
 import hail as hl
-from hail.methods import export_vcf
+from hail.methods import export_plink, export_vcf
 
 
 BCFTOOLS_IMAGE = get_config()['images']['bcftools']
@@ -98,6 +99,33 @@ def main(vds_version, chromosomes):
             bcftools_job.storage('15G')
             bcftools_job.command(f"bcftools index -c {vcf_input} -o {bcftools_job.csi}")
             get_batch().write_output(bcftools_job.csi, f'{cv_vcf_path}.csi')
+
+    # subset variants for variance ratio estimation
+    vre_plink_path = output_path(
+            f'vds{vds_version}/vre_plink_2000_variants'
+        )
+    if not can_reuse(vre_plink_path):
+        mt = hl.vds.to_dense_mt(vds)
+        mt = hl.variant_qc(mt)
+        # minor allele count (MAC) > {vre_n_markers}
+        vre_mt = mt.filter_rows(mt.variant_qc.AC[0] > 20)
+        n_ac_vars = vre_mt.count()[0]  # to avoid evaluating this 2X
+        if n_ac_vars == 0:
+            return
+        # since pruning is very costly, subset first a bit
+        random.seed(0)
+        vre_mt = vre_mt.sample_rows(p=0.01)
+        # perform LD pruning
+        pruned_variant_table = hl.ld_prune(vre_mt.GT, r2=0.2, bp_window_size=500000)
+        vre_mt = vre_mt.filter_rows(hl.is_defined(pruned_variant_table[vre_mt.row_key]))
+        # randomly sample {vre_n_markers} variants
+        random.seed(0)
+        vre_mt = vre_mt.sample_rows((2000 * 1.1) / vre_mt.count()[0])
+        vre_mt = vre_mt.head(2000)
+
+        # export to plink common variants only for sparse GRM
+        export_plink(vre_mt, vre_plink_path, ind_id=vre_mt.s)
+
     get_batch().run(wait=False)
 
 
