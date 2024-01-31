@@ -9,6 +9,17 @@ This script will
 
 this will be used as input for the
 SAIGE-QTL association pipeline.
+
+
+To run:
+
+analysis-runner \
+    --description "get common variant VCF" \
+    --dataset "bioheart" \
+    --access-level "test" \
+    --output-dir "saige-qtl/input_files/genotypes/" \
+    python3 get_genotype_vcf.py --vds-name vds/1-0.vds --chromosomes=chr22
+
 """
 
 # python modules
