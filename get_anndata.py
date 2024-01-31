@@ -31,11 +31,28 @@ from cpg_utils.hail_batch import (
     output_path,
 )
 import click
+import math
 import hail as hl
 import pandas as pd
 import scanpy as sc
 
 SCANPY_IMAGE = get_config()['images']['scanpy']
+
+
+def filter_lowly_expressed_genes(expression_adata, min_pct=5) -> sc.AnnData:
+    """Remove genes with low expression across cells
+
+    Input: adata with all genes
+
+    Output: adata filtered
+    """
+    n_all_cells = len(expression_adata.obs.index)
+    min_cells = math.ceil((n_all_cells * min_pct) / 100)
+    expression_adata = sc.pp.filter_genes(expression_adata, min_cells=min_cells)
+    assert isinstance(expression_adata, sc.AnnData)
+
+    return expression_adata
+
 
 def get_celltype_covariates(
     expression_files_prefix: str,
@@ -49,11 +66,14 @@ def get_celltype_covariates(
 
     Output: covariate df for cell type of interest
     """
-    covs_tsv_path = dataset_path(f'{expression_files_prefix}/expression_pcs/{cell_type}.csv')
+    covs_tsv_path = dataset_path(
+        f'{expression_files_prefix}/expression_pcs/{cell_type}.csv'
+    )
     covs_df = pd.read_csv(covs_tsv_path, sep=',', index_col=0)
     return covs_df
 
-def get_gene_cis_file(gene_info_df, gene: str, window_size: int):
+
+def get_gene_cis_info(gene_info_df, gene: str, window_size: int):
     """Get gene cis window file"""
     # select the gene from df
     gene_info_gene = gene_info_df[gene_info_df['gene'] == gene]
@@ -91,9 +111,9 @@ def get_gene_cis_file(gene_info_df, gene: str, window_size: int):
 def main(
     celltypes: str,
     chromosomes: str,
-    gene_info_tsv: str,
+    gene_info_tsv: str,  # this info may actually be included in expression adata files
     expression_files_prefix: str,
-    sample_mapping_file_path: str,
+    sample_mapping_file_path: str,  # this info may actually be included in expression adata files
     min_pct_expr: int,
     cis_window_size: int,
     max_gene_concurrency=int,
@@ -119,14 +139,22 @@ def main(
             expression_adata = sc.read(expression_h5ad_path)
 
             # extract genes expressed in at least X% cells
+            expression_adata = filter_lowly_expressed_genes(
+                expression_adata, min_pct=min_pct_expr
+            )
 
             # for each gene
+            genes = expression_adata.var_names
 
-            # get expression
-            # make pheno cov file
+            for gene in genes:
+                # get expression
+                # make pheno cov file
 
-            # get gene info
-            # make cis window file
+                # get gene info
+                gene_cis_df = get_gene_cis_info(
+                    gene_info_df=gene_info_tsv, gene=gene, window_size=cis_window_size
+                )
+                # make cis window file
 
     get_batch().run(wait=False)
 
