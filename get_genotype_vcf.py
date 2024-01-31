@@ -93,6 +93,8 @@ def main(vds_version, chromosomes, vre_mac_threshold, vre_n_markers):
             # export to plink common variants only
             export_vcf(cv_mt, cv_vcf_path)
 
+        # check existence of index file separately
+        if not can_reuse(f'{cv_vcf_path}.csi'):
             # add index file (.csi) using bcftools
             vcf_input = get_batch().read_input(cv_vcf_path)
             bcftools_job = get_batch().new_job(name='index vcf')
