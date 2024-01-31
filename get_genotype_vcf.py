@@ -47,7 +47,7 @@ def main(vds_name, chromosomes):
     vds_path = dataset_path(vds_name)
     vds = hl.vds.read_vds(vds_path)
 
-    for chromosome in chromosomes.split(','):
+    for chromosome in chromosomes:
 
         # consider only relevant chromosome
         chrom_vds = hl.vds.filter_chromosomes(vds, keep=chromosome)
