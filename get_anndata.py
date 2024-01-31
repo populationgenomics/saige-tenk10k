@@ -9,6 +9,17 @@ This script will
 
 these files will be used as inputs for the
 SAIGE-QTL association pipeline.
+
+To run:
+
+analysis-runner \
+    --description "make expression input files" \
+    --dataset "bioheart" \
+    --access-level "test" \
+    --output-dir "saige-qtl/input_files/expression_files/" \
+    python3 get_anndata.py --celltypes B_IN,Plasma --chromosomes chr1,chr2,chr22
+
+
 """
 
 from cpg_utils import to_path
@@ -26,6 +37,21 @@ import scanpy as sc
 
 SCANPY_IMAGE = get_config()['images']['scanpy']
 
+def get_celltype_covariates(
+    expression_files_prefix: str,
+    cell_type: str,
+):
+    """Obtain cell type specific covariates
+
+    Input:
+    - cell type of interest
+    - covariate files prefix
+
+    Output: covariate df for cell type of interest
+    """
+    covs_tsv_path = dataset_path(f'{expression_files_prefix}/expression_pcs/{cell_type}.csv')
+    covs_df = pd.read_csv(covs_tsv_path, sep=',', index_col=0)
+    return covs_df
 
 def get_gene_cis_file(gene_info_df, gene: str, window_size: int):
     """Get gene cis window file"""
