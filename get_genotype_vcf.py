@@ -71,8 +71,8 @@ def main(vds_name, chromosomes):
         bcftools_job.image(BCFTOOLS_IMAGE)
         bcftools_job.cpu(4)
         bcftools_job.storage('15G')
-        bcftools_job.command(f"bcftools index -c {vcf_input} -o {cv_vcf_path}.csi")
-
+        bcftools_job.command(f"bcftools index -c {vcf_input} -o {bcftools_job.csi}")
+        get_batch().write_output(bcftools_job.csi, f'{cv_vcf_path}.csi')
     get_batch().run(wait=False)
 
 
