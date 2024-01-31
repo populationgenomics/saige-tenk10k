@@ -16,7 +16,7 @@ analysis-runner \
     --description "make expression input files" \
     --dataset "bioheart" \
     --access-level "test" \
-    --output-dir "saige-qtl/input_files/expression_files/" \
+    --output-dir "saige-qtl/input_files/" \
     python3 get_anndata.py --celltypes B_IN,Plasma --chromosomes chr1,chr2,chr22
 
 
@@ -149,12 +149,20 @@ def main(
             for gene in genes:
                 # get expression
                 # make pheno cov file
+                pheno_cov_filename = to_path(
+                    output_path(f'expression_files/{gene}_pheno_cov.csv')
+                )
 
-                # get gene info
+                # make cis window file
+                gene_cis_filename = to_path(
+                    output_path(f'cis_window_files/{gene}_{cis_window_size}bp.csv')
+                )
                 gene_cis_df = get_gene_cis_info(
                     gene_info_df=gene_info_tsv, gene=gene, window_size=cis_window_size
                 )
-                # make cis window file
+                # write
+                with gene_cis_filename.open('w') as gcf:
+                    gene_cis_df.to_csv(gcf, index=False)
 
     get_batch().run(wait=False)
 
