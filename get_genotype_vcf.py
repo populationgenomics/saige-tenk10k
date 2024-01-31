@@ -35,7 +35,7 @@ BCFTOOLS_IMAGE = get_config()['images']['bcftools']
 
 # inputs:
 @click.option('--vds-name', help='e.g., vds/1-0.vds')
-@click.option('--chromosomes', help='e.g., chr22')
+@click.argument('--chromosomes', help='e.g., chr22 chrX ', nargs=-1)
 @click.command()
 def main(vds_name, chromosomes):
     """
