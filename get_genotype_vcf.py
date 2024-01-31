@@ -39,13 +39,13 @@ def main(chromosomes):
     for chromosome in chromosomes:
 
         # consider only relevant chromosome
-        vds = hl.vds.filter_chromosomes(vds, keep=chromosome)
+        chrom_vds = hl.vds.filter_chromosomes(vds, keep=chromosome)
 
         # split multiallelic loci
-        vds = hl.vds.split_multi(vds, filter_changed_loci=True)
+        chrom_vds = hl.vds.split_multi(chrom_vds, filter_changed_loci=True)
 
         # densify to matrix table object
-        mt = hl.vds.to_dense_mt(vds)
+        mt = hl.vds.to_dense_mt(chrom_vds)
 
         # filter out loci & variant QC
         mt = mt.filter_rows(
