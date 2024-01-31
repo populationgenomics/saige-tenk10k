@@ -59,50 +59,50 @@ def main(vds_version, chromosomes, vre_mac_threshold, vre_n_markers):
     vds_path = dataset_path(f'vds/{vds_version}.vds')
     vds = hl.vds.read_vds(vds_path)
 
-    # for chromosome in chromosomes.split(','):
+    for chromosome in chromosomes.split(','):
 
-    #     # create path and check if it exists already
-    #     cv_vcf_path = output_path(
-    #         f'vds{vds_version}/{chromosome}_common_variants.vcf.bgz'
-    #     )
-    #     if not can_reuse(cv_vcf_path):
+        # create path and check if it exists already
+        cv_vcf_path = output_path(
+            f'vds{vds_version}/{chromosome}_common_variants.vcf.bgz'
+        )
+        if not can_reuse(cv_vcf_path):
 
-    #         # consider only relevant chromosome
-    #         chrom_vds = hl.vds.filter_chromosomes(vds, keep=chromosome)
+            # consider only relevant chromosome
+            chrom_vds = hl.vds.filter_chromosomes(vds, keep=chromosome)
 
-    #         # split multiallelic loci
-    #         chrom_vds = hl.vds.split_multi(chrom_vds, filter_changed_loci=True)
+            # split multiallelic loci
+            chrom_vds = hl.vds.split_multi(chrom_vds, filter_changed_loci=True)
 
-    #         # densify to matrix table object
-    #         mt = hl.vds.to_dense_mt(chrom_vds)
+            # densify to matrix table object
+            mt = hl.vds.to_dense_mt(chrom_vds)
 
-    #         # filter out loci & variant QC
-    #         mt = mt.filter_rows(
-    #             ~(mt.was_split)  # biallelic (exclude multiallelic)
-    #             & (hl.len(mt.alleles) == 2)  # remove hom-ref
-    #             & (hl.is_snp(mt.alleles[0], mt.alleles[1]))  # SNPs (exclude indels)
-    #         )
-    #         mt = hl.variant_qc(mt)
+            # filter out loci & variant QC
+            mt = mt.filter_rows(
+                ~(mt.was_split)  # biallelic (exclude multiallelic)
+                & (hl.len(mt.alleles) == 2)  # remove hom-ref
+                & (hl.is_snp(mt.alleles[0], mt.alleles[1]))  # SNPs (exclude indels)
+            )
+            mt = hl.variant_qc(mt)
 
-    #         # common variants only
-    #         cv_mt = mt.filter_rows(mt.variant_qc.AF[1] > 0.05)
+            # common variants only
+            cv_mt = mt.filter_rows(mt.variant_qc.AF[1] > 0.05)
 
-    #         # remove fields not in the VCF
-    #         cv_mt = cv_mt.drop('gvcf_info')
+            # remove fields not in the VCF
+            cv_mt = cv_mt.drop('gvcf_info')
 
-    #         # export to plink common variants only
-    #         export_vcf(cv_mt, cv_vcf_path)
+            # export to plink common variants only
+            export_vcf(cv_mt, cv_vcf_path)
 
-    #     # check existence of index file separately
-    #     if not can_reuse(f'{cv_vcf_path}.csi'):
-    #         # add index file (.csi) using bcftools
-    #         vcf_input = get_batch().read_input(cv_vcf_path)
-    #         bcftools_job = get_batch().new_job(name='index vcf')
-    #         bcftools_job.image(BCFTOOLS_IMAGE)
-    #         bcftools_job.cpu(4)
-    #         bcftools_job.storage('15G')
-    #         bcftools_job.command(f"bcftools index -c {vcf_input} -o {bcftools_job.csi}")
-    #         get_batch().write_output(bcftools_job.csi, f'{cv_vcf_path}.csi')
+        # check existence of index file separately
+        if not can_reuse(f'{cv_vcf_path}.csi'):
+            # add index file (.csi) using bcftools
+            vcf_input = get_batch().read_input(cv_vcf_path)
+            bcftools_job = get_batch().new_job(name='index vcf')
+            bcftools_job.image(BCFTOOLS_IMAGE)
+            bcftools_job.cpu(4)
+            bcftools_job.storage('15G')
+            bcftools_job.command(f"bcftools index -c {vcf_input} -o {bcftools_job.csi}")
+            get_batch().write_output(bcftools_job.csi, f'{cv_vcf_path}.csi')
 
     # subset variants for variance ratio estimation
     vre_plink_path = output_path(f'vds{vds_version}/vre_plink_2000_variants')
