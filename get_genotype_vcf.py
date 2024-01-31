@@ -104,8 +104,6 @@ def main(vds_version, chromosomes, vre_mac_threshold, vre_n_markers):
             bcftools_job.command(f"bcftools index -c {vcf_input} -o {bcftools_job.csi}")
             get_batch().write_output(bcftools_job.csi, f'{cv_vcf_path}.csi')
 
-    get_batch().run(wait=False)
-
     # subset variants for variance ratio estimation
     vre_plink_path = output_path(f'vds{vds_version}/vre_plink_2000_variants')
     if not can_reuse(vre_plink_path):
@@ -135,6 +133,7 @@ def main(vds_version, chromosomes, vre_mac_threshold, vre_n_markers):
 
         # export to plink common variants only for sparse GRM
         export_plink(vre_mt, vre_plink_path, ind_id=vre_mt.s)
+    get_batch().run(wait=False)
 
 
 if __name__ == '__main__':
