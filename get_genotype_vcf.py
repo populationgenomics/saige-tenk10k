@@ -73,7 +73,7 @@ def main(chromosomes):
 
         # figure out how to create index file (.csi)
         vcf_input = get_batch().read_input(cv_vcf_path)
-        bcftools_job = get_batch().new_job(name=f'index vcf')
+        bcftools_job = get_batch().new_job(name='index vcf')
         bcftools_job.image(BCFTOOLS_IMAGE)
         bcftools_job.cpu(4)
         bcftools_job.storage('15G')
