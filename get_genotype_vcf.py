@@ -26,7 +26,6 @@ from hail.methods import export_vcf
 
 
 BIOHEART_TOB_VDS = dataset_path('vds/1-0.vds')
-# HAIL_IMAGE = get_config()['images']['scanpy']
 BCFTOOLS_IMAGE = get_config()['images']['bcftools']
 
 # inputs:
@@ -71,7 +70,7 @@ def main(chromosomes):
         cv_vcf_path = output_path(f'{chromosome}_common_variants.vcf.bgz')
         export_vcf(cv_mt, cv_vcf_path)
 
-        # figure out how to create index file (.csi)
+        # add index file (.csi) using bcftools
         vcf_input = get_batch().read_input(cv_vcf_path)
         bcftools_job = get_batch().new_job(name='index vcf')
         bcftools_job.image(BCFTOOLS_IMAGE)
