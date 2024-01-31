@@ -103,6 +103,7 @@ def main(vds_version, chromosomes):
     # subset variants for variance ratio estimation
     vre_plink_path = output_path(f'vds{vds_version}/vre_plink_2000_variants')
     if not can_reuse(vre_plink_path):
+        vds = hl.vds.split_multi(vds, filter_changed_loci=True)
         mt = hl.vds.to_dense_mt(vds)
         mt = hl.variant_qc(mt)
         # minor allele count (MAC) > {vre_n_markers}
