@@ -101,9 +101,7 @@ def main(vds_version, chromosomes):
             get_batch().write_output(bcftools_job.csi, f'{cv_vcf_path}.csi')
 
     # subset variants for variance ratio estimation
-    vre_plink_path = output_path(
-            f'vds{vds_version}/vre_plink_2000_variants'
-        )
+    vre_plink_path = output_path(f'vds{vds_version}/vre_plink_2000_variants')
     if not can_reuse(vre_plink_path):
         mt = hl.vds.to_dense_mt(vds)
         mt = hl.variant_qc(mt)
