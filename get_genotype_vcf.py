@@ -23,7 +23,7 @@ import hail as hl
 from hail.methods import export_vcf
 
 
-BIOHEART_TOB_VDS = dataset_path('.vds')
+BIOHEART_TOB_VDS = dataset_path('vds/1-0.vds')
 HAIL_IMAGE = get_config()['images']['scanpy']
 CHROMOSOMES = 'chr22'
 
