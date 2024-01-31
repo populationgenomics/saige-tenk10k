@@ -24,11 +24,11 @@ BIOHEART_TOB_VDS = dataset_path('vds/1-0.vds')
 BCFTOOLS_IMAGE = get_config()['images']['bcftools']
 
 # inputs:
-@click.option('--chromosomes', help=' eg chr22')
+@click.option('--chromosomes', help='e.g., chr22')
 @click.command()
 def main(chromosomes):
     """
-    Run associaTR processing pipeline
+    Write genotypes as VCF
     """
 
     init_batch()
