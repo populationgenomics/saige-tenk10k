@@ -20,20 +20,20 @@ import hail as hl
 from hail.methods import export_vcf
 
 
-BIOHEART_TOB_VDS = dataset_path('vds/1-0.vds')
 BCFTOOLS_IMAGE = get_config()['images']['bcftools']
 
 # inputs:
+@click.option('--vds-name', help='e.g., vds/1-0.vds')
 @click.option('--chromosomes', help='e.g., chr22')
 @click.command()
-def main(chromosomes):
+def main(vds_name, chromosomes):
     """
     Write genotypes as VCF
     """
 
     init_batch()
 
-    vds_path = BIOHEART_TOB_VDS
+    vds_path = dataset_path(vds_name)
     vds = hl.vds.read_vds(vds_path)
 
     for chromosome in chromosomes:
