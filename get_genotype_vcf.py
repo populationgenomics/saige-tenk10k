@@ -12,13 +12,8 @@ SAIGE-QTL association pipeline.
 """
 
 # python modules
-from cpg_utils.hail_batch import (
-    dataset_path,
-    get_batch,
-    get_config,
-    init_batch,
-    output_path,
-)
+from cpg_utils.config import get_config
+from cpg_utils.hail_batch import dataset_path, get_batch, init_batch, output_path
 
 import click
 import hail as hl
