@@ -135,7 +135,5 @@ def main(vds_version, chromosomes, vre_mac_threshold, vre_n_markers):
         export_plink(vre_mt, vre_plink_path, ind_id=vre_mt.s)
 
 
-
-
 if __name__ == '__main__':
     main()  # pylint: disable=no-value-for-parameter
