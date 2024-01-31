@@ -18,7 +18,7 @@ analysis-runner \
     --dataset "bioheart" \
     --access-level "test" \
     --output-dir "saige-qtl/input_files/genotypes/" \
-    python3 get_genotype_vcf.py --vds-name vds/1-0.vds --chromosomes chr22
+    python3 get_genotype_vcf.py --vds-name vds/1-0.vds chr1 chr2 chr22
 
 """
 
