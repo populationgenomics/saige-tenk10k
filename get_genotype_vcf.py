@@ -6,6 +6,8 @@ This script will
 
 - extract common variants
 - export as VCF (one per chrom)
+- also create a plink file for a subset of variants
+for variance ratio estimation
 
 this will be used as input for the
 SAIGE-QTL association pipeline.
@@ -18,7 +20,7 @@ analysis-runner \
     --dataset "bioheart" \
     --access-level "test" \
     --output-dir "saige-qtl/input_files/genotypes/" \
-    python3 get_genotype_vcf.py --vds-name vds/1-0.vds --chromosomes chr1,chr2,chr22
+    python3 get_genotype_vcf.py --vds-version 1-0 --chromosomes chr1,chr2,chr22
 
 """
 
@@ -34,17 +36,17 @@ from hail.methods import export_vcf
 BCFTOOLS_IMAGE = get_config()['images']['bcftools']
 
 # inputs:
-@click.option('--vds-name', help=' e.g., vds/1-0.vds ')
+@click.option('--vds-version', help=' e.g., 1-0 ')
 @click.option('--chromosomes', help=' e.g., chr22,chrX ')
 @click.command()
-def main(vds_name, chromosomes):
+def main(vds_version, chromosomes):
     """
     Write genotypes as VCF
     """
 
     init_batch()
 
-    vds_path = dataset_path(vds_name)
+    vds_path = dataset_path(f'vds/{vds_version}.vds')
     vds = hl.vds.read_vds(vds_path)
 
     for chromosome in chromosomes.split(','):
@@ -73,7 +75,9 @@ def main(vds_name, chromosomes):
         cv_mt = cv_mt.drop('gvcf_info')
 
         # export to plink common variants only
-        cv_vcf_path = output_path(f'{chromosome}_common_variants.vcf.bgz')
+        cv_vcf_path = output_path(
+            f'vds{vds_version}/{chromosome}_common_variants.vcf.bgz'
+        )
         export_vcf(cv_mt, cv_vcf_path)
 
         # add index file (.csi) using bcftools
