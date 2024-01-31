@@ -107,7 +107,6 @@ def main(vds_version, chromosomes, vre_mac_threshold, vre_n_markers):
     # subset variants for variance ratio estimation
     vre_plink_path = output_path(f'vds{vds_version}/vre_plink_2000_variants')
     if not can_reuse(vre_plink_path):
-        print("file does not yet exist")
         vds = hl.vds.split_multi(vds, filter_changed_loci=True)
         mt = hl.vds.to_dense_mt(vds)
         mt = mt.filter_rows(
@@ -117,7 +116,7 @@ def main(vds_version, chromosomes, vre_mac_threshold, vre_n_markers):
         )
         mt = hl.variant_qc(mt)
         # minor allele count (MAC) > {vre_mac_threshold}
-        vre_mt = mt.filter_rows(mt.variant_qc.AC[0] > vre_mac_threshold)
+        vre_mt = mt.filter_rows(mt.variant_qc.AC[1] > vre_mac_threshold)
         n_ac_vars = vre_mt.count()[0]  # to avoid evaluating this 2X
         if n_ac_vars == 0:
             print("no variants left")
