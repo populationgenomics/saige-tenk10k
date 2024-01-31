@@ -102,6 +102,8 @@ def main(vds_version, chromosomes, vre_mac_threshold, vre_n_markers):
             bcftools_job.command(f"bcftools index -c {vcf_input} -o {bcftools_job.csi}")
             get_batch().write_output(bcftools_job.csi, f'{cv_vcf_path}.csi')
 
+    get_batch().run(wait=False)
+
     # subset variants for variance ratio estimation
     vre_plink_path = output_path(f'vds{vds_version}/vre_plink_2000_variants')
     if not can_reuse(vre_plink_path):
@@ -114,7 +116,7 @@ def main(vds_version, chromosomes, vre_mac_threshold, vre_n_markers):
         )
         mt = hl.variant_qc(mt)
         # minor allele count (MAC) > {vre_mac_threshold}
-        vre_mt = mt.filter_rows(mt.variant_qc.AC[0] > {vre_mac_threshold})
+        vre_mt = mt.filter_rows(mt.variant_qc.AC[0] > vre_mac_threshold)
         n_ac_vars = vre_mt.count()[0]  # to avoid evaluating this 2X
         if n_ac_vars == 0:
             return
@@ -126,13 +128,13 @@ def main(vds_version, chromosomes, vre_mac_threshold, vre_n_markers):
         vre_mt = vre_mt.filter_rows(hl.is_defined(pruned_variant_table[vre_mt.row_key]))
         # randomly sample {vre_n_markers} variants
         random.seed(0)
-        vre_mt = vre_mt.sample_rows(({vre_n_markers} * 1.1) / vre_mt.count()[0])
-        vre_mt = vre_mt.head({vre_n_markers})
+        vre_mt = vre_mt.sample_rows((vre_n_markers * 1.1) / vre_mt.count()[0])
+        vre_mt = vre_mt.head(vre_n_markers)
 
         # export to plink common variants only for sparse GRM
         export_plink(vre_mt, vre_plink_path, ind_id=vre_mt.s)
 
-    get_batch().run(wait=False)
+
 
 
 if __name__ == '__main__':
