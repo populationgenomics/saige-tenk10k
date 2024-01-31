@@ -46,8 +46,10 @@ def can_reuse(path: str):
 # inputs:
 @click.option('--vds-version', help=' e.g., 1-0 ')
 @click.option('--chromosomes', help=' e.g., chr22,chrX ')
+@click.option('--vre-mac-threshold', default=20)
+@click.option('--vre-n-markers', default=2000)
 @click.command()
-def main(vds_version, chromosomes):
+def main(vds_version, chromosomes, vre_mac_threshold, vre_n_markers):
     """
     Write genotypes as VCF
     """
@@ -111,8 +113,8 @@ def main(vds_version, chromosomes):
             & (hl.is_snp(mt.alleles[0], mt.alleles[1]))  # SNPs (exclude indels)
         )
         mt = hl.variant_qc(mt)
-        # minor allele count (MAC) > {vre_n_markers}
-        vre_mt = mt.filter_rows(mt.variant_qc.AC[0] > 20)
+        # minor allele count (MAC) > {vre_mac_threshold}
+        vre_mt = mt.filter_rows(mt.variant_qc.AC[0] > {vre_mac_threshold})
         n_ac_vars = vre_mt.count()[0]  # to avoid evaluating this 2X
         if n_ac_vars == 0:
             return
@@ -124,8 +126,8 @@ def main(vds_version, chromosomes):
         vre_mt = vre_mt.filter_rows(hl.is_defined(pruned_variant_table[vre_mt.row_key]))
         # randomly sample {vre_n_markers} variants
         random.seed(0)
-        vre_mt = vre_mt.sample_rows((2000 * 1.1) / vre_mt.count()[0])
-        vre_mt = vre_mt.head(2000)
+        vre_mt = vre_mt.sample_rows(({vre_n_markers} * 1.1) / vre_mt.count()[0])
+        vre_mt = vre_mt.head({vre_n_markers})
 
         # export to plink common variants only for sparse GRM
         export_plink(vre_mt, vre_plink_path, ind_id=vre_mt.s)
