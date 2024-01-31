@@ -18,7 +18,7 @@ analysis-runner \
     --dataset "bioheart" \
     --access-level "test" \
     --output-dir "saige-qtl/input_files/genotypes/" \
-    python3 get_genotype_vcf.py --vds-name vds/1-0.vds chr1 chr2 chr22
+    python3 get_genotype_vcf.py --vds-name vds/1-0.vds --chromosomes chr1,chr2,chr22
 
 """
 
@@ -34,8 +34,8 @@ from hail.methods import export_vcf
 BCFTOOLS_IMAGE = get_config()['images']['bcftools']
 
 # inputs:
-@click.option('--vds-name', help='e.g., vds/1-0.vds')
-@click.argument('--chromosomes', help='e.g., chr22 chrX ', nargs=-1)
+@click.option('--vds-name', help=' e.g., vds/1-0.vds ')
+@click.option('--chromosomes', help=' e.g., chr22,chrX ')
 @click.command()
 def main(vds_name, chromosomes):
     """
@@ -47,7 +47,7 @@ def main(vds_name, chromosomes):
     vds_path = dataset_path(vds_name)
     vds = hl.vds.read_vds(vds_path)
 
-    for chromosome in chromosomes:
+    for chromosome in chromosomes.split(','):
 
         # consider only relevant chromosome
         chrom_vds = hl.vds.filter_chromosomes(vds, keep=chromosome)
