@@ -106,10 +106,10 @@ def main(vds_version, chromosomes):
         vds = hl.vds.split_multi(vds, filter_changed_loci=True)
         mt = hl.vds.to_dense_mt(vds)
         mt = mt.filter_rows(
-                ~(mt.was_split)  # biallelic (exclude multiallelic)
-                & (hl.len(mt.alleles) == 2)  # remove hom-ref
-                & (hl.is_snp(mt.alleles[0], mt.alleles[1]))  # SNPs (exclude indels)
-            )
+            ~(mt.was_split)  # biallelic (exclude multiallelic)
+            & (hl.len(mt.alleles) == 2)  # remove hom-ref
+            & (hl.is_snp(mt.alleles[0], mt.alleles[1]))  # SNPs (exclude indels)
+        )
         mt = hl.variant_qc(mt)
         # minor allele count (MAC) > {vre_n_markers}
         vre_mt = mt.filter_rows(mt.variant_qc.AC[0] > 20)
