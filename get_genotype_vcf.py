@@ -119,6 +119,8 @@ def main(vds_version, chromosomes, vre_mac_threshold, vre_n_markers):
         mt = hl.variant_qc(mt)
         print(mt.count()[0])
         # minor allele count (MAC) > {vre_mac_threshold}
+        print(vre_mac_threshold)
+        print(mt.variant_qc.AC[1])
         vre_mt = mt.filter_rows(mt.variant_qc.AC[1] > vre_mac_threshold)
         n_ac_vars = vre_mt.count()[0]  # to avoid evaluating this 2X
         if n_ac_vars == 0:
