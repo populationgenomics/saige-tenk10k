@@ -20,7 +20,7 @@ analysis-runner \
     --dataset "bioheart" \
     --access-level "test" \
     --output-dir "saige-qtl/input_files/genotypes/" \
-    python3 get_genotype_vcf.py --vds-version 1-0 --chromosomes chr1,chr2,chr22
+    python3 get_genotype_vcf.py --vds-version 1-0 --chromosomes chr1,chr2,chr22 --vre-mac-threshold 1
 
 """
 
@@ -109,22 +109,17 @@ def main(vds_version, chromosomes, vre_mac_threshold, vre_n_markers):
     if not can_reuse(vre_plink_path):
         vds = hl.vds.split_multi(vds, filter_changed_loci=True)
         mt = hl.vds.to_dense_mt(vds)
-        print(mt.count()[0])
         mt = mt.filter_rows(
             ~(mt.was_split)  # biallelic (exclude multiallelic)
             & (hl.len(mt.alleles) == 2)  # remove hom-ref
             & (hl.is_snp(mt.alleles[0], mt.alleles[1]))  # SNPs (exclude indels)
         )
-        print(mt.count()[0])
         mt = hl.variant_qc(mt)
-        print(mt.count()[0])
+
         # minor allele count (MAC) > {vre_mac_threshold}
-        print(vre_mac_threshold)
-        print(mt.variant_qc.AC[1])
         vre_mt = mt.filter_rows(mt.variant_qc.AC[1] > vre_mac_threshold)
         n_ac_vars = vre_mt.count()[0]  # to avoid evaluating this 2X
         if n_ac_vars == 0:
-            print("no variants left")
             return
         # since pruning is very costly, subset first a bit
         random.seed(0)
