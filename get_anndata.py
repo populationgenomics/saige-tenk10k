@@ -54,23 +54,23 @@ def filter_lowly_expressed_genes(expression_adata, min_pct=5) -> sc.AnnData:
     return expression_adata
 
 
-def get_celltype_covariates(
-    expression_files_prefix: str,
-    cell_type: str,
-):
-    """Obtain cell type specific covariates
+# def get_celltype_covariates(
+#     expression_files_prefix: str,
+#     cell_type: str,
+# ):
+#     """Obtain cell type specific covariates
 
-    Input:
-    - cell type of interest
-    - covariate files prefix
+#     Input:
+#     - cell type of interest
+#     - covariate files prefix
 
-    Output: covariate df for cell type of interest
-    """
-    covs_tsv_path = dataset_path(
-        f'{expression_files_prefix}/expression_pcs/{cell_type}.csv'
-    )
-    covs_df = pd.read_csv(covs_tsv_path, sep=',', index_col=0)
-    return covs_df
+#     Output: covariate df for cell type of interest
+#     """
+#     covs_tsv_path = dataset_path(
+#         f'{expression_files_prefix}/expression_pcs/{cell_type}.csv'
+#     )
+#     covs_df = pd.read_csv(covs_tsv_path, sep=',', index_col=0)
+#     return covs_df
 
 
 def get_gene_cis_info(gene_info_df, gene: str, window_size: int):
@@ -94,8 +94,9 @@ def get_gene_cis_info(gene_info_df, gene: str, window_size: int):
 @click.option('--celltypes')
 @click.option('--chromosomes')
 @click.option('--gene-info-tsv')
-@click.option('--expression-files-prefix')
-@click.option('--sample-mapping-file-path')
+@click.option(
+    '--anndata-files-prefix', default=dataset_path('saige-qtl/anndata_objects_from_HPC')
+)
 @click.option('--min-pct-expr', type=int, default=5)
 @click.option('--cis-window-size', type=int, default=100000)
 @click.option(
@@ -112,8 +113,7 @@ def main(
     celltypes: str,
     chromosomes: str,
     gene_info_tsv: str,  # this info may actually be included in expression adata files
-    expression_files_prefix: str,
-    sample_mapping_file_path: str,  # this info may actually be included in expression adata files
+    anndata_files_prefix: str,
     min_pct_expr: int,
     cis_window_size: int,
     max_gene_concurrency=int,
@@ -134,7 +134,7 @@ def main(
 
         for chromosome in chromosomes.split(','):
             expression_h5ad_path = to_path(
-                dataset_path(f'{expression_files_prefix}/{celltype}_{chromosome}.h5ad')
+                dataset_path(f'{anndata_files_prefix}/{celltype}_{chromosome}.h5ad')
             ).copy('here.h5ad')
             expression_adata = sc.read(expression_h5ad_path)
 
