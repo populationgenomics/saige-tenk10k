@@ -1,44 +1,55 @@
 # Hail batch workflow to run SAIGE-QTL on TenK10K data
 
-This is a hail batch pipeline to run the new [QTL version of SAIGE](https://github.com/weizhou0/qtl) on CPG's GCP, to map associations between both common and rare genetic variants and single-cell gene expression from blood.
+This is a hail batch pipeline to run the new [QTL version of SAIGE](https://github.com/weizhou0/qtl) on CPG's GCP, to map associations between both common and rare genetic variants and single-cell gene expression from peripheral mononuclear blood cells (PBMCs).
 First, this will be run on the TOB (AKA OneK1K) and then BioHEART datasets as part of phase 1 of the TenK10K project (see *Data* below), but in the future all datasets within OurDNA (with scRNA-seq + WGS data) will go through this pipeline as well.
 
-The pipeline is split into four parts, to make for more flexible usage:
+The pipeline is split into three parts, to make for more flexible usage:
 
-1. Genotype processing (SNV): this involves sample and variant QC of the WGS data, and genotype file preparation specifically for common and rare single-nucleotide variants
-2. Expression (phenotype) processing: this involves processing of the scRNA-seq data, and preparation of the pheno_cov file
-3. Input files check and preparation: this involves combining data from above and cross-check for consistency prior to running SAIGE-QTL
-4. Association testing: prepare and run SAIGE-QTL commands for association mapping
+1. Genotype processing (SNV): this involves variant QC and selection of the WGS data, and genotype file preparation specifically for common and rare single-nucleotide variants (VCF files), as well as plink files for only a subset of 2,000 variants that is used for some approximations within SAIGE-QTL
+2. Expression (phenotype) processing: this involves processing of the scRNA-seq data, inclusion of covariates, and preparation of the pheno_cov files (one per gene, cell type) and cis window files (one per gene)
+4. Association testing: prepare and run SAIGE-QTL commands for association mapping using inputs generated in the first two parts.
 
-Only [1] is ready for now.
+## Genotypes preprocessing
 
-## Genotypes preprocessing (once per cohort, e.g., TOB)
+Script: get_genotype_vcf.py
 
-Function name: filter_variants.
+Variant selection for VCF files:
 
-Hail query to filter WGS object to
-
-* samples that are: i) QC-passing, ii) present in the scRNA-seq dataset
 * variants that are: i) QC-passing, ii) non ref-ref variants, and iii) (for now) indels and multi-allelic SNPs.
+* variants that are common (MAF > 0.01) in our population
+* one per chromosome
 
-It outputs two objects:
+Variant selection for PLINK files for variance ratio estimation (VRE):
 
-* MT object, all retained samples and variants (both common & rare at this stage)
+* variants that are: i) QC-passing, ii) non ref-ref variants, and iii) (for now) indels and multi-allelic SNPs.
+* variants that are non rare (MAC > 20) in our population
+* random subset of 20,000 variants across all chromosomes
+
+Inputs:
+
+* joint call VDS object (TOB + BioHEART)
+
+Outputs:
+
+* VCF file containing all retained common variants (one per chromosome) + corresponding index file (.csi)
 * plink object for only 2,000 variants (minor allele count>20), after LD pruning - this is for the estimation of the variance ratio (VR plinks)
 
+## Gene expresion preprocessing
+
+Script: get_anndata.py
+
+Inputs:
+
+* scanpy AnnData object (one per chromosome and cell type, TOB + BioHEART)
+
+Outputs:
+
+* TSV phenotype covariate files (one per gene, cell type)
+* TSV gene cis window file (one per gene)
 
 ### To run
 
-```bash
-analysis-runner \
-    --dataset tob-wgs \
-    --access-level standard \
-    --output-dir 'tob_wgs_genetics/saige_qtl/input' \
-    --description 'WGS processing batch job' \
-    python3 genotypes_processing.py \
-      --mt-path 'mt/v7.mt' \
-      --sample-mapping-file-tsv 'scrna-seq/grch38_association_files/OneK1K_CPG_IDs.tsv'
-```
+Instructions to run each component of the pipeline using analysis runner are provided at the top of each script
 
 ## Data
 
@@ -50,5 +61,5 @@ TenK10K is matched single-cell RNA-seq (scRNA-seq) and whole-genome sequencing (
 
 ## Additional resources
 
-* [SAIGE-QTL pipeline flowchar GSlides](https://docs.google.com/presentation/d/1OhNiA6DaP9ZGlAbh8uZuZWzvrrr_QwvJwJ_lVPBZoic/edit#slide=id.g25daf727307_0_102)
+* [SAIGE-QTL pipeline flowchart GSlides](https://docs.google.com/presentation/d/1OhNiA6DaP9ZGlAbh8uZuZWzvrrr_QwvJwJ_lVPBZoic/edit#slide=id.g25daf727307_0_102)
 * [SAIGE-QTL pipeline notes GDoc](https://docs.google.com/document/d/1t11VafeU1THA4X58keHd5oPVglTYiY3DKC7P05GHCzw/edit)
