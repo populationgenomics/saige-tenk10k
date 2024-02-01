@@ -47,6 +47,21 @@ Outputs:
 * TSV phenotype covariate files (one per gene, cell type)
 * TSV gene cis window file (one per gene)
 
+## SAIGE-QTL association pipeline
+
+Script: saige_assoc.py
+
+Inputs:
+
+* PLINK genotype files for VRE estimation (one only)
+* VCF genotype files for SNP testing (one per chromosome)
+* TSV phenotype covariate files for expression + covariate info (one per gene + cell type combination)
+* TSV gene cis window file to specify what variants to test (one per gene)
+
+Outputs:
+
+* association summary statistics
+
 ### To run
 
 Instructions to run each component of the pipeline using analysis runner are provided at the top of each script
@@ -55,8 +70,8 @@ Instructions to run each component of the pipeline using analysis runner are pro
 
 TenK10K is matched single-cell RNA-seq (scRNA-seq) and whole-genome sequencing (WGS) data from up to 10,000 individuals:
 
-* Phase 0: OneK1K data only (1,000 individuals) - already generated (both WGS and scRNA-seq, though with an older technology)
-* Phase 1: OneK1K + BioHEART (2,000 individuals) - WGS done, scRNA-seq in progress (new kit, which should result in many more cells per individual)
+* Phase 0: OneK1K data only (~1,000 individuals) - already generated (both WGS and scRNA-seq, though with an older technology)
+* Phase 1: OneK1K + BioHEART (~2,000 individuals) - WGS done, scRNA-seq in progress (almost done)
 * Phase 2/final: aim is ~ 10,000 individuals from the (extended) TOB/OneK1K, BioHEART, ADAPT, LBIO and AIM cohorts (nothing generated besides current stage of Phase 1)
 
 ## Additional resources
