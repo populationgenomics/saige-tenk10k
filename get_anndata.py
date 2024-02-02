@@ -17,6 +17,7 @@ analysis-runner \
     --dataset "bioheart" \
     --access-level "test" \
     --output-dir "saige-qtl/input_files/" \
+    --image australia-southeast1-docker.pkg.dev/cpg-common/images/scanpy:1.9.3 \
     python3 get_anndata.py --celltypes CD4_Naive --chromosomes chr1
 
 
