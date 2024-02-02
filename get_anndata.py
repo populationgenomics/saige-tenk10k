@@ -17,7 +17,7 @@ analysis-runner \
     --dataset "bioheart" \
     --access-level "test" \
     --output-dir "saige-qtl/input_files/" \
-    python3 get_anndata.py --celltypes B_IN,Plasma --chromosomes chr1,chr2,chr22
+    python3 get_anndata.py --celltypes CD4_Naive --chromosomes chr1
 
 
 """
@@ -27,7 +27,7 @@ from cpg_utils.hail_batch import (
     dataset_path,
     get_batch,
     get_config,
-    init_batch,
+    # init_batch,
     output_path,
 )
 import click
@@ -93,7 +93,6 @@ def get_gene_cis_info(gene_info_df, gene: str, window_size: int):
 @click.command()
 @click.option('--celltypes')
 @click.option('--chromosomes')
-@click.option('--gene-info-tsv')
 @click.option(
     '--anndata-files-prefix', default=dataset_path('saige-qtl/anndata_objects_from_HPC')
 )
@@ -112,11 +111,10 @@ def get_gene_cis_info(gene_info_df, gene: str, window_size: int):
 def main(
     celltypes: str,
     chromosomes: str,
-    gene_info_tsv: str,  # this info may actually be included in expression adata files
     anndata_files_prefix: str,
     min_pct_expr: int,
     cis_window_size: int,
-    max_gene_concurrency=int,
+    # max_gene_concurrency=int,
 ):
     """
     Run expression processing pipeline
@@ -144,21 +142,23 @@ def main(
             )
 
             # for each gene
-            genes = expression_adata.var_names
+            genes = expression_adata.var['gene_name']
 
             for gene in genes:
                 # get expression
                 # make pheno cov file
-                pheno_cov_filename = to_path(
-                    output_path(f'expression_files/{gene}_pheno_cov.csv')
-                )
+                # pheno_cov_filename = to_path(
+                #     output_path(f'expression_files/{gene}_pheno_cov.csv')
+                # )
 
                 # make cis window file
                 gene_cis_filename = to_path(
                     output_path(f'cis_window_files/{gene}_{cis_window_size}bp.csv')
                 )
                 gene_cis_df = get_gene_cis_info(
-                    gene_info_df=gene_info_tsv, gene=gene, window_size=cis_window_size
+                    gene_info_df=expression_adata.var,
+                    gene=gene,
+                    window_size=cis_window_size,
                 )
                 # write
                 with gene_cis_filename.open('w') as gcf:
