@@ -99,16 +99,16 @@ def get_gene_cis_info(gene_info_df, gene: str, window_size: int):
 )
 @click.option('--min-pct-expr', type=int, default=5)
 @click.option('--cis-window-size', type=int, default=100000)
-@click.option(
-    '--max-gene-concurrency',
-    type=int,
-    default=50,
-    help=(
-        'To avoid resource starvation, set this concurrency to limit '
-        'horizontal scale. Higher numbers have a better walltime, but '
-        'risk jobs that are stuck (which are expensive)'
-    ),
-)
+# @click.option(
+#     '--max-gene-concurrency',
+#     type=int,
+#     default=50,
+#     help=(
+#         'To avoid resource starvation, set this concurrency to limit '
+#         'horizontal scale. Higher numbers have a better walltime, but '
+#         'risk jobs that are stuck (which are expensive)'
+#     ),
+# )
 def main(
     celltypes: str,
     chromosomes: str,
