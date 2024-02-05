@@ -116,7 +116,7 @@ def main(
         celtype_covs_file = dataset_path(
             f'{celtype_covs_files_prefix}/{celltype}_expression_pcs.csv'
         )
-        celtype_covs_df = pd.read_csv(celtype_covs_file)
+        # celtype_covs_df = pd.read_csv(celtype_covs_file)
 
         for chromosome in chromosomes.split(','):
             expression_h5ad_path = to_path(
