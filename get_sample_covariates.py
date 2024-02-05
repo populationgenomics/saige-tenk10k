@@ -49,7 +49,6 @@ def main(tob_sex_file_path, bioheart_sex_file_path):
     tob_meta = tob_meta[
         ~tob_meta['s'].isin(["NA12878", "NA12891", "NA12892", "syndip"])
     ]
-    print(tob_meta['sex_karyotype'].unique())
     # remove samples with ambiguous sex inference
     tob_meta = tob_meta[tob_meta['sex_karyotype'].isin(["XX", "XY"])]
     # encode sex as 1,2 instead
@@ -58,11 +57,9 @@ def main(tob_sex_file_path, bioheart_sex_file_path):
     # rename s as sample id to match bioheart file
     tob_meta['sample_id'] = tob_meta['s']
     tob_sex = tob_meta.loc[:, ["sample_id", "sex"]]
-    print(tob_sex['sex'].unique())
     # BioHEART sex info from Hope's Somalier stand alone run
     bioheart_meta = pd.read_csv(bioheart_sex_file_path, sep="\t")
     bioheart_sex = bioheart_meta.loc[:, ["sample_id", "sex"]]
-    print(bioheart_sex['sex'].unique())
     # combine_info
     combined_sex = pd.concat([tob_sex, bioheart_sex], axis=0)
     sex_out_file = output_path('sex_tob_bioheart.csv')
