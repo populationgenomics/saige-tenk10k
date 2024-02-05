@@ -19,7 +19,8 @@ analysis-runner \
     --dataset "bioheart" \
     --access-level "test" \
     --output-dir "saige-qtl/input_files/covariates/" \
-    python3 get_sample_covariates.py
+    python3 get_sample_covariates.py --tob-sex-file-path 'gs://cpg-tob-wgs-main-analysis/joint-calling/v7/meta.tsv' \
+                --bioheart-sex-file-path 'gs://cpg-bioheart-main-analysis/qc-stand-alone/somalier/990_samples_somalier.samples.tsv'
 
 """
 
@@ -32,14 +33,8 @@ import click
 import pandas as pd
 
 
-@click.option(
-    '--tob-sex-file-path',
-    default='gs://cpg-tob-wgs-main-analysis/joint-calling/v7/meta.tsv',
-)
-@click.option(
-    '--bioheart-sex-file-path',
-    default='gs://cpg-bioheart-main-analysis/qc-stand-alone/somalier/990_samples_somalier.samples.tsv',
-)
+@click.option('--tob-sex-file-path')
+@click.option('--bioheart-sex-file-path')
 @click.command()
 def main(tob_sex_file_path, bioheart_sex_file_path):
     """
