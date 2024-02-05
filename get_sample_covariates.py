@@ -54,7 +54,7 @@ def main(tob_sex_file_path, bioheart_sex_file_path):
     tob_meta = tob_meta[tob_meta['sex_karyotype'].isin(["XX", "XY"])]
     # encode sex as 1,2 instead
     tob_meta['sex'] = tob_meta['sex_karyotype'].replace('XY', '1')
-    tob_meta['sex'] = tob_meta['sex_karyotype'].replace('XX', '2')
+    tob_meta['sex'] = tob_meta['sex'].replace('XX', '2')
     # rename s as sample id to match bioheart file
     tob_meta['sample_id'] = tob_meta['s']
     tob_sex = tob_meta.loc[:, ["sample_id", "sex"]]
