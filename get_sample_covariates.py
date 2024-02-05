@@ -24,7 +24,7 @@ analysis-runner \
 
 main files:
 'gs://cpg-tob-wgs-main-analysis/joint-calling/v7/meta.tsv'
-'gs://cpg-bioheart-main-analysis/hoptan-str/somalier/somalier.samples.tsv
+'gs://cpg-bioheart-main-analysis/qc-stand-alone/somalier/990_samples_somalier.samples.tsv
 """
 
 # from cpg_utils import to_path
@@ -49,11 +49,7 @@ def main(tob_sex_file_path, bioheart_sex_file_path):
     tob_meta = tob_meta[
         ~tob_meta['s'].isin(["NA12878", "NA12891", "NA12892", "syndip"])
     ]
-    # remove spaces from sex karyotypes
     print(tob_meta['sex_karyotype'].unique())
-    tob_meta['sex_karyotype'] = [
-        sk.replace(" ", "") for sk in tob_meta['sex_karyotype']
-    ]
     # remove samples with ambiguous sex inference
     tob_meta = tob_meta[tob_meta['sex_karyotype'].isin(["XX", "XY"])]
     # encode sex as 1,2 instead
@@ -65,6 +61,7 @@ def main(tob_sex_file_path, bioheart_sex_file_path):
     # BioHEART sex info from Hope's Somalier stand alone run
     bioheart_meta = pd.read_csv(bioheart_sex_file_path, sep="\t")
     bioheart_sex = bioheart_meta.loc[:, ["sample_id", "sex"]]
+    print(bioheart_sex['sex'].unique())
     # combine_info
     combined_sex = pd.concat([tob_sex, bioheart_sex], axis=0)
     sex_out_file = output_path('sex_tob_bioheart.csv')
