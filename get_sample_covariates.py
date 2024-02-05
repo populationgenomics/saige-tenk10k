@@ -19,8 +19,8 @@ analysis-runner \
     --dataset "bioheart" \
     --access-level "test" \
     --output-dir "saige-qtl/input_files/covariates/" \
-    python3 get_sample_covariates.py --tob-sex-file-path 'gs://cpg-tob-wgs-main-analysis/joint-calling/v7/meta.tsv' \
-                --bioheart-sex-file-path 'gs://cpg-bioheart-main-analysis/qc-stand-alone/somalier/990_samples_somalier.samples.tsv'
+    python3 get_sample_covariates.py --tob-sex-file-path 'gs://cpg-tob-wgs-test-analysis/joint-calling/v7/meta.tsv' \
+                --bioheart-sex-file-path 'gs://cpg-bioheart-test-analysis/hoptan-str/somalier/somalier.samples.tsv'
 
 """
 
@@ -45,6 +45,10 @@ def main(tob_sex_file_path, bioheart_sex_file_path):
     # remove non-TOB samples
     tob_meta = tob_meta[
         ~tob_meta['s'].isin(["NA12878", "NA12891", "NA12892", "syndip"])
+    ]
+    # remove spaces from sex karyotypes
+    tob_meta['sex_karyotype'] = [
+        sk.replace(" ", "") for sk in tob_meta['sex_karyotype']
     ]
     # remove samples with ambiguous sex inference
     tob_meta = tob_meta[tob_meta['sex_karyotype'].isin(["XX", "XY"])]
