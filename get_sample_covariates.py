@@ -58,6 +58,7 @@ def main(tob_sex_file_path, bioheart_sex_file_path):
     # rename s as sample id to match bioheart file
     tob_meta['sample_id'] = tob_meta['s']
     tob_sex = tob_meta.loc[:, ["sample_id", "sex"]]
+    print(tob_sex['sex'].unique())
     # BioHEART sex info from Hope's Somalier stand alone run
     bioheart_meta = pd.read_csv(bioheart_sex_file_path, sep="\t")
     bioheart_sex = bioheart_meta.loc[:, ["sample_id", "sex"]]
