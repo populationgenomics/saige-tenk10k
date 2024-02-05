@@ -28,7 +28,7 @@ from cpg_utils.hail_batch import (
     dataset_path,
     get_batch,
     get_config,
-    # init_batch,
+    init_batch,
     output_path,
 )
 import click
@@ -81,16 +81,16 @@ def get_gene_cis_info(gene_info_df, gene: str, window_size: int):
 )
 @click.option('--min-pct-expr', type=int, default=5)
 @click.option('--cis-window-size', type=int, default=100000)
-# @click.option(
-#     '--max-gene-concurrency',
-#     type=int,
-#     default=50,
-#     help=(
-#         'To avoid resource starvation, set this concurrency to limit '
-#         'horizontal scale. Higher numbers have a better walltime, but '
-#         'risk jobs that are stuck (which are expensive)'
-#     ),
-# )
+@click.option(
+    '--max-gene-concurrency',
+    type=int,
+    default=50,
+    help=(
+        'To avoid resource starvation, set this concurrency to limit '
+        'horizontal scale. Higher numbers have a better walltime, but '
+        'risk jobs that are stuck (which are expensive)'
+    ),
+)
 def main(
     celltypes: str,
     chromosomes: str,
@@ -98,11 +98,13 @@ def main(
     celtype_covs_files_prefix: str,
     min_pct_expr: int,
     cis_window_size: int,
-    # max_gene_concurrency=int,
+    max_gene_concurrency=int,
 ):
     """
     Run expression processing pipeline
     """
+    init_batch()
+    batch = get_batch('gene expression processing pipeline')
     # extract samples we actually want to test
 
     # extract sample level covariates
@@ -143,6 +145,7 @@ def main(
                 gene_cis_filename = to_path(
                     output_path(f'cis_window_files/{gene}_{cis_window_size}bp.csv')
                 )
+                # gene_cis_job = batch.new_python_job(name='gene cis file')
                 gene_cis_df = get_gene_cis_info(
                     gene_info_df=expression_adata.var,
                     gene=gene,
