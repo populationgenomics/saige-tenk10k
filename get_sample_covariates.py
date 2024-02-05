@@ -27,9 +27,6 @@ main files:
 'gs://cpg-bioheart-main-analysis/qc-stand-alone/somalier/990_samples_somalier.samples.tsv
 """
 
-# from cpg_utils import to_path
-# from cpg_utils.config import get_config
-# from cpg_utils.hail_batch import dataset_path, get_batch, init_batch, output_path
 from cpg_utils.hail_batch import output_path
 
 import click
