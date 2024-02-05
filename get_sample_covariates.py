@@ -22,6 +22,9 @@ analysis-runner \
     python3 get_sample_covariates.py --tob-sex-file-path 'gs://cpg-tob-wgs-test-analysis/joint-calling/v7/meta.tsv' \
                 --bioheart-sex-file-path 'gs://cpg-bioheart-test-analysis/hoptan-str/somalier/somalier.samples.tsv'
 
+main files:
+'gs://cpg-tob-wgs-main-analysis/joint-calling/v7/meta.tsv'
+'gs://cpg-bioheart-main-analysis/hoptan-str/somalier/somalier.samples.tsv
 """
 
 # from cpg_utils import to_path
@@ -47,6 +50,7 @@ def main(tob_sex_file_path, bioheart_sex_file_path):
         ~tob_meta['s'].isin(["NA12878", "NA12891", "NA12892", "syndip"])
     ]
     # remove spaces from sex karyotypes
+    print(tob_meta['sex_karyotype'].unique())
     tob_meta['sex_karyotype'] = [
         sk.replace(" ", "") for sk in tob_meta['sex_karyotype']
     ]
