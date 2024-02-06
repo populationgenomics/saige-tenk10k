@@ -28,7 +28,7 @@ from cpg_utils.hail_batch import (
     dataset_path,
     get_batch,
     get_config,
-    init_batch,
+    # init_batch,
     output_path,
 )
 import click
@@ -81,30 +81,30 @@ def get_gene_cis_info(gene_info_df, gene: str, window_size: int):
 )
 @click.option('--min-pct-expr', type=int, default=5)
 @click.option('--cis-window-size', type=int, default=100000)
-@click.option(
-    '--max-gene-concurrency',
-    type=int,
-    default=50,
-    help=(
-        'To avoid resource starvation, set this concurrency to limit '
-        'horizontal scale. Higher numbers have a better walltime, but '
-        'risk jobs that are stuck (which are expensive)'
-    ),
-)
+# @click.option(
+#     '--max-gene-concurrency',
+#     type=int,
+#     default=50,
+#     help=(
+#         'To avoid resource starvation, set this concurrency to limit '
+#         'horizontal scale. Higher numbers have a better walltime, but '
+#         'risk jobs that are stuck (which are expensive)'
+#     ),
+# )
 def main(
     celltypes: str,
     chromosomes: str,
     anndata_files_prefix: str,
-    celtype_covs_files_prefix: str,
+    # celtype_covs_files_prefix: str,
     min_pct_expr: int,
     cis_window_size: int,
-    max_gene_concurrency=int,
+    # max_gene_concurrency=int,
 ):
     """
     Run expression processing pipeline
     """
-    init_batch()
-    batch = get_batch('gene expression processing pipeline')
+    # init_batch()
+    # batch = get_batch('gene expression processing pipeline')
     # extract samples we actually want to test
 
     # extract sample level covariates
@@ -114,10 +114,10 @@ def main(
     for celltype in celltypes.split(','):
 
         # extract cell-level covariates
-        # expression PCs, cell type specific
-        celtype_covs_file = dataset_path(
-            f'{celtype_covs_files_prefix}/{celltype}_expression_pcs.csv'
-        )
+        # # expression PCs, cell type specific
+        # celtype_covs_file = dataset_path(
+        #     f'{celtype_covs_files_prefix}/{celltype}_expression_pcs.csv'
+        # )
         # celtype_covs_df = pd.read_csv(celtype_covs_file)
 
         for chromosome in chromosomes.split(','):
@@ -130,9 +130,13 @@ def main(
             expression_adata = filter_lowly_expressed_genes(
                 expression_adata, min_pct=min_pct_expr
             )
+            print(expression_adata.shape)
 
             # for each gene
             genes = expression_adata.var['gene_name']
+            # to test if memory error is due to too many genes, reduce
+            genes = genes[0:10]
+            print(genes)
 
             for gene in genes:
                 # get expression
