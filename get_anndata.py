@@ -4,6 +4,7 @@
 This script will
 
 - open anndata expression files
+- open covariate files
 - create pheno_cov_files
 - create cis window files
 
@@ -79,6 +80,9 @@ def get_gene_cis_info(gene_info_df, gene: str, window_size: int):
 # @click.option(
 #     '--celltype-covs-files-prefix', default='saige-qtl/celltype_covs_from_HPC'
 # )
+# @click.option(
+#     '--sample-covs-files-prefix', default='saige-qtl/input_files/covariates/'
+# )
 @click.option('--min-pct-expr', type=int, default=5)
 @click.option('--cis-window-size', type=int, default=100000)
 # @click.option(
@@ -95,7 +99,8 @@ def main(
     celltypes: str,
     chromosomes: str,
     anndata_files_prefix: str,
-    # celtype_covs_files_prefix: str,
+    # celltype_covs_files_prefix: str,
+    # sample_covs_files_prefix: str,
     min_pct_expr: int,
     cis_window_size: int,
     # max_gene_concurrency=int,
@@ -110,15 +115,16 @@ def main(
     # extract sample level covariates
     # age from metamist
     # sex from somalier
+    # sample_covs_file = dataset_path(f'{sample_covs_files_prefix}sex_tob_bioheart.csv')
 
     for celltype in celltypes.split(','):
 
         # extract cell-level covariates
         # # expression PCs, cell type specific
-        # celtype_covs_file = dataset_path(
-        #     f'{celtype_covs_files_prefix}/{celltype}_expression_pcs.csv'
+        # celltype_covs_file = dataset_path(
+        #     f'{celltype_covs_files_prefix}/{celltype}_expression_pcs.csv'
         # )
-        # celtype_covs_df = pd.read_csv(celtype_covs_file)
+        # celltype_covs_df = pd.read_csv(celltype_covs_file)
 
         for chromosome in chromosomes.split(','):
             expression_h5ad_path = to_path(
