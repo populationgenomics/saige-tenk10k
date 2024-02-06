@@ -49,12 +49,9 @@ def filter_lowly_expressed_genes(expression_adata, min_pct=5) -> sc.AnnData:
 
     Output: adata filtered
     """
-    assert isinstance(expression_adata, sc.AnnData)
-    print(expression_adata.shape)
     n_all_cells = len(expression_adata.obs.index)
     min_cells = math.ceil((n_all_cells * min_pct) / 100)
     sc.pp.filter_genes(expression_adata, min_cells=min_cells)
-    print(expression_adata.shape)
     assert isinstance(expression_adata, sc.AnnData)
 
     return expression_adata
@@ -135,6 +132,7 @@ def main(
                 dataset_path(f'{anndata_files_prefix}/{celltype}_{chromosome}.h5ad')
             ).copy('here.h5ad')
             expression_adata = sc.read(expression_h5ad_path)
+            assert isinstance(expression_adata, sc.AnnData)
 
             # extract genes expressed in at least X% cells
             expression_adata = filter_lowly_expressed_genes(
@@ -149,6 +147,7 @@ def main(
             print(genes)
 
             for gene in genes:
+                print(gene)
                 # get expression
                 # make pheno cov file
                 # pheno_cov_filename = to_path(
