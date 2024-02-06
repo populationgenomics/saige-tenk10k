@@ -76,9 +76,9 @@ def get_gene_cis_info(gene_info_df, gene: str, window_size: int):
 @click.option('--celltypes')
 @click.option('--chromosomes')
 @click.option('--anndata-files-prefix', default='saige-qtl/anndata_objects_from_HPC')
-@click.option(
-    '--celltype-covs-files-prefix', default='saige-qtl/celltype_covs_from_HPC'
-)
+# @click.option(
+#     '--celltype-covs-files-prefix', default='saige-qtl/celltype_covs_from_HPC'
+# )
 @click.option('--min-pct-expr', type=int, default=5)
 @click.option('--cis-window-size', type=int, default=100000)
 # @click.option(
