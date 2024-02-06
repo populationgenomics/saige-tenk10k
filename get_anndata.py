@@ -50,9 +50,11 @@ def filter_lowly_expressed_genes(expression_adata, min_pct=5) -> sc.AnnData:
     Output: adata filtered
     """
     assert isinstance(expression_adata, sc.AnnData)
+    print(expression_adata.shape)
     n_all_cells = len(expression_adata.obs.index)
     min_cells = math.ceil((n_all_cells * min_pct) / 100)
-    expression_adata = sc.pp.filter_genes(expression_adata, min_cells=min_cells)
+    sc.pp.filter_genes(expression_adata, min_cells=min_cells)
+    print(expression_adata.shape)
     assert isinstance(expression_adata, sc.AnnData)
 
     return expression_adata
