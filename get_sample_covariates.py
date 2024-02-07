@@ -105,7 +105,7 @@ def main(
         query_vars = {'project_name': project_name}
         meta = query(GET_PARTICIPANT_META_QUERY, variables=query_vars)
         print(meta)
-        for sg in meta['project'][0]['sequencingGroups']:
+        for sg in meta['project']['sequencingGroups']:
             cpg_id = sg['id']
             age = sg['sample']['participant']['meta']['age']
             age_dict[cpg_id] = age
