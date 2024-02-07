@@ -100,10 +100,17 @@ def main(
     # sex_out_file = output_path('sex_tob_bioheart.csv')
     # combined_sex.to_csv(sex_out_file)
     # age
+    age_dict: dict = {}
     for project_name in project_names.split(','):
         query_vars = {'project_name': project_name}
         meta = query(GET_PARTICIPANT_META_QUERY, variables=query_vars)
         print(meta)
+        for sg in meta['project'][0]['sequencingGroups']:
+            cpg_id = sg['id']
+            age = sg['sample']['participant']['meta']['age']
+            age_dict[cpg_id] = age
+    age_df = pd.DataFrame(age_dict)
+    print(age_df.head())
 
 
 if __name__ == '__main__':
