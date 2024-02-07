@@ -59,12 +59,17 @@ def filter_lowly_expressed_genes(expression_adata, min_pct=5) -> sc.AnnData:
 
 def get_gene_cis_info(gene_info_df, gene: str, window_size: int):
     """Get gene cis window file"""
+    print(type(gene_info_df))
     print(gene_info_df.head())
     # select the gene from df
     gene_info_gene = gene_info_df[gene_info_df['gene_name'] == gene]
     print(gene_info_gene.head())
     # get gene chromosome
     chrom = gene_info_gene['chr']
+    print(type(chrom))
+    print(chrom)
+    chrom = str(chrom)
+    print(type(chrom))
     print(chrom)
     # get gene body position (start and end) and add window
     left_boundary = max(1, int(gene_info_gene['start']) - window_size)
