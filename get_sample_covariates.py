@@ -27,9 +27,10 @@ main files:
 'gs://cpg-bioheart-main-analysis/qc-stand-alone/somalier/990_samples_somalier.samples.tsv
 """
 
-from cpg_utils.hail_batch import output_path
+# from cpg_utils.hail_batch import output_path
 
 import click
+
 # import sys
 import pandas as pd
 
@@ -39,8 +40,13 @@ GET_PARTICIPANT_META_QUERY = gql(
     """
     query GetMeta($project_name: String! ) {
         project(name: $project_name) {
-            participants {
-                meta
+            sequencingGroups {
+                id
+                sample {
+                    participant {
+                        meta
+                    }
+                }
             }
         }
     }
@@ -60,7 +66,8 @@ GET_PARTICIPANT_META_QUERY = gql(
 def main(
     # tob_sex_file_path,
     # bioheart_sex_file_path,
-    project_names):
+    project_names,
+):
     """
     Get sex and age info for TOB and BioHEART individuals
     """
@@ -94,7 +101,7 @@ def main(
     # combined_sex.to_csv(sex_out_file)
     # age
     for project_name in project_names.split(','):
-        query_vars = {'project_name':project_name}
+        query_vars = {'project_name': project_name}
         meta = query(GET_PARTICIPANT_META_QUERY, variables=query_vars)
         print(meta)
 
