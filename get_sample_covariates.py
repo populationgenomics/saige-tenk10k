@@ -20,7 +20,8 @@ analysis-runner \
     --access-level "test" \
     --output-dir "saige-qtl/input_files/covariates/" \
     python3 get_sample_covariates.py --tob-sex-file-path 'gs://cpg-tob-wgs-test-analysis/joint-calling/v7/meta.tsv' \
-                --bioheart-sex-file-path 'gs://cpg-bioheart-test-analysis/hoptan-str/somalier/somalier.samples.tsv'
+                --bioheart-sex-file-path 'gs://cpg-bioheart-test-analysis/hoptan-str/somalier/somalier.samples.tsv' \
+                --project-names 'tob-wgs,bioheart'
 
 main files:
 'gs://cpg-tob-wgs-main-analysis/joint-calling/v7/meta.tsv'
@@ -30,8 +31,28 @@ main files:
 from cpg_utils.hail_batch import output_path
 
 import click
+
 import sys
 import pandas as pd
+
+from metamist.graphql import gql, query
+
+GET_PARTICIPANT_META_QUERY = gql(
+    """
+    query GetMeta($project_name: String! ) {
+        project(name: $project_name) {
+            sequencingGroups {
+                id
+                sample {
+                    participant {
+                        meta
+                    }
+                }
+            }
+        }
+    }
+    """
+)
 
 
 @click.option(
@@ -42,8 +63,13 @@ import pandas as pd
     '--bioheart-sex-file-path',
     help='this file should contain sample id and inferred sex info for the bioheart cohort',
 )
+@click.option('--project-names', default='tob-wgs,bioheart')
 @click.command()
-def main(tob_sex_file_path, bioheart_sex_file_path):
+def main(
+    tob_sex_file_path,
+    bioheart_sex_file_path,
+    project_names,
+):
     """
     Get sex and age info for TOB and BioHEART individuals
     """
@@ -72,9 +98,35 @@ def main(tob_sex_file_path, bioheart_sex_file_path):
     # extract sex for BioHEART
     bioheart_sex = bioheart_meta.loc[:, ["sample_id", "sex"]]
     # combine_info
-    combined_sex = pd.concat([tob_sex, bioheart_sex], axis=0)
-    sex_out_file = output_path('sex_tob_bioheart.csv')
-    combined_sex.to_csv(sex_out_file)
+    sex_df = pd.concat([tob_sex, bioheart_sex], axis=0)
+
+    # age
+    # create a list from dictionary to populate
+    age_dict_list: list(dict) = []
+    # loop over projects (tob-wgs, bioheart)
+    for project_name in project_names.split(','):
+        query_vars = {'project_name': project_name}
+        # run query above, which returns a dict
+        meta = query(GET_PARTICIPANT_META_QUERY, variables=query_vars)
+        for sg in meta['project']['sequencingGroups']:
+            cpg_id = sg['id']
+            try:
+                age = sg['sample']['participant']['meta']['age']
+            except KeyError as e:
+                print(f"Key Error: - no {e} available for {cpg_id}")
+                age = 'NA'
+            age_dict_list.append({'sample_id': cpg_id, 'age': age})
+    age_df = pd.DataFrame(age_dict_list)
+
+    # index with sample id
+    sex_df.index = sex_df['sample_id']
+    sex_df.drop(['sample_id'], axis=1, inplace=True)
+    age_df.index = age_df['sample_id']
+    age_df.drop(['sample_id'], axis=1, inplace=True)
+    # combine sex and age info
+    combined_sex_age = pd.concat([sex_df, age_df], axis=1)
+    sex_age_out_file = output_path('sex_age_tob_bioheart.csv')
+    combined_sex_age.to_csv(sex_age_out_file)
 
 
 if __name__ == '__main__':
