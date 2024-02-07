@@ -109,7 +109,7 @@ def main(
     """
     Run expression processing pipeline
     """
-    # init_batch()
+    init_batch()
     # batch = get_batch('gene expression processing pipeline')
     # extract samples we actually want to test
 
