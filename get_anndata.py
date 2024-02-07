@@ -52,7 +52,7 @@ def filter_lowly_expressed_genes(expression_adata, min_pct=5) -> sc.AnnData:
     n_all_cells = len(expression_adata.obs.index)
     min_cells = math.ceil((n_all_cells * min_pct) / 100)
     sc.pp.filter_genes(expression_adata, min_cells=min_cells)
-    assert isinstance(expression_adata, sc.AnnData)
+    assert isinstance(expression_adata, sc.AnnData), type(expression_adata)
 
     return expression_adata
 
@@ -60,7 +60,7 @@ def filter_lowly_expressed_genes(expression_adata, min_pct=5) -> sc.AnnData:
 def get_gene_cis_info(gene_info_df, gene: str, window_size: int):
     """Get gene cis window file"""
     # select the gene from df
-    gene_info_gene = gene_info_df[gene_info_df['gene'] == gene]
+    gene_info_gene = gene_info_df[gene_info_df['gene_name'] == gene]
     # get gene chromosome
     chrom = gene_info_gene['chr']
     # get gene body position (start and end) and add window
@@ -132,7 +132,7 @@ def main(
                 dataset_path(f'{anndata_files_prefix}/{celltype}_{chromosome}.h5ad')
             ).copy('here.h5ad')
             expression_adata = sc.read(expression_h5ad_path)
-            assert isinstance(expression_adata, sc.AnnData)
+            assert isinstance(expression_adata, sc.AnnData), type(expression_adata)
 
             # extract genes expressed in at least X% cells
             expression_adata = filter_lowly_expressed_genes(
