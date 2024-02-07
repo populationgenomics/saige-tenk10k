@@ -110,9 +110,10 @@ def main(
             try:
                 age = sg['sample']['participant']['meta']['age']
             except KeyError as e:
-                print(e)
+                print(f"Key Error: - {e}")
                 age = 'NA'
             age_dict[cpg_id] = age
+    print(age_dict)
     age_df = pd.DataFrame(age_dict)
     print(age_df.head())
 
