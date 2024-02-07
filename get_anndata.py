@@ -42,6 +42,12 @@ import scanpy as sc
 SCANPY_IMAGE = get_config()['images']['scanpy']
 
 
+def can_reuse(path: str):
+    if path and to_path(path).exists():
+        return True
+    return False
+
+
 def filter_lowly_expressed_genes(expression_adata, min_pct=5) -> sc.AnnData:
     """Remove genes with low expression across cells
 
@@ -147,8 +153,6 @@ def main(
 
             # for each gene
             genes = expression_adata.var['gene_name']
-            # to test if memory error is due to too many genes, reduce
-            genes = genes[0:10]
             # print(genes)
 
             for gene in genes:
@@ -163,15 +167,16 @@ def main(
                 gene_cis_filename = to_path(
                     output_path(f'cis_window_files/{gene}_{cis_window_size}bp.csv')
                 )
-                # gene_cis_job = batch.new_python_job(name='gene cis file')
-                gene_cis_df = get_gene_cis_info(
-                    gene_info_df=expression_adata.var,
-                    gene=gene,
-                    window_size=cis_window_size,
-                )
-                # write
-                with gene_cis_filename.open('w') as gcf:
-                    gene_cis_df.to_csv(gcf, index=False)
+                if not can_reuse(gene_cis_filename):
+                    # gene_cis_job = batch.new_python_job(name='gene cis file')
+                    gene_cis_df = get_gene_cis_info(
+                        gene_info_df=expression_adata.var,
+                        gene=gene,
+                        window_size=cis_window_size,
+                    )
+                    # write
+                    with gene_cis_filename.open('w') as gcf:
+                        gene_cis_df.to_csv(gcf, index=False)
 
     get_batch().run(wait=False)
 
