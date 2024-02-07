@@ -107,6 +107,7 @@ def main(
         print(meta)
         for sg in meta['project']['sequencingGroups']:
             cpg_id = sg['id']
+            print(sg)
             age = sg['sample']['participant']['meta']['age']
             age_dict[cpg_id] = age
     age_df = pd.DataFrame(age_dict)
