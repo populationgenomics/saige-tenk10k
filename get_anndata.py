@@ -65,16 +65,13 @@ def get_gene_cis_info(gene_info_df, gene: str, window_size: int):
     gene_info_gene = gene_info_df[gene_info_df['gene_name'] == gene]
     print(gene_info_gene.head())
     # get gene chromosome
-    chrom = gene_info_gene['chr']
-    print(type(chrom))
-    print(chrom)
-    chrom = str(chrom)
+    chrom = gene_info_gene['chr'][0]
     print(type(chrom))
     print(chrom)
     # get gene body position (start and end) and add window
-    left_boundary = max(1, int(gene_info_gene['start']) - window_size)
+    left_boundary = max(1, int(gene_info_gene['start'][0]) - window_size)
     right_boundary = min(
-        int(gene_info_gene['end']) + window_size,
+        int(gene_info_gene['end'][0]) + window_size,
         hl.get_reference('GRCh38').lengths[chrom],
     )
     data = {'chromosome': chrom, 'start': left_boundary, 'end': right_boundary}
