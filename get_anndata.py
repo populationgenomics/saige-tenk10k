@@ -59,10 +59,13 @@ def filter_lowly_expressed_genes(expression_adata, min_pct=5) -> sc.AnnData:
 
 def get_gene_cis_info(gene_info_df, gene: str, window_size: int):
     """Get gene cis window file"""
+    print(gene_info_df.head())
     # select the gene from df
     gene_info_gene = gene_info_df[gene_info_df['gene_name'] == gene]
+    print(gene_info_gene.head())
     # get gene chromosome
     chrom = gene_info_gene['chr']
+    print(chrom)
     # get gene body position (start and end) and add window
     left_boundary = max(1, int(gene_info_gene['start']) - window_size)
     right_boundary = min(
@@ -144,10 +147,10 @@ def main(
             genes = expression_adata.var['gene_name']
             # to test if memory error is due to too many genes, reduce
             genes = genes[0:10]
-            print(genes)
+            # print(genes)
 
             for gene in genes:
-                print(gene)
+                # print(gene)
                 # get expression
                 # make pheno cov file
                 # pheno_cov_filename = to_path(
