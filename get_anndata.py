@@ -92,9 +92,9 @@ def get_gene_cis_info(gene_info_df, gene: str, window_size: int):
 # @click.option(
 #     '--celltype-covs-files-prefix', default='saige-qtl/celltype_covs_from_HPC'
 # )
-# @click.option(
-#     '--sample-covs-files-prefix', default='saige-qtl/input_files/covariates/'
-# )
+@click.option(
+    '--sample-covs-files-prefix', default='saige-qtl/input_files/covariates/'
+)
 @click.option('--min-pct-expr', type=int, default=5)
 @click.option('--cis-window-size', type=int, default=100000)
 # @click.option(
@@ -112,7 +112,7 @@ def main(
     chromosomes: str,
     anndata_files_prefix: str,
     # celltype_covs_files_prefix: str,
-    # sample_covs_files_prefix: str,
+    sample_covs_files_prefix: str,
     min_pct_expr: int,
     cis_window_size: int,
     # max_gene_concurrency=int,
@@ -124,10 +124,10 @@ def main(
     # batch = get_batch('gene expression processing pipeline')
     # extract samples we actually want to test
 
-    # extract sample level covariates
-    # age from metamist
-    # sex from somalier
-    # sample_covs_file = dataset_path(f'{sample_covs_files_prefix}sex_tob_bioheart.csv')
+    # extract sample level covariates (age + sex)
+    # age from metamist, sex from somalier + Vlad's file for now
+    sample_covs_file = dataset_path(f'{sample_covs_files_prefix}sex_age_tob_bioheart.csv')
+    sample_covs_df = pd.read_csv(sample_covs_file)
 
     for celltype in celltypes.split(','):
 
