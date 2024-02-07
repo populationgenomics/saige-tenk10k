@@ -20,7 +20,8 @@ analysis-runner \
     --access-level "test" \
     --output-dir "saige-qtl/input_files/covariates/" \
     python3 get_sample_covariates.py --tob-sex-file-path 'gs://cpg-tob-wgs-test-analysis/joint-calling/v7/meta.tsv' \
-                --bioheart-sex-file-path 'gs://cpg-bioheart-test-analysis/hoptan-str/somalier/somalier.samples.tsv'
+                --bioheart-sex-file-path 'gs://cpg-bioheart-test-analysis/hoptan-str/somalier/somalier.samples.tsv' \
+                --project-names 'tob-wgs-test,bioheart-test'
 
 main files:
 'gs://cpg-tob-wgs-main-analysis/joint-calling/v7/meta.tsv'
@@ -98,8 +99,8 @@ def main(
     bioheart_sex = bioheart_meta.loc[:, ["sample_id", "sex"]]
     # combine_info
     sex_df = pd.concat([tob_sex, bioheart_sex], axis=0)
-    print(sex_df.shape)
-    print(sex_df.head())
+    # print(sex_df.shape)
+    # print(sex_df.head())
     # sex_out_file = output_path('sex_tob_bioheart.csv')
     # sex_df.to_csv(sex_out_file)
 
@@ -116,12 +117,12 @@ def main(
             try:
                 age = sg['sample']['participant']['meta']['age']
             except KeyError as e:
-                # print(f"Key Error: - no {e} availabe for {cpg_id}")
+                print(f"Key Error: - no {e} availabe for {cpg_id}")
                 age = 'NA'
             age_dict_list.append({'sample_id': cpg_id, 'age': age})
     age_df = pd.DataFrame(age_dict_list)
-    print(age_df.shape)
-    print(age_df.head())
+    # print(age_df.shape)
+    # print(age_df.head())
     # age_out_file = output_path('age_tob_bioheart.csv')
     # age_df.to_csv(age_out_file)
 
