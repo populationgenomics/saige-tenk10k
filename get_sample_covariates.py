@@ -99,6 +99,7 @@ def main(
     # combine_info
     sex_df = pd.concat([tob_sex, bioheart_sex], axis=0)
     print(sex_df.shape)
+    print(sex_df.head())
     # sex_out_file = output_path('sex_tob_bioheart.csv')
     # sex_df.to_csv(sex_out_file)
 
@@ -115,16 +116,22 @@ def main(
             try:
                 age = sg['sample']['participant']['meta']['age']
             except KeyError as e:
-                print(f"Key Error: - no {e} availabe foe {cpg_id}")
+                # print(f"Key Error: - no {e} availabe for {cpg_id}")
                 age = 'NA'
             age_dict_list.append({'sample_id': cpg_id, 'age': age})
     age_df = pd.DataFrame(age_dict_list)
     print(age_df.shape)
+    print(age_df.head())
     # age_out_file = output_path('age_tob_bioheart.csv')
     # age_df.to_csv(age_out_file)
 
+    # index with sample id
+    sex_df.index = sex_df['sample_id']
+    age_df.index = age_df['sample_id']
     # combine sex and age info
     combined_sex_age = pd.concat([sex_df, age_df], axis=1)
+    print(combined_sex_age.shape)
+    print(combined_sex_age.head())
     sex_age_out_file = output_path('sex_age_tob_bioheart.csv')
     combined_sex_age.to_csv(sex_age_out_file)
 
