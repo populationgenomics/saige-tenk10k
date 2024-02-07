@@ -100,7 +100,8 @@ def main(
     # sex_out_file = output_path('sex_tob_bioheart.csv')
     # combined_sex.to_csv(sex_out_file)
     # age
-    age_dict: dict = {}
+    age_dict_list: list(dict) = []
+    # age_dict: dict = {}
     for project_name in project_names.split(','):
         query_vars = {'project_name': project_name}
         meta = query(GET_PARTICIPANT_META_QUERY, variables=query_vars)
@@ -113,11 +114,13 @@ def main(
                 print(f"Key Error: - {e}")
                 print(cpg_id)
                 age = 'NA'
-            age_dict[cpg_id] = age
-    print(age_dict)
-    age_df = pd.DataFrame.from_dict(
-        data=age_dict, orient='index', columns=['CPG_ID', 'age']
-    )
+            # age_dict[cpg_id] = age
+            age_dict_list.append({'id': cpg_id, 'age': age})
+    # print(age_dict)
+    # age_df = pd.DataFrame.from_dict(
+    #     data=age_dict, orient='index', columns=['age']
+    # )
+    age_df = pd.DataFrame(age_dict_list)
     print(age_df.head())
 
 
