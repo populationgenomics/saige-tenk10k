@@ -120,9 +120,9 @@ def main(
 
     # index with sample id
     sex_df.index = sex_df['sample_id']
-    sex_df.drop(['sample_id'])
+    sex_df.drop(['sample_id'], axis=1)
     age_df.index = age_df['sample_id']
-    age_df.drop(['sample_id'])
+    age_df.drop(['sample_id'], axis=1)
     # combine sex and age info
     combined_sex_age = pd.concat([sex_df, age_df], axis=1)
     sex_age_out_file = output_path('sex_age_tob_bioheart.csv')
