@@ -30,7 +30,7 @@ from cpg_utils.hail_batch import (
     dataset_path,
     get_batch,
     get_config,
-    # init_batch,
+    init_batch,
     output_path,
 )
 import click
