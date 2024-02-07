@@ -107,8 +107,11 @@ def main(
         print(meta)
         for sg in meta['project']['sequencingGroups']:
             cpg_id = sg['id']
-            print(sg)
-            age = sg['sample']['participant']['meta']['age']
+            try:
+                age = sg['sample']['participant']['meta']['age']
+            except KeyError as e:
+                print(e)
+                age = 'NA'
             age_dict[cpg_id] = age
     age_df = pd.DataFrame(age_dict)
     print(age_df.head())
