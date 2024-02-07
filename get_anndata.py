@@ -85,16 +85,21 @@ def get_gene_cis_info(gene_info_df, gene: str, window_size: int):
     return pd.DataFrame(data, index=[gene])
 
 
+def make_pheno_cov(gene, expression_adata, sample_covs_df, celltype_covs_df):
+    """Combine expression and covariates into a single file"""
+    cell_ind_df = expression_adata.obs['Individual', 'Cell']
+    expr_df = expression_adata.X[gene]
+    return pd.concat(cell_ind_df, expr_df, sample_covs_df, celltype_covs_df)
+
+
 @click.command()
 @click.option('--celltypes')
 @click.option('--chromosomes')
 @click.option('--anndata-files-prefix', default='saige-qtl/anndata_objects_from_HPC')
-# @click.option(
-#     '--celltype-covs-files-prefix', default='saige-qtl/celltype_covs_from_HPC'
-# )
 @click.option(
-    '--sample-covs-files-prefix', default='saige-qtl/input_files/covariates/'
+    '--celltype-covs-files-prefix', default='saige-qtl/celltype_covs_from_HPC'
 )
+@click.option('--sample-covs-files-prefix', default='saige-qtl/input_files/covariates/')
 @click.option('--min-pct-expr', type=int, default=5)
 @click.option('--cis-window-size', type=int, default=100000)
 # @click.option(
@@ -111,7 +116,7 @@ def main(
     celltypes: str,
     chromosomes: str,
     anndata_files_prefix: str,
-    # celltype_covs_files_prefix: str,
+    celltype_covs_files_prefix: str,
     sample_covs_files_prefix: str,
     min_pct_expr: int,
     cis_window_size: int,
@@ -126,17 +131,19 @@ def main(
 
     # extract sample level covariates (age + sex)
     # age from metamist, sex from somalier + Vlad's file for now
-    sample_covs_file = dataset_path(f'{sample_covs_files_prefix}sex_age_tob_bioheart.csv')
+    sample_covs_file = dataset_path(
+        f'{sample_covs_files_prefix}sex_age_tob_bioheart.csv'
+    )
     sample_covs_df = pd.read_csv(sample_covs_file)
 
     for celltype in celltypes.split(','):
 
         # extract cell-level covariates
-        # # expression PCs, cell type specific
-        # celltype_covs_file = dataset_path(
-        #     f'{celltype_covs_files_prefix}/{celltype}_expression_pcs.csv'
-        # )
-        # celltype_covs_df = pd.read_csv(celltype_covs_file)
+        # expression PCs, cell type specific
+        celltype_covs_file = dataset_path(
+            f'{celltype_covs_files_prefix}/{celltype}_expression_pcs.csv'
+        )
+        celltype_covs_df = pd.read_csv(celltype_covs_file)
 
         for chromosome in chromosomes.split(','):
             expression_h5ad_path = to_path(
@@ -159,9 +166,19 @@ def main(
                 # print(gene)
                 # get expression
                 # make pheno cov file
-                # pheno_cov_filename = to_path(
-                #     output_path(f'expression_files/{gene}_pheno_cov.csv')
-                # )
+                pheno_cov_filename = to_path(
+                    output_path(f'expression_files/{gene}_pheno_cov.csv')
+                )
+                if not can_reuse(pheno_cov_filename):
+                    pheno_cov_df = make_pheno_cov(
+                        gene=gene,
+                        expression_adata=expression_adata,
+                        sample_covs_df=sample_covs_df,
+                        celltype_covs_df=celltype_covs_df,
+                    )
+                    # write
+                    with pheno_cov_filename.open('w') as pcf:
+                        pheno_cov_df.to_csv(pcf, index=False)
 
                 # make cis window file
                 gene_cis_filename = to_path(
@@ -176,7 +193,7 @@ def main(
                     )
                     # write
                     with gene_cis_filename.open('w') as gcf:
-                        gene_cis_df.to_csv(gcf, index=False)
+                        gene_cis_df.to_csv(gcf, index=False, header=False)
 
     get_batch().run(wait=False)
 
