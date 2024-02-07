@@ -37,7 +37,7 @@ from metamist.graphql import gql, query
 
 GET_PARTICIPANT_META_QUERY = gql(
     """
-    query GetMeta(project_name: String! ) {
+    query GetMeta($project_name: String! ) {
         project(name: $project_name) {
             participants {
                 meta
