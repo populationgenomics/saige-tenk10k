@@ -115,7 +115,9 @@ def main(
                 age = 'NA'
             age_dict[cpg_id] = age
     print(age_dict)
-    age_df = pd.DataFrame(age_dict, columns=['CPG_ID','age'])
+    age_df = pd.DataFrame.from_dict(
+        data=age_dict, orient='index', columns=['CPG_ID', 'age']
+    )
     print(age_df.head())
 
 
