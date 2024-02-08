@@ -30,7 +30,8 @@ import click
 import glob
 
 import hailtop.batch as hb
-import pandas as pd
+
+# import pandas as pd
 from typing import List
 
 from cpg_utils.config import get_config
@@ -341,7 +342,7 @@ def main(
 
             # this is really messy, there must be a better way
             # and im not even sure glob will work on gcp
-            files = glob.glob(pheno_cov_files_path_chrom, f'*_{celltype}.tsv')
+            files = glob.glob(f'{pheno_cov_files_path_chrom}/*_{celltype}.tsv')
             genes = [
                 f.replace(pheno_cov_files_path_chrom, '').replace(
                     f'_{celltype}.tsv', ''
