@@ -204,7 +204,7 @@ def main(
                     output_path(f'expression_files/{gene}_pheno_cov.csv')
                 )
                 if not pheno_cov_filename.exists():
-                    pheno_cov_job = get_batch().new_python_job(name='pheno cov file')
+                    pheno_cov_job = get_batch().new_python_job(name=f'pheno cov file: {gene}')
                     pheno_cov_job.call(
                         make_pheno_cov,
                         gene,
