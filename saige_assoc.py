@@ -27,7 +27,7 @@ analysis-runner \
 """
 
 import click
-import os
+import glob
 
 import hailtop.batch as hb
 import pandas as pd
@@ -312,7 +312,6 @@ def main(
     vcf_file_path: str,
     vre_plink_path: str,
     # other
-    gene_info_tsv: str,
     sample_id: str,
     covs: str,
     sample_covs: str,
@@ -321,8 +320,6 @@ def main(
     """
     Run SAIGE-QTL pipeline for all cell types
     """
-
-    gene_info_df = pd.read_csv(gene_info_tsv, sep='\t')
 
     batch = get_batch('SAIGE-QTL pipeline')
     jobs: List[hb.job.Job] = []
@@ -337,23 +334,28 @@ def main(
 
     for chromosome in chromosomes.split(','):
 
-        genes = gene_info_df[gene_info_df['chrom'] == chromosome]['gene']
+        cis_window_files_path_chrom = f'{cis_window_files_path}/{chromosome}'
+        pheno_cov_files_path_chrom = f'{pheno_cov_files_path}/{chromosome}'
 
         for celltype in celltypes.split(','):
+
+            # this is really messy, there must be a better way
+            # and im not even sure glob will work on gcp
+            files = glob.glob(pheno_cov_files_path_chrom, f'*_{celltype}.tsv')
+            genes = [
+                f.replace(pheno_cov_files_path_chrom, '').replace(
+                    f'_{celltype}.tsv', ''
+                )
+                for f in files
+            ]
 
             # extract relevant gene-related files
             for gene in genes:
                 pheno_cov_path = dataset_path(
-                    os.path.join(
-                        pheno_cov_files_path,
-                        f'{gene}_{celltype}.tsv',
-                    )
+                    f'{pheno_cov_files_path_chrom}/{gene}_{celltype}.tsv'
                 )
                 cis_window_path = dataset_path(
-                    os.path.join(
-                        cis_window_files_path,
-                        f'{gene}.tsv',
-                    )
+                    f'{cis_window_files_path_chrom}/{gene}.tsv'
                 )
 
                 # todo - check if these outputs already exist, if so don't make a new job
