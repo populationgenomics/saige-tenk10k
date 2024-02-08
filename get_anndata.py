@@ -214,6 +214,7 @@ def main(
                         expression_adata,
                         sample_covs_df,
                         celltype_covs_df,
+                        str(pheno_cov_filename),
                     )
                     manage_concurrency(pheno_cov_job)
 
