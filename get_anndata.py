@@ -25,21 +25,25 @@ analysis-runner \
 
 """
 
-from cpg_utils import to_path
-from cpg_utils.hail_batch import (
-    dataset_path,
-    get_batch,
-    get_config,
-    init_batch,
-    output_path,
-)
+# from cpg_utils import to_path
+# from cpg_utils.hail_batch import (
+#     dataset_path,
+#     get_batch,
+#     get_config,
+#     init_batch,
+#     output_path,
+# )
 import click
 import math
 import hail as hl
 import pandas as pd
 import scanpy as sc
 
-SCANPY_IMAGE = get_config()['images']['scanpy']
+from cpg_utils import to_path, Path
+from cpg_utils.config import get_config
+from cpg_utils.hail_batch import dataset_path, get_batch, output_path
+
+# SCANPY_IMAGE = get_config()['images']['scanpy']
 
 
 def can_reuse(path: str):
@@ -49,11 +53,15 @@ def can_reuse(path: str):
 
 
 def filter_lowly_expressed_genes(expression_adata, min_pct=5) -> sc.AnnData:
-    """Remove genes with low expression across cells
+    """
+    Remove genes with low expression across cells
 
-    Input: adata with all genes
+    Args:
+        expression_adata (sc.AnnData): adata with all genes
+        min_pct (int): min percentage to retain
 
-    Output: adata filtered
+    Returns:
+        filtered AnnData object
     """
     n_all_cells = len(expression_adata.obs.index)
     min_cells = math.ceil((n_all_cells * min_pct) / 100)
@@ -63,13 +71,24 @@ def filter_lowly_expressed_genes(expression_adata, min_pct=5) -> sc.AnnData:
     return expression_adata
 
 
-def get_gene_cis_info(gene_info_df, gene: str, window_size: int):
-    """Get gene cis window file"""
-    print(type(gene_info_df))
-    print(gene_info_df.head())
+def get_gene_cis_info(
+        gene_info_df: pd.DataFrame,
+        gene: str,
+        window_size: int,
+        out_path: str,
+        chrom_len: int,
+    ):
+    """
+    Get gene cis window file
+    Args:
+        gene_info_df (pd.DataFrame): gene chrom, start, end
+        gene (str): gene name
+        window_size (int): bp to consider in window, up and downstream of gene
+        out_path (str): path we're writing to
+        chrom_len ():
+    """
     # select the gene from df
     gene_info_gene = gene_info_df[gene_info_df['gene_name'] == gene]
-    print(gene_info_gene.head())
     # get gene chromosome
     chrom = gene_info_gene['chr'][0]
     print(type(chrom))
