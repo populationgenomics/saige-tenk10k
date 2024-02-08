@@ -204,7 +204,9 @@ def main(
                     output_path(f'expression_files/{gene}_pheno_cov.csv')
                 )
                 if not pheno_cov_filename.exists():
-                    pheno_cov_job = get_batch().new_python_job(name=f'pheno cov file: {gene}')
+                    pheno_cov_job = get_batch().new_python_job(
+                        name=f'pheno cov file: {gene}, {celltype}'
+                    )
                     pheno_cov_job.call(
                         make_pheno_cov,
                         gene,
@@ -219,7 +221,9 @@ def main(
                     output_path(f'cis_window_files/{gene}_{cis_window_size}bp.csv')
                 )
                 if not gene_cis_filename.exists():
-                    gene_cis_job = get_batch().new_python_job(name=f'gene cis file: {gene}')
+                    gene_cis_job = get_batch().new_python_job(
+                        name=f'gene cis file: {gene}'
+                    )
                     gene_cis_job.call(
                         get_gene_cis_info,
                         expression_adata.var,
