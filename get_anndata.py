@@ -31,15 +31,9 @@ import hailtop.batch.job as hb_job
 import pandas as pd
 import scanpy as sc
 
-from cpg_utils import to_path, Path
+from cpg_utils import to_path
 from cpg_utils.config import get_config
 from cpg_utils.hail_batch import dataset_path, get_batch, output_path
-
-
-def can_reuse(path: Path):
-    if path and path.exists():
-        return True
-    return False
 
 
 def filter_lowly_expressed_genes(expression_adata, min_pct=5) -> sc.AnnData:
@@ -173,7 +167,7 @@ def main(
                 gene_cis_filename = to_path(
                     output_path(f'cis_window_files/{gene}_{cis_window_size}bp.csv')
                 )
-                if not can_reuse(gene_cis_filename):
+                if not gene_cis_filename.exists():
                     gene_cis_job = get_batch().new_python_job(name='gene cis file')
                     gene_cis_job.call(
                         get_gene_cis_info,
