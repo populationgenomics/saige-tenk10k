@@ -325,7 +325,7 @@ def main(
     gene_info_df = pd.read_csv(gene_info_tsv, sep='\t')
 
     batch = get_batch('SAIGE-QTL pipeline')
-    jobs = List[hb.batch.job.Job] = []
+    jobs = List[hb.job.Job] = []
 
     def manage_concurrency_for_job(job: hb.batch.job.Job):
         """
