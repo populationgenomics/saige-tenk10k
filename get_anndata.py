@@ -36,7 +36,7 @@ from typing import List
 
 from cpg_utils import to_path
 from cpg_utils.config import get_config
-from cpg_utils.hail_batch import dataset_path, get_batch, output_path
+from cpg_utils.hail_batch import dataset_path, get_batch, init_batch, output_path
 
 
 def filter_lowly_expressed_genes(expression_adata, min_pct=5) -> sc.AnnData:
@@ -160,8 +160,9 @@ def main(
             new_job.depends_on(all_jobs[-concurrent_job_cap])
         all_jobs.append(new_job)
 
-    hl.init()
-    hl.default_reference(hl.get_reference('GRCh38'))
+    # hl.init()
+    # hl.default_reference(hl.get_reference('GRCh38'))
+    init_batch()
 
     # extract samples we actually want to test
 
