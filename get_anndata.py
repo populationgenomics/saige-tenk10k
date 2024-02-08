@@ -25,14 +25,7 @@ analysis-runner \
 
 """
 
-# from cpg_utils import to_path
-# from cpg_utils.hail_batch import (
-#     dataset_path,
-#     get_batch,
-#     get_config,
-#     init_batch,
-#     output_path,
-# )
+
 import click
 import math
 import hail as hl
@@ -43,8 +36,6 @@ import scanpy as sc
 from cpg_utils import to_path
 from cpg_utils.config import get_config
 from cpg_utils.hail_batch import dataset_path, get_batch, output_path
-
-# SCANPY_IMAGE = get_config()['images']['scanpy']
 
 
 def filter_lowly_expressed_genes(expression_adata, min_pct=5) -> sc.AnnData:
@@ -153,7 +144,8 @@ def main(
     """
     # set this up with the default python image
     get_batch(
-        default_python_image=get_config()['images']['scanpy'], name='do all the things'
+        default_python_image=get_config()['images']['scanpy'],
+        name='prepare all gene files',
     )
     all_jobs = []
 
@@ -172,7 +164,7 @@ def main(
 
     # extract samples we actually want to test
 
-    # extract sample level covariates (age + sex)
+    # sample level covariates (age + sex)
     # age from metamist, sex from somalier + Vlad's file for now
     sample_covs_file = dataset_path(
         f'{sample_covs_files_prefix}sex_age_tob_bioheart.csv'
@@ -205,8 +197,7 @@ def main(
 
             # start up some jobs for all each gene
             for gene in expression_adata.var['gene_name']:
-                # print(gene)
-                # get expression
+
                 # make pheno cov file
                 pheno_cov_filename = to_path(
                     output_path(f'expression_files/{gene}_pheno_cov.csv')
