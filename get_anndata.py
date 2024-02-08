@@ -32,6 +32,7 @@ import hail as hl
 import hailtop.batch.job as hb_job
 import pandas as pd
 import scanpy as sc
+from typing import List
 
 from cpg_utils import to_path
 from cpg_utils.config import get_config
@@ -147,7 +148,7 @@ def main(
         default_python_image=get_config()['images']['scanpy'],
         name='prepare all gene files',
     )
-    all_jobs = []
+    all_jobs: List[hb_job.Job] = []
 
     def manage_concurrency(new_job: hb_job.Job):
         """
