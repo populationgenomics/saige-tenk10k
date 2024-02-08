@@ -34,7 +34,7 @@ import pandas as pd
 from typing import List
 
 from cpg_utils.config import get_config
-from cpg_utils.hail_batch import dataset_path, get_batch, output_path, image_path
+from cpg_utils.hail_batch import dataset_path, get_batch, image_path, output_path
 
 
 # Fit null model (step 1)
