@@ -31,6 +31,7 @@ import os
 
 import hailtop.batch as hb
 import pandas as pd
+from typing import List
 
 from cpg_utils.config import get_config
 from cpg_utils.hail_batch import dataset_path, get_batch, output_path, image_path
@@ -324,7 +325,7 @@ def main(
     gene_info_df = pd.read_csv(gene_info_tsv, sep='\t')
 
     batch = get_batch('SAIGE-QTL pipeline')
-    jobs = list[hb.batch.job.Job] = []
+    jobs = List[hb.batch.job.Job] = []
 
     def manage_concurrency_for_job(job: hb.batch.job.Job):
         """
