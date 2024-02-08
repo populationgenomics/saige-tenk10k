@@ -219,7 +219,7 @@ def main(
                     output_path(f'cis_window_files/{gene}_{cis_window_size}bp.csv')
                 )
                 if not gene_cis_filename.exists():
-                    gene_cis_job = get_batch().new_python_job(name='gene cis file')
+                    gene_cis_job = get_batch().new_python_job(name=f'gene cis file: {gene}')
                     gene_cis_job.call(
                         get_gene_cis_info,
                         expression_adata.var,
