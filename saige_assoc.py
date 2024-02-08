@@ -5,9 +5,12 @@
 Hail Batch workflow to perform association tests using SAIGE-QTL
 
 - given all input files already generated
-    - pheno_cov filename, genotypes with annotations
+    - pheno + cov file (from get_anndata.py)
+    - cis window file (from get_anndata.py)
+    - genotype file (from get_genotype_vcf.py)
+    - VRE genotypes (from get_genotype_vcf.py)
 - builds saige commands (just add to str)
-- run saige commands (execute Rscript from command line)
+- run SAIGE-QTL (execute Rscript from command line)
 - aggregate & summarise results (not yet)
 
 
@@ -18,7 +21,7 @@ analysis-runner \
     --description "SAIGE-QTL association pipeline" \
     --dataset "bioheart" \
     --access-level "test" \
-    --output-dir "saige-qtl/repo-example-inputs/output/" \
+    --output-dir "saige-qtl/output_files/" \
      python3 saige_assoc.py
 
 """
@@ -31,8 +34,6 @@ import pandas as pd
 
 from cpg_utils.config import get_config
 from cpg_utils.hail_batch import dataset_path, get_batch, output_path, image_path
-
-__author__ = 'annacuomo'
 
 
 # Fit null model (step 1)
@@ -362,10 +363,10 @@ def main(
                     covs_list=covs,
                     sample_covs_list=sample_covs,
                     sample_id=sample_id,
-                    null_output_path=output_path(f'output_files/{gene}'),
-                    sv_output_path=output_path(f'output_files/{gene}_cis'),
+                    null_output_path=output_path(f'output_files/{celltype}_{gene}'),
+                    sv_output_path=output_path(f'output_files/{celltype}_{gene}_cis'),
                     gene_pvals_output_path=output_path(
-                        f'output_files/{gene}_cis_gene_pval'
+                        f'output_files/{celltype}_{gene}_cis_gene_pval'
                     ),
                     plink_path=vre_plink_path,
                     gene_name=gene,
