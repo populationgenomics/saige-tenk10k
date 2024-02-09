@@ -105,15 +105,17 @@ def make_pheno_cov(
     """
     cell_ind_df = expression_adata.obs.loc[:, ['cell', 'individual']]
     gene_adata = expression_adata[:, expression_adata.var['gene_name'] == gene]
-    print(gene_adata.shape)
-    expr_mat = gene_adata.X.todense()
-    print(expr_mat.shape)
-    expr_df = pd.DataFrame(data=expr_mat, index=gene_adata.obs.index, columns=[gene])
-    # print(cell_ind_df.shape)
-    # print(expr_df.shape)
+    expr_df = pd.DataFrame(
+        data=gene_adata.X.todense(), index=gene_adata.obs.index, columns=[gene]
+    )
+    print(cell_ind_df.shape)
+    print(cell_ind_df.head())
+    print(expr_df.shape)
     print(expr_df.head())
     print(sample_covs_df.shape)
+    print(sample_covs_df.head())
     print(celltype_covs_df.shape)
+    print(celltype_covs_df.head())
     pheno_cov_df = pd.concat(
         [cell_ind_df, expr_df, sample_covs_df, celltype_covs_df], axis=1
     )
@@ -211,7 +213,9 @@ def main(
 
                 # make pheno cov file
                 pheno_cov_filename = to_path(
-                    output_path(f'pheno_cov_files/{chromosome}/{gene}_pheno_cov.csv')
+                    output_path(
+                        f'pheno_cov_files/{celltype}/{chromosome}/{gene}_{celltype}_pheno_cov.csv'
+                    )
                 )
                 if not pheno_cov_filename.exists():
                     pheno_cov_job = get_batch().new_python_job(
