@@ -111,6 +111,8 @@ def make_pheno_cov(
     print(cell_ind_df.head())
     print(sample_covs_df.shape)
     print(sample_covs_df.head())
+    print(sample_covs_cells_df.shape)
+    print(sample_covs_cells_df.head())
     gene_adata = expression_adata[:, expression_adata.var['gene_name'] == gene]
     expr_df = pd.DataFrame(
         data=gene_adata.X.todense(), index=gene_adata.obs.index, columns=[gene]
