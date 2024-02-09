@@ -104,11 +104,14 @@ def make_pheno_cov(
         out_path (str): path we're writing to
     """
     cell_ind_df = expression_adata.obs.loc[:, ['cell', 'individual']]
-    gene_adata = expression_adata[:, expression_adata.index == gene]
+    gene_adata = expression_adata[:, expression_adata.var.index == gene]
     expr_df = pd.DataFrame(
         data=gene_adata.X.todense, index=gene_adata.obs.index, columns=[gene]
     )
-    print(expr_df.head())
+    print(cell_ind_df.shape)
+    print(expr_df.shape)
+    print(sample_covs_df.shape)
+    print(celltype_covs_df.shape)
     pheno_cov_df = pd.concat(cell_ind_df, expr_df, sample_covs_df, celltype_covs_df)
     with to_path(out_path).open('w') as pcf:
         pheno_cov_df.to_csv(pcf, index=False)
