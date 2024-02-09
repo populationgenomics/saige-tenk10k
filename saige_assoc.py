@@ -27,7 +27,8 @@ analysis-runner \
 """
 
 import click
-import glob
+
+# import glob
 
 import hailtop.batch as hb
 
@@ -36,6 +37,7 @@ from typing import List
 
 # this may be part of production pipelines
 from cpg_workflows.utils import can_reuse
+from cpg_utils import to_path
 from cpg_utils.config import get_config
 from cpg_utils.hail_batch import dataset_path, get_batch, image_path, output_path
 
@@ -388,7 +390,7 @@ def main(
 
             # this is really messy, there must be a better way
             # and im not even sure glob will work on gcp
-            files = glob.glob(f'{pheno_cov_files_path_chrom}/*_{celltype}.tsv')
+            files = to_path(pheno_cov_files_path_chrom).glob(f'*_{celltype}.tsv')
             genes = [
                 f.replace(pheno_cov_files_path_chrom, '').replace(
                     f'_{celltype}.tsv', ''
