@@ -104,22 +104,27 @@ def make_pheno_cov(
         out_path (str): path we're writing to
     """
     cell_ind_df = expression_adata.obs.loc[:, ['cell', 'individual']]
+    sample_covs_cells_df = cell_ind_df.merge(
+        sample_covs_df, on='individual', how='left'
+    )
+    print(cell_ind_df.shape)
+    print(cell_ind_df.head())
+    print(sample_covs_df.shape)
+    print(sample_covs_df.head())
     gene_adata = expression_adata[:, expression_adata.var['gene_name'] == gene]
     expr_df = pd.DataFrame(
         data=gene_adata.X.todense(), index=gene_adata.obs.index, columns=[gene]
     )
-    print(cell_ind_df.shape)
-    print(cell_ind_df.head())
     print(expr_df.shape)
     print(expr_df.head())
-    print(sample_covs_df.shape)
-    print(sample_covs_df.head())
     print(celltype_covs_df.shape)
     print(celltype_covs_df.head())
-    pheno_cov_df = pd.concat(
-        [cell_ind_df, expr_df, sample_covs_df, celltype_covs_df], axis=1
-    )
+    # pheno_cov_df = pd.concat(
+    #     [cell_ind_df, expr_df, sample_covs_df, celltype_covs_df], axis=1
+    # )
+    pheno_cov_df = pd.concat([sample_covs_cells_df, expr_df, celltype_covs_df], axis=1)
     print(pheno_cov_df.shape)
+    print(pheno_cov_df.head())
     with to_path(out_path).open('w') as pcf:
         pheno_cov_df.to_csv(pcf, index=False)
 
@@ -209,7 +214,7 @@ def main(
             )
 
             # start up some jobs for all each gene
-            for gene in expression_adata.var['gene_name'][0:15]:
+            for gene in expression_adata.var['gene_name'][0:18]:
                 print(gene)
 
                 # make pheno cov file
