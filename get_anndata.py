@@ -104,7 +104,7 @@ def make_pheno_cov(
         out_path (str): path we're writing to
     """
     cell_ind_df = expression_adata.obs.loc[:, ['cell', 'individual']]
-    gene_adata = expression_adata[:, expression_adata.var.index == gene]
+    gene_adata = expression_adata[:, expression_adata.var['gene_name'] == gene]
     print(gene_adata.shape)
     expr_mat = gene_adata.X.todense()
     print(expr_mat.shape)
