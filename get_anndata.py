@@ -171,11 +171,7 @@ def main(
             new_job.depends_on(all_jobs[-concurrent_job_cap])
         all_jobs.append(new_job)
 
-    # hl.init()
-    # hl.default_reference(hl.get_reference('GRCh38'))
     init_batch()
-
-    # extract samples we actually want to test
 
     # sample level covariates (age + sex)
     # age from metamist, sex from somalier + Vlad's file for now
@@ -209,7 +205,7 @@ def main(
             )
 
             # start up some jobs for all each gene
-            for gene in expression_adata.var['gene_name'][0:10]:
+            for gene in expression_adata.var['gene_name'][10:12]:
 
                 # make pheno cov file
                 pheno_cov_filename = to_path(
