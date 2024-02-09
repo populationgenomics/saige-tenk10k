@@ -36,7 +36,7 @@ import hailtop.batch as hb
 from typing import List
 
 # this may be part of production pipelines
-from cpg_workflows.utils import can_reuse
+# from cpg_workflows.utils import can_reuse
 from cpg_utils import to_path
 from cpg_utils.config import get_config
 from cpg_utils.hail_batch import dataset_path, get_batch, image_path, output_path
@@ -211,18 +211,69 @@ def apply_job_settings(job, job_name: str):
             job.cpu(cpu)
 
 
-def run_fit_null_job(
-    b: hb.Batch,
+# def run_fit_null_job(
+#     b: hb.Batch,
+#     null_output_path: str,
+# ):
+#     if can_reuse(null_output_path):
+#         return None, b.read_input_group(
+#             **{
+#                 'rda': '{null_output_path}.rda',
+#                 'varianceRatio': '{null_output_path}.varianceRatio.txt',
+#             }
+#         )
+#     gene_job = b.new_job(name="saige-qtl")
+#     gene_job.image(image_path('saige-qtl'))
+#     apply_job_settings(gene_job, 'fit_null')
+
+#     # create output group for first command in gene job
+#     gene_job.declare_resource_group(
+#         output={
+#             'rda': '{root}.rda',
+#             'varianceRatio': '{root}.varianceRatio.txt',
+#         }
+#     )
+
+#     gene_job.command(
+#         build_fit_null_command(
+#             pheno_file=pheno_cov_filename,
+#             cov_col_list=covs_list,
+#             sample_cov_col_list=sample_covs_list,
+#             sample_id_pheno=sample_id,
+#             output_prefix=gene_job.output,
+#             plink_path=plink_path,
+#             pheno_col=gene_name,
+#         )
+#     )
+
+#     # copy the output file to persistent storage
+#     if null_output_path.startswith('gs://'):
+#         b.write_output(gene_job.output, null_output_path)
+#     return gene_job, gene_job.output
+
+
+def association_pipeline(
+    pheno_cov_filename: str,
+    vcf_file_path: str,
+    covs_list: str,
+    sample_covs_list: str,
+    sample_id: str,
     null_output_path: str,
+    sv_output_path: str,
+    gene_pvals_output_path: str,
+    plink_path: str,
+    gene_name: str,
+    chrom: str,
+    cis_window_file: str,
+    vcf_field: str = 'GT',
 ):
-    if can_reuse(null_output_path):
-        return None, b.read_input_group(
-            **{
-                'rda': '{null_output_path}.rda',
-                'varianceRatio': '{null_output_path}.varianceRatio.txt',
-            }
-        )
-    gene_job = b.new_job(name="saige-qtl")
+    """
+    Run association for one gene
+    """
+
+    batch = get_batch()
+
+    gene_job = batch.new_job(name="saige-qtl")
     gene_job.image(image_path('saige-qtl'))
     apply_job_settings(gene_job, 'fit_null')
 
@@ -248,58 +299,7 @@ def run_fit_null_job(
 
     # copy the output file to persistent storage
     if null_output_path.startswith('gs://'):
-        b.write_output(gene_job.output, null_output_path)
-    return gene_job, gene_job.output
-
-
-def association_pipeline(
-    pheno_cov_filename: str,
-    vcf_file_path: str,
-    covs_list: str,
-    sample_covs_list: str,
-    sample_id: str,
-    null_output_path: str,
-    sv_output_path: str,
-    gene_pvals_output_path: str,
-    plink_path: str,
-    gene_name: str,
-    chrom: str,
-    cis_window_file: str,
-    vcf_field: str = 'GT',
-):
-    """
-    Run association for one gene
-    """
-
-    batch = get_batch()
-
-    gene_job = batch.new_job(name="saige-qtl")
-    # gene_job.image(image_path('saige-qtl'))
-    # apply_job_settings(gene_job, 'fit_null')
-
-    # # create output group for first command in gene job
-    # gene_job.declare_resource_group(
-    #     output={
-    #         'rda': '{root}.rda',
-    #         'varianceRatio': '{root}.varianceRatio.txt',
-    #     }
-    # )
-
-    # gene_job.command(
-    #     build_fit_null_command(
-    #         pheno_file=pheno_cov_filename,
-    #         cov_col_list=covs_list,
-    #         sample_cov_col_list=sample_covs_list,
-    #         sample_id_pheno=sample_id,
-    #         output_prefix=gene_job.output,
-    #         plink_path=plink_path,
-    #         pheno_col=gene_name,
-    #     )
-    # )
-
-    # # copy the output file to persistent storage
-    # if null_output_path.startswith('gs://'):
-    #     batch.write_output(gene_job.output, null_output_path)
+        batch.write_output(gene_job.output, null_output_path)
     gene_job, null_output_path = run_fit_null_job()
     if gene_job:
         apply_job_settings(gene_job, 'fit_null')
