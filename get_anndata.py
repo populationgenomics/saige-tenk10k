@@ -182,6 +182,7 @@ def main(
         f'{sample_covs_files_prefix}/sex_age_tob_bioheart.csv'
     )
     sample_covs_df = pd.read_csv(sample_covs_file)
+    sample_covs_df['individual'] = sample_covs_df['sample_id']
 
     for celltype in celltypes.split(','):
 
@@ -190,7 +191,7 @@ def main(
         celltype_covs_file = dataset_path(
             f'{celltype_covs_files_prefix}/{celltype}_expression_pcs.csv'
         )
-        celltype_covs_df = pd.read_csv(celltype_covs_file)
+        celltype_covs_df = pd.read_csv(celltype_covs_file, index_col=0)
 
         for chromosome in chromosomes.split(','):
             chrom_len = hl.get_reference('GRCh38').lengths[chromosome]
