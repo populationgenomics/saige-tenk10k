@@ -106,15 +106,17 @@ def make_pheno_cov(
     cell_ind_df = expression_adata.obs.loc[:, ['cell', 'individual']]
     gene_adata = expression_adata[:, expression_adata.var.index == gene]
     expr_df = pd.DataFrame(
-        data=gene_adata.X.todense, index=gene_adata.obs.index, columns=[gene]
+        data=gene_adata.X.todense(), index=gene_adata.obs.index, columns=[gene]
     )
-    print(cell_ind_df.shape)
-    print(expr_df.shape)
+    # print(cell_ind_df.shape)
+    # print(expr_df.shape)
+    print(expr_df.head())
     print(sample_covs_df.shape)
     print(celltype_covs_df.shape)
     pheno_cov_df = pd.concat(
         [cell_ind_df, expr_df, sample_covs_df, celltype_covs_df], axis=1
     )
+    print(pheno_cov_df.shape)
     with to_path(out_path).open('w') as pcf:
         pheno_cov_df.to_csv(pcf, index=False)
 
