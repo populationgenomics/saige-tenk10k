@@ -209,7 +209,7 @@ def main(
             )
 
             # start up some jobs for all each gene
-            for gene in expression_adata.var['gene_name'][10:12]:
+            for gene in expression_adata.var['gene_name'][0:15]:
                 print(gene)
 
                 # make pheno cov file
