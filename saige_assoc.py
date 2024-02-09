@@ -34,6 +34,7 @@ import hailtop.batch as hb
 # import pandas as pd
 from typing import List
 
+from cpg_workflows.utils import can_reuse
 from cpg_utils.config import get_config
 from cpg_utils.hail_batch import dataset_path, get_batch, image_path, output_path
 
@@ -205,6 +206,20 @@ def apply_job_settings(job, job_name: str):
         # if cpu setting in config - apply it
         if cpu := job_settings.get('cpu'):
             job.cpu(cpu)
+
+
+def run_fit_null_job(
+    b: hb.Batch,
+    null_output_path: str,
+):
+    if can_reuse(null_output_path):
+        return None, b.read_input_group(
+            **{
+                'rda': '{null_output_path}.rda',
+                'varianceRatio': '{null_output_path}.varianceRatio.txt',
+            }
+        )
+    return j.output
 
 
 def association_pipeline(
