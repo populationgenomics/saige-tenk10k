@@ -384,14 +384,13 @@ def main(
     for chromosome in chromosomes.split(','):
 
         cis_window_files_path_chrom = f'{cis_window_files_path}/{chromosome}'
-        pheno_cov_files_path_ct_chrom = (
-            f'{pheno_cov_files_path}/{celltype}/{chromosome}'
-        )
 
         for celltype in celltypes.split(','):
 
-            # this is really messy, there must be a better way
-            # and im not even sure glob will work on gcp
+            # extract gene list based on genes for which we have pheno cov files
+            pheno_cov_files_path_ct_chrom = (
+                f'{pheno_cov_files_path}/{celltype}/{chromosome}'
+            )
             files = to_path(pheno_cov_files_path_ct_chrom).glob(f'*_{celltype}.tsv')
             genes = [
                 f.replace(pheno_cov_files_path_ct_chrom, '').replace(
