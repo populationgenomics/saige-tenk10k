@@ -105,6 +105,7 @@ def make_pheno_cov(
     """
     cell_ind_df = expression_adata.obs.loc[:, ['cell', 'individual']]
     gene_adata = expression_adata[:, expression_adata.var.index == gene]
+    print(gene_adata.shape)
     expr_mat = gene_adata.X.todense()
     print(expr_mat.shape)
     expr_df = pd.DataFrame(data=expr_mat, index=gene_adata.obs.index, columns=[gene])
