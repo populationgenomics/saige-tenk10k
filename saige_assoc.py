@@ -300,9 +300,9 @@ def association_pipeline(
     # copy the output file to persistent storage
     if null_output_path.startswith('gs://'):
         batch.write_output(gene_job.output, null_output_path)
-    gene_job, null_output_path = run_fit_null_job()
-    if gene_job:
-        apply_job_settings(gene_job, 'fit_null')
+    # gene_job, null_output_path = run_fit_null_job()
+    # if gene_job:
+    #     apply_job_settings(gene_job, 'fit_null')
 
     # step 2 (cis eQTL single variant test)
     vcf_group = batch.read_input_group(vcf=vcf_file_path, index=f'{vcf_file_path}.csi')
@@ -384,15 +384,17 @@ def main(
     for chromosome in chromosomes.split(','):
 
         cis_window_files_path_chrom = f'{cis_window_files_path}/{chromosome}'
-        pheno_cov_files_path_chrom = f'{pheno_cov_files_path}/{chromosome}'
+        pheno_cov_files_path_ct_chrom = (
+            f'{pheno_cov_files_path}/{celltype}/{chromosome}'
+        )
 
         for celltype in celltypes.split(','):
 
             # this is really messy, there must be a better way
             # and im not even sure glob will work on gcp
-            files = to_path(pheno_cov_files_path_chrom).glob(f'*_{celltype}.tsv')
+            files = to_path(pheno_cov_files_path_ct_chrom).glob(f'*_{celltype}.tsv')
             genes = [
-                f.replace(pheno_cov_files_path_chrom, '').replace(
+                f.replace(pheno_cov_files_path_ct_chrom, '').replace(
                     f'_{celltype}.tsv', ''
                 )
                 for f in files
