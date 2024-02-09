@@ -103,8 +103,10 @@ def make_pheno_cov(
         celltype_covs_df (pd.DataFrame): celltype specific covs
         out_path (str): path we're writing to
     """
+    print(expression_adata.obs.head())
     cell_ind_df = expression_adata.obs['individual', 'cell']
     expr_df = expression_adata.X[gene]
+    print(expr_df.head())
     pheno_cov_df = pd.concat(cell_ind_df, expr_df, sample_covs_df, celltype_covs_df)
     with to_path(out_path).open('w') as pcf:
         pheno_cov_df.to_csv(pcf, index=False)
