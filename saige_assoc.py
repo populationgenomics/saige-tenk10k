@@ -22,7 +22,7 @@ analysis-runner \
     --dataset "bioheart" \
     --access-level "test" \
     --output-dir "saige-qtl/output_files/" \
-     python3 saige_assoc.py
+     python3 saige_assoc.py --celltypes CD4_Naive --chromosomes chr1
 
 """
 
@@ -347,7 +347,7 @@ def association_pipeline(
 @click.option(
     '--max-parallel-jobs',
     type=int,
-    default=50,
+    default=100,
     help=('To avoid exceeding Google Cloud quotas, set this concurrency as a limit.'),
 )
 @click.option('--cis-window-size', type=int, default=100000)
@@ -364,7 +364,7 @@ def main(
     sample_id: str,
     covs: str,
     sample_covs: str,
-    max_parallel_jobs: int = 50,
+    max_parallel_jobs: int = 100,
 ):
     """
     Run SAIGE-QTL pipeline for all cell types
@@ -403,7 +403,7 @@ def main(
             # extract relevant gene-related files
             for gene in genes:
                 pheno_cov_path = dataset_path(
-                    f'{pheno_cov_files_path_chrom}/{gene}_{celltype}.tsv'
+                    f'{pheno_cov_files_path_ct_chrom}/{gene}_{celltype}.tsv'
                 )
                 cis_window_path = dataset_path(
                     f'{cis_window_files_path_chrom}/{gene}.tsv'
