@@ -401,6 +401,7 @@ def main(
                 f'{pheno_cov_files_path}/{celltype}/{chromosome}'
             )
             files = to_path(pheno_cov_files_path_ct_chrom).glob(f'*_{celltype}.tsv')
+            print(files)
             genes = [
                 f.replace(pheno_cov_files_path_ct_chrom, '').replace(
                     f'_{celltype}.tsv', ''
@@ -410,6 +411,7 @@ def main(
 
             # extract relevant gene-related files
             for gene in genes[0:2]:
+                print(gene)
                 pheno_cov_path = dataset_path(
                     f'{pheno_cov_files_path_ct_chrom}/{gene}_{celltype}.tsv'
                 )
