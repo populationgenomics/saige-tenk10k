@@ -117,6 +117,7 @@ def make_pheno_cov(
     expr_df = pd.DataFrame(
         data=gene_adata.X.todense(), index=gene_adata.obs.index, columns=[gene]
     )
+    expr_df['cell'] = expr_df.index
     print(expr_df.shape)
     print(expr_df.head())
     print(celltype_covs_df.shape)
@@ -216,7 +217,7 @@ def main(
             )
 
             # start up some jobs for all each gene
-            for gene in expression_adata.var['gene_name'][0:20]:
+            for gene in expression_adata.var['gene_name'][0:22]:
                 print(gene)
 
                 # make pheno cov file
