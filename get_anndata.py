@@ -108,6 +108,7 @@ def make_pheno_cov(
         sample_covs_df, on='individual', how='left'
     )
     sample_covs_cells_df.index = sample_covs_cells_df['cell']
+    sample_covs_cells_df.drop(['cell'])
     print(cell_ind_df.shape)
     print(cell_ind_df.head())
     print(sample_covs_df.shape)
@@ -118,10 +119,10 @@ def make_pheno_cov(
     expr_df = pd.DataFrame(
         data=gene_adata.X.todense(), index=gene_adata.obs.index, columns=[gene]
     )
-    expr_df['cell'] = expr_df.index
+    # expr_df['cell'] = expr_df.index
     print(expr_df.shape)
     print(expr_df.head())
-    celltype_covs_df['cell'] = celltype_covs_df.index
+    # celltype_covs_df['cell'] = celltype_covs_df.index
     print(celltype_covs_df.shape)
     print(celltype_covs_df.head())
     # pheno_cov_df = pd.concat(
