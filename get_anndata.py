@@ -93,6 +93,8 @@ def make_pheno_cov(
     sample_covs_df: pd.DataFrame,
     celltype_covs_df: pd.DataFrame,
     out_path: str,
+    fill_in_sex: bool = True,
+    fill_in_age: bool = True,
 ):
     """
     Combine expression and covariates into a single file
@@ -103,23 +105,24 @@ def make_pheno_cov(
         celltype_covs_df (pd.DataFrame): celltype specific covs
         out_path (str): path we're writing to
     """
+    # determine avg age to fill in later
+    if fill_in_age:
+        mean_age = sample_covs_df['age'].mean()
     cell_ind_df = expression_adata.obs.loc[:, ['cell', 'individual']]
     sample_covs_cells_df = cell_ind_df.merge(
         sample_covs_df, on='individual', how='left'
     )
-    # determine avg age to fill in later
-    mean_age = sample_covs_df['age'].mean()
     sample_covs_cells_df.index = sample_covs_cells_df['cell']
+    # fill missing values for sex and age
+    if fill_in_sex:
+        sample_covs_cells_df['sex'] = sample_covs_cells_df['sex'].fillna(0)
+    if fill_in_age:
+        sample_covs_cells_df['age'] = sample_covs_cells_df['age'].fillna(mean_age)
     gene_adata = expression_adata[:, expression_adata.var['gene_name'] == gene]
     expr_df = pd.DataFrame(
         data=gene_adata.X.todense(), index=gene_adata.obs.index, columns=[gene]
     )
     pheno_cov_df = pd.concat([sample_covs_cells_df, expr_df, celltype_covs_df], axis=1)
-    # fill missing values for sex and age
-    sample_covs_df['sex'] = sample_covs_df['sex'].fillna(0)
-    sample_covs_df['age'] = sample_covs_df['age'].fillna(mean_age)
-    print(pheno_cov_df.shape)
-    print(pheno_cov_df.head())
     with to_path(out_path).open('w') as pcf:
         pheno_cov_df.to_csv(pcf, index=False)
 
@@ -209,7 +212,7 @@ def main(
             )
 
             # start up some jobs for all each gene
-            for gene in expression_adata.var['gene_name'][0:32]:
+            for gene in expression_adata.var['gene_name'][0:33]:
                 print(gene)
 
                 # make pheno cov file
