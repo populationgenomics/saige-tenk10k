@@ -108,25 +108,10 @@ def make_pheno_cov(
         sample_covs_df, on='individual', how='left'
     )
     sample_covs_cells_df.index = sample_covs_cells_df['cell']
-    print(cell_ind_df.shape)
-    print(cell_ind_df.head())
-    print(sample_covs_df.shape)
-    print(sample_covs_df.head())
-    print(sample_covs_cells_df.shape)
-    print(sample_covs_cells_df.head())
     gene_adata = expression_adata[:, expression_adata.var['gene_name'] == gene]
     expr_df = pd.DataFrame(
         data=gene_adata.X.todense(), index=gene_adata.obs.index, columns=[gene]
     )
-    # expr_df['cell'] = expr_df.index
-    print(expr_df.shape)
-    print(expr_df.head())
-    # celltype_covs_df['cell'] = celltype_covs_df.index
-    print(celltype_covs_df.shape)
-    print(celltype_covs_df.head())
-    # pheno_cov_df = pd.concat(
-    #     [cell_ind_df, expr_df, sample_covs_df, celltype_covs_df], axis=1
-    # )
     pheno_cov_df = pd.concat([sample_covs_cells_df, expr_df, celltype_covs_df], axis=1)
     print(pheno_cov_df.shape)
     print(pheno_cov_df.head())
@@ -193,6 +178,10 @@ def main(
     )
     sample_covs_df = pd.read_csv(sample_covs_file)
     sample_covs_df['individual'] = sample_covs_df['sample_id']
+    # fill missing values for sex and age
+    sample_covs_df['sex'] = sample_covs_df['sex'].fillna(0)
+    mean_age = sample_covs_df['age'].mean()
+    sample_covs_df['age'] = sample_covs_df['age'].fillna(mean_age)
 
     for celltype in celltypes.split(','):
 
