@@ -120,6 +120,7 @@ def make_pheno_cov(
     expr_df['cell'] = expr_df.index
     print(expr_df.shape)
     print(expr_df.head())
+    celltype_covs_df['cell'] = celltype_covs_df.index
     print(celltype_covs_df.shape)
     print(celltype_covs_df.head())
     # pheno_cov_df = pd.concat(
@@ -217,7 +218,7 @@ def main(
             )
 
             # start up some jobs for all each gene
-            for gene in expression_adata.var['gene_name'][0:22]:
+            for gene in expression_adata.var['gene_name'][0:25]:
                 print(gene)
 
                 # make pheno cov file
