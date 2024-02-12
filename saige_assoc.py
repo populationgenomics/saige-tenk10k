@@ -400,7 +400,7 @@ def main(
             ]
 
             # extract relevant gene-related files
-            for gene in genes:
+            for gene in genes[0:2]:
                 pheno_cov_path = dataset_path(
                     f'{pheno_cov_files_path_ct_chrom}/{gene}_{celltype}.tsv'
                 )
