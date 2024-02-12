@@ -107,6 +107,7 @@ def make_pheno_cov(
     sample_covs_cells_df = cell_ind_df.merge(
         sample_covs_df, on='individual', how='left'
     )
+    sample_covs_cells_df.index = sample_covs_cells_df['cell']
     print(cell_ind_df.shape)
     print(cell_ind_df.head())
     print(sample_covs_df.shape)
@@ -218,7 +219,7 @@ def main(
             )
 
             # start up some jobs for all each gene
-            for gene in expression_adata.var['gene_name'][0:25]:
+            for gene in expression_adata.var['gene_name'][0:28]:
                 print(gene)
 
                 # make pheno cov file
