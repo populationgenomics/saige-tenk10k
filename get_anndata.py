@@ -108,7 +108,6 @@ def make_pheno_cov(
         sample_covs_df, on='individual', how='left'
     )
     sample_covs_cells_df.index = sample_covs_cells_df['cell']
-    sample_covs_cells_df.drop(['cell'])
     print(cell_ind_df.shape)
     print(cell_ind_df.head())
     print(sample_covs_df.shape)
