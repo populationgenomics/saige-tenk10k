@@ -22,7 +22,7 @@ analysis-runner \
     --dataset "bioheart" \
     --access-level "test" \
     --output-dir "saige-qtl/output_files/" \
-     python3 saige_assoc.py --celltypes CD4_Naive --chromosomes chr1
+     python3 saige_assoc.py --celltypes CD4_Naive --chromosomes chr1 --vds-version 1-0
 
 """
 
@@ -338,28 +338,32 @@ def association_pipeline(
 @click.command()
 @click.option('--celltypes', help='add as one string, separated by comma')
 @click.option('--chromosomes', help='add as one string, separated by comma')
+@click.option('--vds-version', help=' e.g., 1-0 ')
 @click.option(
     '--pheno-cov-files-path', default=output_path('input_files/pheno_cov_files/')
 )
 @click.option(
     '--cis-window-files-path', default=output_path('input_files/cis_window_files/')
 )
+@click.option('--genotypes-files-prefix', default=output_path('input_files/genotypes/'))
+@click.option('--sample-id', default='individual')
+@click.option('--covs', default='sex,age,harmony_PC1')
+@click.option('--sample-covs', default='sex,age')
 @click.option(
     '--max-parallel-jobs',
     type=int,
     default=100,
     help=('To avoid exceeding Google Cloud quotas, set this concurrency as a limit.'),
 )
-@click.option('--cis-window-size', type=int, default=100000)
 def main(
     celltypes: str,
     chromosomes: str,
+    vds_version: str,
     # outputs from gene_expression processing
     pheno_cov_files_path: str,
     cis_window_files_path: str,
     # outputs from genotype processing
-    vcf_file_path: str,
-    vre_plink_path: str,
+    genotype_files_prefix: str,
     # other
     sample_id: str,
     covs: str,
@@ -381,8 +385,13 @@ def main(
             job.depends_on(jobs[-max_parallel_jobs])
         jobs.append(job)
 
+    vre_plink_path = f'{genotype_files_prefix}/{vds_version}/vre_plink_2000_variants'
+
     for chromosome in chromosomes.split(','):
 
+        # genotype vcf files are one per chromosome
+        vcf_file_path = f'{genotype_files_prefix}/{vds_version}/{chromosome}_common_variants.vcf.bgz'
+        # cis window files are split by gene but organised by chromosome also
         cis_window_files_path_chrom = f'{cis_window_files_path}/{chromosome}'
 
         for celltype in celltypes.split(','):
