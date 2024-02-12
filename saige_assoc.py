@@ -345,7 +345,7 @@ def association_pipeline(
 @click.option(
     '--cis-window-files-path', default=output_path('input_files/cis_window_files/')
 )
-@click.option('--genotypes-files-prefix', default=output_path('input_files/genotypes/'))
+@click.option('--genotype-files-prefix', default=output_path('input_files/genotypes/'))
 @click.option('--sample-id', default='individual')
 @click.option('--covs', default='sex,age,harmony_PC1')
 @click.option('--sample-covs', default='sex,age')
