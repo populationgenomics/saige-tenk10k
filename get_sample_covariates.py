@@ -125,7 +125,7 @@ def main(
     age_df.drop(['sample_id'], axis=1, inplace=True)
     # combine sex and age info
     combined_sex_age = pd.concat([sex_df, age_df], axis=1)
-    sex_age_out_file = output_path('sex_age_tob_bioheart.csv')
+    sex_age_out_file = output_path('sex_age_tob_bioheart.csv', 'analysis')
     combined_sex_age.to_csv(sex_age_out_file)
 
 
