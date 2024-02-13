@@ -46,10 +46,11 @@ def can_reuse(path: str):
 # inputs:
 @click.option('--vds-version', help=' e.g., 1-0 ')
 @click.option('--chromosomes', help=' e.g., chr22,chrX ')
+@click.option('--cv-maf-threshold', default=0.01)
 @click.option('--vre-mac-threshold', default=20)
 @click.option('--vre-n-markers', default=2000)
 @click.command()
-def main(vds_version, chromosomes, vre_mac_threshold, vre_n_markers):
+def main(vds_version, chromosomes, cv_maf_threshold, vre_mac_threshold, vre_n_markers):
     """
     Write genotypes as VCF
     """
@@ -85,7 +86,7 @@ def main(vds_version, chromosomes, vre_mac_threshold, vre_n_markers):
             mt = hl.variant_qc(mt)
 
             # common variants only
-            cv_mt = mt.filter_rows(mt.variant_qc.AF[1] > 0.05)
+            cv_mt = mt.filter_rows(mt.variant_qc.AF[1] > cv_maf_threshold)
 
             # remove fields not in the VCF
             cv_mt = cv_mt.drop('gvcf_info')
