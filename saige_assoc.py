@@ -156,7 +156,8 @@ def build_run_single_variant_test_command(
     vcf_group = get_batch().read_input_group(vcf=vcf_file, index=f'{vcf_file}.csi')
     second_job = get_batch().new_job(name="saige-qtl part 2")
 
-    second_job.command(f"""
+    second_job.command(
+        f"""
         Rscript /usr/local/bin/step2_tests_qtl.R \
         --vcfFile={vcf_group.vcf} \
         --vcfFileIndex={vcf_group.index} \
@@ -171,8 +172,9 @@ def build_run_single_variant_test_command(
         --varianceRatioFile={variance_ratio_path} \
         --rangestoIncludeFile={cis_window_file} \
         --markers_per_chunk={n_markers}
-    """)
-    
+    """
+    )
+
     # write the output
     get_batch().write_output(second_job.output, output_path)
 
@@ -230,13 +232,13 @@ def apply_job_settings(job: hb.batch.job.Job, job_name: str):
 
 
 def run_fit_null_job(
-        null_output_path: str,
-        pheno_file:str,
-        cov_col_list:str,
-        sample_cov_col_list:str,
-        sample_id_pheno: str,
-        plink_path: str,
-        pheno_col: str
+    null_output_path: str,
+    pheno_file: str,
+    cov_col_list: str,
+    sample_cov_col_list: str,
+    sample_id_pheno: str,
+    plink_path: str,
+    pheno_col: str,
 ):
     """
     Check if the output file already exists;
@@ -361,7 +363,12 @@ def main(
             logging.info(f'globbing {pheno_cov_files_path_ct_chrom}')
 
             # do a glob, cast to a list, cast all elements to a string
-            files = list(map(str, to_path(pheno_cov_files_path_ct_chrom).glob(f'*_{celltype}.tsv')))
+            files = list(
+                map(
+                    str,
+                    to_path(pheno_cov_files_path_ct_chrom).glob(f'*_{celltype}.tsv'),
+                )
+            )
             logging.info(f'I found these files: {", ".join(files)}')
 
             genes = [
@@ -391,8 +398,8 @@ def main(
                     sample_cov_col_list=sample_covs,
                     sample_id_pheno=sample_id,
                     plink_path=vre_plink_path,
-                    pheno_col=gene
-                 )
+                    pheno_col=gene,
+                )
                 if null_job:
                     manage_concurrency_for_job(null_job)
 
@@ -412,7 +419,9 @@ def main(
                 job3, output = build_obtain_gene_level_pvals_command(
                     gene_name=gene,
                     saige_sv_output_file=step2_output,
-                    saige_gene_pval_output_file=output_path(f'output_files/{celltype}_{gene}_cis_gene_pval'),
+                    saige_gene_pval_output_file=output_path(
+                        f'output_files/{celltype}_{gene}_cis_gene_pval'
+                    ),
                 )
 
                 if job3:
