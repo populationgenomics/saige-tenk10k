@@ -28,7 +28,7 @@ analysis-runner \
 
 import click
 
-# import glob
+import logging
 
 import hailtop.batch as hb
 
@@ -400,14 +400,20 @@ def main(
             pheno_cov_files_path_ct_chrom = (
                 f'{pheno_cov_files_path}/{celltype}/{chromosome}'
             )
-            files = to_path(pheno_cov_files_path_ct_chrom).glob(f'*_{celltype}.tsv')
-            print(files)
+            logging.info(f'globbing {pheno_cov_files_path_ct_chrom}')
+
+            # do a glob, cast to a list, cast all elements to a string
+            files = list(map(str, to_path(pheno_cov_files_path_ct_chrom).glob(f'*_{celltype}.tsv')))
+            logging.info(f'I found these files: {", ".join(files)}')
+
             genes = [
                 f.replace(pheno_cov_files_path_ct_chrom, '').replace(
                     f'_{celltype}.tsv', ''
                 )
                 for f in files
             ]
+
+            logging.info(f'I found these genes: {", ".join(genes)}')
 
             # extract relevant gene-related files
             for gene in genes[0:2]:
@@ -443,4 +449,5 @@ def main(
 
 
 if __name__ == '__main__':
+    logging.basicConfig(level=logging.INFO)
     main()  # pylint: disable=no-value-for-parameter
