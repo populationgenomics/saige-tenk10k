@@ -32,11 +32,8 @@ import logging
 
 import hailtop.batch as hb
 
-# import pandas as pd
 from typing import List
 
-# this may be part of production pipelines
-# from cpg_workflows.utils import can_reuse
 from cpg_utils import to_path
 from cpg_utils.config import get_config
 from cpg_utils.hail_batch import dataset_path, get_batch, image_path, output_path
@@ -109,21 +106,24 @@ def build_fit_null_command(
 
 # Run single variant association (step 2)
 def build_run_single_variant_test_command(
+    output_path: str,
     vcf_file: str,
-    vcf_file_index: str,
-    vcf_field: str,
-    saige_output_file: str,
     chrom: str,
     cis_window_file: str,
     gmmat_model_path: str,
     variance_ratio_path: str,
+    vcf_field: str = 'GT',
     min_maf: float = 0,
     min_mac: int = 5,
     loco_bool: str = 'FALSE',
     n_markers: int = 10000,
     spa_cutoff: int = 10000,
 ):
-    """Build SAIGE command for running single variant test
+    """
+    n.b. I have not edited this method docstring
+            ... but I have definitely edited the method
+
+    Build SAIGE command for running single variant test
     This will run a single variant test using a score test
 
     Input:
@@ -149,12 +149,19 @@ def build_run_single_variant_test_command(
     Output:
     Rscript command (str) ready to run
     """
-    return f"""
+
+    if to_path(output_path).exists():
+        return None, get_batch().read_input(output_path)
+
+    vcf_group = get_batch().read_input_group(vcf=vcf_file, index=f'{vcf_file}.csi')
+    second_job = get_batch().new_job(name="saige-qtl part 2")
+
+    second_job.command(f"""
         Rscript /usr/local/bin/step2_tests_qtl.R \
-        --vcfFile={vcf_file} \
-        --vcfFileIndex={vcf_file_index} \
+        --vcfFile={vcf_group.vcf} \
+        --vcfFileIndex={vcf_group.index} \
         --vcfField={vcf_field} \
-        --SAIGEOutputFile={saige_output_file} \
+        --SAIGEOutputFile={second_job.output} \
         --chrom={chrom} \
         --minMAF={min_maf} \
         --minMAC={min_mac} \
@@ -164,7 +171,12 @@ def build_run_single_variant_test_command(
         --varianceRatioFile={variance_ratio_path} \
         --rangestoIncludeFile={cis_window_file} \
         --markers_per_chunk={n_markers}
-    """
+    """)
+    
+    # write the output
+    get_batch().write_output(second_job.output, output_path)
+
+    return second_job, second_job.output
 
 
 # Combine single variant associations at gene level (step 3)
@@ -173,24 +185,30 @@ def build_obtain_gene_level_pvals_command(
     saige_sv_output_file: str,
     saige_gene_pval_output_file: str,
 ):
-    """Build SAIGE command to obtain gene-level pvals
+    """
+    Build SAIGE command to obtain gene-level pvals
     Only for single-variant tests (Step3)
     combines single-variant p-values to obtain one gene
     level p-value
 
     Input:
-    - ouput of previous step, association file (txt)
+    - output of previous step, association file (txt)
     - gene we need to aggregate results for (across SNPs)
     - path for output file
     """
+    if to_path(saige_gene_pval_output_file).exists():
+        return None, get_batch().read_input(saige_gene_pval_output_file)
+
+    saige_job = get_batch().new_job(name="saige-qtl part 3")
     saige_command_step3 = 'Rscript /usr/local/bin/step3_gene_pvalue_qtl.R'
     saige_command_step3 += f' --assocFile={saige_sv_output_file}'
     saige_command_step3 += f' --geneName={gene_name}'
-    saige_command_step3 += f' --genePval_outputFile={saige_gene_pval_output_file}'
-    return saige_command_step3
+    saige_command_step3 += f' --genePval_outputFile={saige_job.output}'
+    saige_job.command(saige_command_step3)
+    get_batch().write_output(saige_job.output, saige_gene_pval_output_file)
 
 
-def apply_job_settings(job, job_name: str):
+def apply_job_settings(job: hb.batch.job.Job, job_name: str):
     """
     Apply settings to a job based on the name
 
@@ -211,69 +229,40 @@ def apply_job_settings(job, job_name: str):
             job.cpu(cpu)
 
 
-# def run_fit_null_job(
-#     b: hb.Batch,
-#     null_output_path: str,
-# ):
-#     if can_reuse(null_output_path):
-#         return None, b.read_input_group(
-#             **{
-#                 'rda': '{null_output_path}.rda',
-#                 'varianceRatio': '{null_output_path}.varianceRatio.txt',
-#             }
-#         )
-#     gene_job = b.new_job(name="saige-qtl")
-#     gene_job.image(image_path('saige-qtl'))
-#     apply_job_settings(gene_job, 'fit_null')
-
-#     # create output group for first command in gene job
-#     gene_job.declare_resource_group(
-#         output={
-#             'rda': '{root}.rda',
-#             'varianceRatio': '{root}.varianceRatio.txt',
-#         }
-#     )
-
-#     gene_job.command(
-#         build_fit_null_command(
-#             pheno_file=pheno_cov_filename,
-#             cov_col_list=covs_list,
-#             sample_cov_col_list=sample_covs_list,
-#             sample_id_pheno=sample_id,
-#             output_prefix=gene_job.output,
-#             plink_path=plink_path,
-#             pheno_col=gene_name,
-#         )
-#     )
-
-#     # copy the output file to persistent storage
-#     if null_output_path.startswith('gs://'):
-#         b.write_output(gene_job.output, null_output_path)
-#     return gene_job, gene_job.output
-
-
-def association_pipeline(
-    pheno_cov_filename: str,
-    vcf_file_path: str,
-    covs_list: str,
-    sample_covs_list: str,
-    sample_id: str,
-    null_output_path: str,
-    sv_output_path: str,
-    gene_pvals_output_path: str,
-    plink_path: str,
-    gene_name: str,
-    chrom: str,
-    cis_window_file: str,
-    vcf_field: str = 'GT',
+def run_fit_null_job(
+        null_output_path: str,
+        pheno_file:str,
+        cov_col_list:str,
+        sample_cov_col_list:str,
+        sample_id_pheno: str,
+        plink_path: str,
+        pheno_col: str
 ):
     """
-    Run association for one gene
+    Check if the output file already exists;
+        if it does, read into a resource group
+        if it doesn't, run the command and pass the resource group back
+    Args:
+        null_output_path ():
+        pheno_file ():
+        cov_col_list ():
+        sample_cov_col_list ():
+        sample_id_pheno ():
+        plink_path ():
+        pheno_col ():
+
+    Returns:
+        Tuple: (Job | None, ResourceGroup)
+
     """
-
-    batch = get_batch()
-
-    gene_job = batch.new_job(name="saige-qtl")
+    if to_path(null_output_path).exists():
+        return None, get_batch().read_input_group(
+            **{
+                'rda': '{null_output_path}.rda',
+                'varianceRatio': '{null_output_path}.varianceRatio.txt',
+            }
+        )
+    gene_job = get_batch().new_job(name="saige-qtl")
     gene_job.image(image_path('saige-qtl'))
     apply_job_settings(gene_job, 'fit_null')
 
@@ -287,52 +276,21 @@ def association_pipeline(
 
     gene_job.command(
         build_fit_null_command(
-            pheno_file=pheno_cov_filename,
-            cov_col_list=covs_list,
-            sample_cov_col_list=sample_covs_list,
-            sample_id_pheno=sample_id,
+            pheno_file=pheno_file,
+            cov_col_list=cov_col_list,
+            sample_cov_col_list=sample_cov_col_list,
+            sample_id_pheno=sample_id_pheno,
             output_prefix=gene_job.output,
             plink_path=plink_path,
-            pheno_col=gene_name,
+            pheno_col=pheno_col,
         )
     )
 
     # copy the output file to persistent storage
-    if null_output_path.startswith('gs://'):
-        batch.write_output(gene_job.output, null_output_path)
-    # gene_job, null_output_path = run_fit_null_job()
-    # if gene_job:
-    #     apply_job_settings(gene_job, 'fit_null')
+    if null_output_path:
+        get_batch().write_output(gene_job.output, null_output_path)
 
-    # step 2 (cis eQTL single variant test)
-    vcf_group = batch.read_input_group(vcf=vcf_file_path, index=f'{vcf_file_path}.csi')
-    gene_job.command(
-        build_run_single_variant_test_command(
-            vcf_file=vcf_group.vcf,
-            vcf_file_index=vcf_group.index,
-            vcf_field=vcf_field,
-            saige_output_file=gene_job.output_single_variant,
-            chrom=chrom,
-            cis_window_file=cis_window_file,
-            gmmat_model_path=gene_job.output['rda'],
-            variance_ratio_path=gene_job.output['varianceRatio'],
-        )
-    )
-
-    if sv_output_path.startswith('gs://'):
-        batch.write_output(gene_job.output_single_variant, sv_output_path)
-
-    # step3 (gene-level pvalues)
-    gene_job.command(
-        build_obtain_gene_level_pvals_command(
-            gene_name=gene_name,
-            saige_sv_output_file=gene_job.output_single_variant,
-            saige_gene_pval_output_file=gene_job.get_gene_pvals,
-        )
-    )
-
-    if gene_pvals_output_path.startswith('gs://'):
-        batch.write_output(gene_job.get_gene_pvals, gene_pvals_output_path)
+    return gene_job, gene_job.output
 
 
 @click.command()
@@ -425,25 +383,40 @@ def main(
                     f'{cis_window_files_path_chrom}/{gene}.tsv'
                 )
 
-                # todo - check if these outputs already exist, if so don't make a new job
-
-                job = association_pipeline(
-                    pheno_cov_filename=pheno_cov_path,
-                    vcf_file_path=vcf_file_path,
-                    covs_list=covs,
-                    sample_covs_list=sample_covs,
-                    sample_id=sample_id,
-                    null_output_path=output_path(f'output_files/{celltype}_{gene}'),
-                    sv_output_path=output_path(f'output_files/{celltype}_{gene}_cis'),
-                    gene_pvals_output_path=output_path(
-                        f'output_files/{celltype}_{gene}_cis_gene_pval'
-                    ),
+                # check if these outputs already exist, if so don't make a new job
+                null_job, null_output = run_fit_null_job(
+                    output_path(f'output_files/{celltype}_{gene}'),
+                    pheno_file=pheno_cov_path,
+                    cov_col_list=covs,
+                    sample_cov_col_list=sample_covs,
+                    sample_id_pheno=sample_id,
                     plink_path=vre_plink_path,
-                    gene_name=gene,
+                    pheno_col=gene
+                 )
+                if null_job:
+                    manage_concurrency_for_job(null_job)
+
+                # step 2 (cis eQTL single variant test)
+                step2_job, step2_output = build_run_single_variant_test_command(
+                    output_path=output_path(f'output_files/{celltype}_{gene}_cis'),
+                    vcf_file=vcf_file_path,
                     chrom=chromosome,
                     cis_window_file=cis_window_path,
+                    gmmat_model_path=null_output['rda'],
+                    variance_ratio_path=null_output['varianceRatio'],
                 )
-                manage_concurrency_for_job(job)
+                if step2_job:
+                    manage_concurrency_for_job(step2_job)
+
+                # now do step 3... probably don't need to read the output in, as the pipeline concludes here
+                job3, output = build_obtain_gene_level_pvals_command(
+                    gene_name=gene,
+                    saige_sv_output_file=step2_output,
+                    saige_gene_pval_output_file=output_path(f'output_files/{celltype}_{gene}_cis_gene_pval'),
+                )
+
+                if job3:
+                    manage_concurrency_for_job(job3)
     # set jobs running
     batch.run(wait=False)
 
