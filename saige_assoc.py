@@ -379,7 +379,7 @@ def main(
 
             genes = [
                 f.replace(pheno_cov_files_path_ct_chrom, '').replace(
-                    f'_{celltype}.csv', ''
+                    f'_{celltype}_pheno_cov.csv', ''
                 )
                 for f in files
             ]
