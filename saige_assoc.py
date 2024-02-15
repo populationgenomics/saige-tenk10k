@@ -371,7 +371,8 @@ def main(
 
             # do a glob, then pull out all file names as Strings
             files = [
-                file.name for file in to_path(pheno_cov_files_path_ct_chrom).glob(
+                file.name
+                for file in to_path(pheno_cov_files_path_ct_chrom).glob(
                     f'*_{celltype}_pheno_cov.csv'
                 )
             ]
