@@ -362,7 +362,7 @@ def main(
 
             # extract gene list based on genes for which we have pheno cov files
             pheno_cov_files_path_ct_chrom = (
-                f'{pheno_cov_files_path}/{celltype}/{chromosome}'
+                f'{pheno_cov_files_path}/{celltype}/{chromosome}/'
             )
             logging.info(f'globbing {pheno_cov_files_path_ct_chrom}')
 
