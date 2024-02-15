@@ -208,6 +208,7 @@ def build_obtain_gene_level_pvals_command(
     saige_command_step3 += f' --genePval_outputFile={saige_job.output}'
     saige_job.command(saige_command_step3)
     get_batch().write_output(saige_job.output, saige_gene_pval_output_file)
+    return saige_job, saige_job.output
 
 
 def apply_job_settings(job: hb.batch.job.Job, job_name: str):
