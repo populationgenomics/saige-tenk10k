@@ -83,7 +83,9 @@ def build_fit_null_command(
     Rscript command (str) ready to run (bash)
     """
     pheno_file = get_batch().read_input(pheno_file)
-    plink_path = get_batch().read_input(plink_path)
+    plink_prefix = get_batch().read_input_group(
+        bim=f'{plink_path}.bim', bed=f'{plink_path}.bed', fam=f'{plink_path}.fam'
+    )
     return f"""
         Rscript /usr/local/bin/step1_fitNULLGLMM_qtl.R \
         --useSparseGRMtoFitNULL={use_sparse_grm_null} \
@@ -101,7 +103,7 @@ def build_fit_null_command(
         --isCovariateTransform={is_cov_transform} \
         --skipModelFitting={skip_model_fitting} \
         --tol={tol} \
-        --plinkFile={plink_path} \
+        --plinkFile={plink_prefix} \
         --IsOverwriteVarianceRatioFile={is_overwrite_vre_file}
     """
 
