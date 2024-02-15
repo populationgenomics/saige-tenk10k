@@ -301,14 +301,14 @@ def run_fit_null_job(
 @click.option('--vds-version', help=' e.g., 1-0 ')
 @click.option(
     '--pheno-cov-files-path',
-    default=dataset_path('saige-qtl/input_files/pheno_cov_files/'),
+    default=dataset_path('saige-qtl/input_files/pheno_cov_files'),
 )
 @click.option(
     '--cis-window-files-path',
-    default=dataset_path('saige-qtl/input_files/cis_window_files/'),
+    default=dataset_path('saige-qtl/input_files/cis_window_files'),
 )
 @click.option(
-    '--genotype-files-prefix', default=dataset_path('saige-qtl/input_files/genotypes/')
+    '--genotype-files-prefix', default=dataset_path('saige-qtl/input_files/genotypes')
 )
 @click.option('--sample-id', default='individual')
 @click.option('--covs', default='sex,age,harmony_PC1')
