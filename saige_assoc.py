@@ -370,14 +370,14 @@ def main(
             files = list(
                 map(
                     str,
-                    to_path(pheno_cov_files_path_ct_chrom).glob(f'*_{celltype}.tsv'),
+                    to_path(pheno_cov_files_path_ct_chrom).glob(f'*_{celltype}.csv'),
                 )
             )
             logging.info(f'I found these files: {", ".join(files)}')
 
             genes = [
                 f.replace(pheno_cov_files_path_ct_chrom, '').replace(
-                    f'_{celltype}.tsv', ''
+                    f'_{celltype}.csv', ''
                 )
                 for f in files
             ]
@@ -388,7 +388,7 @@ def main(
             for gene in genes[0:2]:
                 print(gene)
                 pheno_cov_path = dataset_path(
-                    f'{pheno_cov_files_path_ct_chrom}/{gene}_{celltype}.tsv'
+                    f'{pheno_cov_files_path_ct_chrom}/{gene}_{celltype}.csv'
                 )
                 cis_window_path = dataset_path(
                     f'{cis_window_files_path_chrom}/{gene}.tsv'
