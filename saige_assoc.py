@@ -393,9 +393,9 @@ def main(
             for gene in genes[0:2]:
                 print(gene)
                 pheno_cov_path = (
-                    f'{pheno_cov_files_path_ct_chrom}/{gene}_{celltype}.csv'
+                    f'{pheno_cov_files_path_ct_chrom}/{gene}_{celltype}_pheno_cov.csv'
                 )
-                cis_window_path = f'{cis_window_files_path_chrom}/{gene}.csv'
+                cis_window_path = f'{cis_window_files_path_chrom}/{gene}_100000bp.csv'
 
                 # check if these outputs already exist, if so don't make a new job
                 null_job, null_output = run_fit_null_job(
