@@ -82,6 +82,8 @@ def build_fit_null_command(
     Output:
     Rscript command (str) ready to run (bash)
     """
+    pheno_file = get_batch().read_input(pheno_file)
+    plink_path = get_batch().read_input(plink_path)
     return f"""
         Rscript /usr/local/bin/step1_fitNULLGLMM_qtl.R \
         --useSparseGRMtoFitNULL={use_sparse_grm_null} \
@@ -363,7 +365,7 @@ def main(
 
             # extract gene list based on genes for which we have pheno cov files
             pheno_cov_files_path_ct_chrom = (
-                f'{pheno_cov_files_path}/{celltype}/{chromosome}/'
+                f'{pheno_cov_files_path}/{celltype}/{chromosome}'
             )
             logging.info(f'globbing {pheno_cov_files_path_ct_chrom}')
 
