@@ -300,12 +300,12 @@ def run_fit_null_job(
 @click.option('--chromosomes', help='add as one string, separated by comma')
 @click.option('--vds-version', help=' e.g., 1-0 ')
 @click.option(
-    '--pheno-cov-files-path', default=output_path('input_files/pheno_cov_files/')
+    '--pheno-cov-files-path', default=dataset_path('input_files/pheno_cov_files/')
 )
 @click.option(
-    '--cis-window-files-path', default=output_path('input_files/cis_window_files/')
+    '--cis-window-files-path', default=dataset_path('input_files/cis_window_files/')
 )
-@click.option('--genotype-files-prefix', default=output_path('input_files/genotypes/'))
+@click.option('--genotype-files-prefix', default=dataset_path('input_files/genotypes/'))
 @click.option('--sample-id', default='individual')
 @click.option('--covs', default='sex,age,harmony_PC1')
 @click.option('--sample-covs', default='sex,age')
