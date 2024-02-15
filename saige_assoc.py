@@ -22,7 +22,7 @@ analysis-runner \
     --dataset "bioheart" \
     --access-level "test" \
     --output-dir "saige-qtl/output_files/" \
-     python3 saige_assoc.py --celltypes CD4_Naive --chromosomes chr1 --vds-version 1-0
+     python3 saige_assoc.py --celltypes CD4_Naive --chromosomes chr1 --vds-version vds1-0
 
 """
 
@@ -390,12 +390,10 @@ def main(
             # extract relevant gene-related files
             for gene in genes[0:2]:
                 print(gene)
-                pheno_cov_path = dataset_path(
+                pheno_cov_path = (
                     f'{pheno_cov_files_path_ct_chrom}/{gene}_{celltype}.csv'
                 )
-                cis_window_path = dataset_path(
-                    f'{cis_window_files_path_chrom}/{gene}.csv'
-                )
+                cis_window_path = f'{cis_window_files_path_chrom}/{gene}.csv'
 
                 # check if these outputs already exist, if so don't make a new job
                 null_job, null_output = run_fit_null_job(
