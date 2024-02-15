@@ -369,24 +369,15 @@ def main(
             )
             logging.info(f'globbing {pheno_cov_files_path_ct_chrom}')
 
-            # do a glob, cast to a list, cast all elements to a string
-            files = list(
-                map(
-                    str,
-                    to_path(pheno_cov_files_path_ct_chrom).glob(
-                        f'*_{celltype}_pheno_cov.csv'
-                    ),
+            # do a glob, then pull out all file names as Strings
+            files = [
+                file.name for file in to_path(pheno_cov_files_path_ct_chrom).glob(
+                    f'*_{celltype}_pheno_cov.csv'
                 )
-            )
+            ]
             logging.info(f'I found these files: {", ".join(files)}')
 
-            genes = [
-                f.replace(pheno_cov_files_path_ct_chrom, '').replace(
-                    f'_{celltype}_pheno_cov.csv', ''
-                )
-                for f in files
-            ]
-
+            genes = [f.replace(f'_{celltype}_pheno_cov.csv', '') for f in files]
             logging.info(f'I found these genes: {", ".join(genes)}')
 
             # extract relevant gene-related files
