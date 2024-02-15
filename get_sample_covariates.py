@@ -93,10 +93,10 @@ def main(
         print(f"Error: File not found - {e}")
         sys.exit(1)
     # extract sex for TOB
-    # remove non-TOB samples
-    tob_meta = tob_meta[
-        ~tob_meta['s'].isin(["NA12878", "NA12891", "NA12892", "syndip"])
-    ]
+    # # remove non-TOB samples
+    # tob_meta = tob_meta[
+    #     ~tob_meta['s'].isin(["NA12878", "NA12891", "NA12892", "syndip"])
+    # ]
     # remove samples with ambiguous sex inference
     tob_meta = tob_meta[tob_meta['sex_karyotype'].isin(["XX", "XY"])]
     # encode sex as 1,2 instead
