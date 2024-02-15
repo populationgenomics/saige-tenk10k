@@ -370,7 +370,9 @@ def main(
             files = list(
                 map(
                     str,
-                    to_path(pheno_cov_files_path_ct_chrom).glob(f'*_{celltype}.csv'),
+                    to_path(pheno_cov_files_path_ct_chrom).glob(
+                        f'*_{celltype}_pheno_cov.csv'
+                    ),
                 )
             )
             logging.info(f'I found these files: {", ".join(files)}')
