@@ -12,20 +12,30 @@ these will be used in the gene expression input preparation
 building inputs for the SAIGE-QTL association pipeline.
 
 
-To run:
+To run,
+
+in test:
 
 analysis-runner \
     --description "get sample covariates" \
     --dataset "bioheart" \
     --access-level "test" \
     --output-dir "saige-qtl/input_files/covariates/" \
-    python3 get_sample_covariates.py --tob-sex-file-path 'gs://cpg-tob-wgs-test-analysis/joint-calling/v7/meta.tsv' \
+    python3 get_sample_covariates.py --tob-sex-file-path 'gs://cpg-bioheart-test/saige-qtl/input_files/mapping_for_anna.csv' \
                 --bioheart-sex-file-path 'gs://cpg-bioheart-test-analysis/hoptan-str/somalier/somalier.samples.tsv' \
                 --project-names 'tob-wgs,bioheart'
 
-main files:
-'gs://cpg-tob-wgs-main-analysis/joint-calling/v7/meta.tsv'
-'gs://cpg-bioheart-main-analysis/qc-stand-alone/somalier/990_samples_somalier.samples.tsv
+in main:
+
+analysis-runner \
+    --description "get sample covariates" \
+    --dataset "bioheart" \
+    --access-level "standard" \
+    --output-dir "saige-qtl/input_files/covariates/" \
+    python3 get_sample_covariates.py --tob-sex-file-path 'gs://cpg-tob-wgs-main-analysis/joint-calling/v7/meta.tsv' \
+                --bioheart-sex-file-path 'gs://cpg-bioheart-main-analysis/qc-stand-alone/somalier/990_samples_somalier.samples.tsv' \
+                --project-names 'tob-wgs,bioheart'
+
 """
 
 from cpg_utils.hail_batch import output_path
@@ -76,7 +86,7 @@ def main(
     # check if files exist
     try:
         # TOB sex info from Vlad's metadata file
-        tob_meta = pd.read_csv(tob_sex_file_path, sep="\t")
+        tob_meta = pd.read_csv(tob_sex_file_path)
         # BioHEART sex info from Hope's Somalier stand alone run
         bioheart_meta = pd.read_csv(bioheart_sex_file_path, sep="\t")
     except FileNotFoundError as e:
@@ -93,7 +103,7 @@ def main(
     tob_meta['sex'] = tob_meta['sex_karyotype'].replace('XY', '1')
     tob_meta['sex'] = tob_meta['sex'].replace('XX', '2')
     # rename s as sample id to match bioheart file
-    tob_meta['sample_id'] = tob_meta['s']
+    tob_meta['sample_id'] = tob_meta['new_CPG_id']
     tob_sex = tob_meta.loc[:, ["sample_id", "sex"]]
     # extract sex for BioHEART
     bioheart_sex = bioheart_meta.loc[:, ["sample_id", "sex"]]
