@@ -32,7 +32,7 @@ analysis-runner \
     --dataset "bioheart" \
     --access-level "standard" \
     --output-dir "saige-qtl/input_files/covariates/" \
-    python3 get_sample_covariates.py --tob-sex-file-path 'gs://cpg-tob-wgs-main-analysis/joint-calling/v7/meta.tsv' \
+    python3 get_sample_covariates.py --tob-sex-file-path 'gs://cpg-bioheart-test/saige-qtl/input_files/mapping_for_anna.csv' \
                 --bioheart-sex-file-path 'gs://cpg-bioheart-main-analysis/qc-stand-alone/somalier/990_samples_somalier.samples.tsv' \
                 --project-names 'tob-wgs,bioheart'
 
@@ -93,10 +93,6 @@ def main(
         print(f"Error: File not found - {e}")
         sys.exit(1)
     # extract sex for TOB
-    # # remove non-TOB samples
-    # tob_meta = tob_meta[
-    #     ~tob_meta['s'].isin(["NA12878", "NA12891", "NA12892", "syndip"])
-    # ]
     # remove samples with ambiguous sex inference
     tob_meta = tob_meta[tob_meta['sex_karyotype'].isin(["XX", "XY"])]
     # encode sex as 1,2 instead
