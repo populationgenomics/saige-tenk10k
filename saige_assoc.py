@@ -391,7 +391,7 @@ def main(
                     f'{pheno_cov_files_path_ct_chrom}/{gene}_{celltype}.csv'
                 )
                 cis_window_path = dataset_path(
-                    f'{cis_window_files_path_chrom}/{gene}.tsv'
+                    f'{cis_window_files_path_chrom}/{gene}.csv'
                 )
 
                 # check if these outputs already exist, if so don't make a new job
