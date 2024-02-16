@@ -63,7 +63,7 @@ def replace_loci_with_structs(mt: hl.MatrixTable) -> hl.MatrixTable:
     mt = mt.annotate_rows(
         new_locus=hl.struct(
             contig=hl.int(mt.locus.contig.replace('chr', '')),
-            position=mt.locus.position
+            position=mt.locus.position,
         )
     )
     # swap the new and old IDs
