@@ -30,6 +30,8 @@ from cpg_utils.hail_batch import dataset_path, get_batch, init_batch, output_pat
 
 import click
 import random
+import pandas as pd
+
 import hail as hl
 from hail.methods import export_plink, export_vcf
 
@@ -41,6 +43,27 @@ def can_reuse(path: str):
     if path and to_path(path).exists():
         return True
     return False
+
+
+def remove_chr_from_bim(input_bim, output_bim):
+    """
+    Reads a PLINK .bim file, modifies the "chrom" column to numerical values,
+    and saves the modified data to a new file.
+
+    Args:
+      input_bim: Path to the original .bim file.
+      output_bim: Path to save the modified .bim file.
+    """
+    # Read the .bim file into a DataFrame
+    data = pd.read_csv(
+        input_bim, sep='\t', header=None, names=['chrom', 'rsid', 'cm', 'bp']
+    )
+
+    # Extract numerical chromosome values
+    data['chrom'] = data['chrom'].str.extract('(\d+)')[0]
+
+    # Save the modified DataFrame to a new .bim file
+    data.to_csv(output_bim, sep='\t', header=None, index=False)
 
 
 # inputs:
@@ -96,13 +119,18 @@ def main(vds_version, chromosomes, cv_maf_threshold, vre_mac_threshold, vre_n_ma
 
         # check existence of index file separately
         if not can_reuse(f'{cv_vcf_path}.csi'):
-            # add index file (.csi) using bcftools
+            # remove chr & add index file using bcftools
             vcf_input = get_batch().read_input(cv_vcf_path)
-            bcftools_job = get_batch().new_job(name='index vcf')
+            bcftools_job = get_batch().new_job(name='remove chr and index vcf')
             bcftools_job.image(BCFTOOLS_IMAGE)
             bcftools_job.cpu(4)
             bcftools_job.storage('15G')
-            bcftools_job.command(f"bcftools index -c {vcf_input} -o {bcftools_job.csi}")
+            # remove chr
+            bcftools_job.command(
+                f'bcftools annotate --remove-chrs {vcf_input} | bgzip > {vcf_input}'
+            )
+            # add index (.csi)
+            bcftools_job.command(f'bcftools index -c {vcf_input} -o {bcftools_job.csi}')
             get_batch().write_output(bcftools_job.csi, f'{cv_vcf_path}.csi')
 
     # subset variants for variance ratio estimation
@@ -135,6 +163,20 @@ def main(vds_version, chromosomes, cv_maf_threshold, vre_mac_threshold, vre_n_ma
 
         # export to plink common variants only for sparse GRM
         export_plink(vre_mt, vre_plink_path, ind_id=vre_mt.s)
+
+        # check existence of bim file separately
+        if not can_reuse(f'{vre_plink_path}.bim'):
+            # remove chr using awk
+            plink_input = get_batch().read_input(vre_plink_path)
+            remove_chr_job = get_batch().new_python_job(
+                name='remove chr from plink bim'
+            )
+            remove_chr_job.cpu(4)
+            remove_chr_job.storage('15G')
+            # remove chr
+            remove_chr_job.call(remove_chr_from_bim, plink_input.bim, plink_input.bim)
+            get_batch().write_output(remove_chr_job.bim, f'{plink_input}.bim')
+
     get_batch().run(wait=False)
 
 
