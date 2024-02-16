@@ -373,21 +373,21 @@ def main(
             files = [
                 file.name
                 for file in to_path(pheno_cov_files_path_ct_chrom).glob(
-                    f'*_{celltype}_pheno_cov.csv'
+                    f'*_{celltype}_pheno_cov.tsv'
                 )
             ]
             logging.info(f'I found these files: {", ".join(files)}')
 
-            genes = [f.replace(f'_{celltype}_pheno_cov.csv', '') for f in files]
+            genes = [f.replace(f'_{celltype}_pheno_cov.tsv', '') for f in files]
             logging.info(f'I found these genes: {", ".join(genes)}')
 
             # extract relevant gene-related files
             for gene in genes[0:2]:
                 print(gene)
                 pheno_cov_path = (
-                    f'{pheno_cov_files_path_ct_chrom}/{gene}_{celltype}_pheno_cov.csv'
+                    f'{pheno_cov_files_path_ct_chrom}/{gene}_{celltype}_pheno_cov.tsv'
                 )
-                cis_window_path = f'{cis_window_files_path_chrom}/{gene}_100000bp.csv'
+                cis_window_path = f'{cis_window_files_path_chrom}/{gene}_100000bp.tsv'
 
                 # check if these outputs already exist, if so don't make a new job
                 null_job, null_output = run_fit_null_job(

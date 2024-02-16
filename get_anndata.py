@@ -71,7 +71,7 @@ def get_gene_cis_info(
         gene_info_df (pd.DataFrame): gene chrom, start, end
         gene (str): gene name
         window_size (int): bp to consider in window, up and downstream of gene
-        out_path (str): path we're writing to
+        out_path (str): path we're writing to (TSV)
         chrom_len (int): length of chromosome
     """
     # select the gene from df
@@ -84,7 +84,7 @@ def get_gene_cis_info(
     data = {'chromosome': chrom, 'start': left_boundary, 'end': right_boundary}
     gene_cis_df = pd.DataFrame(data, index=[gene])
     with to_path(out_path).open('w') as gcf:
-        gene_cis_df.to_csv(gcf, index=False)
+        gene_cis_df.to_csv(gcf, index=False, sep='\t')
 
 
 def make_pheno_cov(
@@ -103,7 +103,7 @@ def make_pheno_cov(
         expression_adata (sc.AnnData): expression object all genes
         sample_covs_df (pd.DataFrame): sex, age
         celltype_covs_df (pd.DataFrame): celltype specific covs
-        out_path (str): path we're writing to
+        out_path (str): path we're writing to (TSV)
     """
     # determine avg age to fill in later
     if fill_in_age:
@@ -124,7 +124,7 @@ def make_pheno_cov(
     )
     pheno_cov_df = pd.concat([sample_covs_cells_df, expr_df, celltype_covs_df], axis=1)
     with to_path(out_path).open('w') as pcf:
-        pheno_cov_df.to_csv(pcf, index=False)
+        pheno_cov_df.to_csv(pcf, index=False, sep='\t')
 
 
 @click.command()
@@ -217,7 +217,7 @@ def main(
                 # make pheno cov file
                 pheno_cov_filename = to_path(
                     output_path(
-                        f'pheno_cov_files/{celltype}/{chromosome}/{gene}_{celltype}_pheno_cov.csv'
+                        f'pheno_cov_files/{celltype}/{chromosome}/{gene}_{celltype}_pheno_cov.tsv'
                     )
                 )
                 if not pheno_cov_filename.exists():
@@ -237,7 +237,7 @@ def main(
                 # make cis window file
                 gene_cis_filename = to_path(
                     output_path(
-                        f'cis_window_files/{chromosome}/{gene}_{cis_window_size}bp.csv'
+                        f'cis_window_files/{chromosome}/{gene}_{cis_window_size}bp.tsv'
                     )
                 )
                 if not gene_cis_filename.exists():
