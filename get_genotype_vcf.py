@@ -47,6 +47,8 @@ def can_reuse(path: str):
 
 def remove_chr_from_bim(input_bim, output_bim):
     """
+    Method powered by Gemini
+
     Reads a PLINK .bim file, modifies the "chrom" column to numerical values,
     and saves the modified data to a new file.
 
@@ -114,7 +116,7 @@ def main(vds_version, chromosomes, cv_maf_threshold, vre_mac_threshold, vre_n_ma
             # remove fields not in the VCF
             cv_mt = cv_mt.drop('gvcf_info')
 
-            # export to plink common variants only
+            # export to vcf common variants only
             export_vcf(cv_mt, cv_vcf_path)
 
         # check existence of index file separately
