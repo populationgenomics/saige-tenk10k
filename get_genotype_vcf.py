@@ -43,6 +43,37 @@ def can_reuse(path: str):
     return False
 
 
+def replace_loci_with_structs(mt: hl.MatrixTable) -> hl.MatrixTable:
+    """
+    replaces the hl.Locus object with a struct containing the contig and position
+    the contig in this object will be an int, not a string
+    or at least it will be a string that can be converted to an int
+
+    Args:
+        mt ():
+
+    Returns:
+
+    """
+
+    # filter out non-numeric data (X, Y, MT)
+    mt = mt.filter_rows(
+        hl.or_missing(hl.int(mt.locus.contig.replace('chr', ''))).is_defined()
+    )
+    mt = mt.annotate_rows(
+        new_locus=hl.struct(
+            contig=hl.int(mt.locus.contig.replace('chr', '')),
+            position=mt.locus.position
+        )
+    )
+    # swap the new and old IDs
+    mt = mt.rename({'new_locus': 'locus', 'locus': 'old_locus'})
+
+    # key by the new version of locus
+    mt = mt.key_rows_by(['locus', 'alleles'])
+    return mt
+
+
 # inputs:
 @click.option('--vds-version', help=' e.g., 1-0 ')
 @click.option('--chromosomes', help=' e.g., chr22,chrX ')
@@ -132,6 +163,10 @@ def main(vds_version, chromosomes, cv_maf_threshold, vre_mac_threshold, vre_n_ma
         random.seed(0)
         vre_mt = vre_mt.sample_rows((vre_n_markers * 1.1) / vre_mt.count()[0])
         vre_mt = vre_mt.head(vre_n_markers)
+
+        # saige is very dumb and need chromosomes to be ints, not `chrN`
+        # for GRCh38 we have to key on a new value to accommodate
+        vre_mt = replace_loci_with_structs(vre_mt)
 
         # export to plink common variants only for sparse GRM
         export_plink(vre_mt, vre_plink_path, ind_id=vre_mt.s)
