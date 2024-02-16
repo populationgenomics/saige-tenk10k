@@ -414,8 +414,8 @@ def main(
                 if step2_job:
                     manage_concurrency_for_job(step2_job)
 
-                # now do step 3... probably don't need to read the output in, as the pipeline concludes here
-                job3, output = build_obtain_gene_level_pvals_command(
+                # step 3 (gene-level p-values)
+                job3 = build_obtain_gene_level_pvals_command(
                     gene_name=gene,
                     saige_sv_output_file=step2_output,
                     saige_gene_pval_output_file=output_path(
