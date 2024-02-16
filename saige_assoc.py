@@ -32,8 +32,6 @@ import logging
 
 import hailtop.batch as hb
 
-from typing import List
-
 from cpg_utils import to_path
 from cpg_utils.config import get_config
 from cpg_utils.hail_batch import dataset_path, get_batch, image_path, output_path
@@ -344,7 +342,7 @@ def main(
     """
 
     batch = get_batch('SAIGE-QTL pipeline')
-    jobs: List[hb.job.Job] = []
+    jobs: list[hb.batch.job.Job] = []
 
     def manage_concurrency_for_job(job: hb.batch.job.Job):
         """
