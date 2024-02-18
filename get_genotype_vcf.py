@@ -74,8 +74,18 @@ def remove_chr_from_bim(input_bim, output_bim):
 @click.option('--cv-maf-threshold', default=0.01)
 @click.option('--vre-mac-threshold', default=20)
 @click.option('--vre-n-markers', default=2000)
+@click.option('--exclude-multiallelic', default=False)
+@click.option('--exclude-indels', default=False)
 @click.command()
-def main(vds_version, chromosomes, cv_maf_threshold, vre_mac_threshold, vre_n_markers):
+def main(
+    vds_version: str,
+    chromosomes: str,
+    cv_maf_threshold: float,
+    vre_mac_threshold: int,
+    vre_n_markers: int,
+    exclude_multiallelic: bool,
+    exclude_indels: bool,
+):
     """
     Write genotypes as VCF
     """
@@ -104,11 +114,12 @@ def main(vds_version, chromosomes, cv_maf_threshold, vre_mac_threshold, vre_n_ma
             mt = mt.head(1000)
 
             # filter out loci & variant QC
-            mt = mt.filter_rows(
-                ~(mt.was_split)  # biallelic (exclude multiallelic)
-                & (hl.len(mt.alleles) == 2)  # remove hom-ref
-                & (hl.is_snp(mt.alleles[0], mt.alleles[1]))  # SNPs (exclude indels)
-            )
+            mt = mt.filter_rows(hl.len(mt.alleles) == 2)  # remove hom-ref
+            if exclude_multiallelic:  # biallelic only (exclude multiallelic)
+                mt = mt.filter_rows(~(mt.was_split))
+            if exclude_indels:  # SNPs only (exclude indels)
+                mt = mt.filter_rows(hl.is_snp(mt.alleles[0], mt.alleles[1]))
+
             mt = hl.variant_qc(mt)
 
             # common variants only
