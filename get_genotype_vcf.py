@@ -60,10 +60,10 @@ def remove_chr_from_bim(input_bim, output_bim):
     data = pd.read_csv(
         input_bim, sep='\t', header=None, names=['chrom', 'rsid', 'cm', 'bp']
     )
-
+    print(data.head())
     # Extract numerical chromosome values
     data['chrom'] = data['chrom'].str.extract('(\d+)')[0]
-
+    print(data.head())
     # Save the modified DataFrame to a new .bim file
     data.to_csv(output_bim, sep='\t', header=None, index=False)
 
@@ -131,6 +131,7 @@ def main(vds_version, chromosomes, cv_maf_threshold, vre_mac_threshold, vre_n_ma
             bcftools_job.command(
                 f'bcftools annotate --remove-chrs {vcf_input} | bgzip > {vcf_input}'
             )
+            get_batch().write_output(bcftools_job, cv_vcf_path)
             # add index (.csi)
             bcftools_job.command(f'bcftools index -c {vcf_input} -o {bcftools_job.csi}')
             get_batch().write_output(bcftools_job.csi, f'{cv_vcf_path}.csi')
