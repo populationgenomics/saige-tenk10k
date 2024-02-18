@@ -58,7 +58,10 @@ def remove_chr_from_bim(input_bim, output_bim):
     """
     # Read the .bim file into a DataFrame
     data = pd.read_csv(
-        input_bim, sep='\t', header=None, names=['chrom', 'rsid', 'cm', 'bp']
+        input_bim,
+        sep='\t',
+        header=None,
+        names=['chrom', 'rsid', 'cm', 'bp', 'ref', 'alt'],
     )
     print(data.head())
     # Extract numerical chromosome values
