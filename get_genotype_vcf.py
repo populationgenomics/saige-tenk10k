@@ -101,6 +101,7 @@ def main(vds_version, chromosomes, cv_maf_threshold, vre_mac_threshold, vre_n_ma
 
             # densify to matrix table object
             mt = hl.vds.to_dense_mt(chrom_vds)
+            mt = mt.head(1000)
 
             # filter out loci & variant QC
             mt = mt.filter_rows(
