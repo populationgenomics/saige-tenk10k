@@ -144,7 +144,7 @@ def main(
             bcftools_job.storage('15G')
             # remove chr
             bcftools_job.command(
-                f'bcftools annotate --remove-chrs {vcf_input} | bgzip > {vcf_input}'
+                f'bcftools annotate --rename-chrs {vcf_input} | bgzip > {vcf_input}'
             )
             get_batch().write_output(bcftools_job, cv_vcf_path)
             # add index (.csi)
