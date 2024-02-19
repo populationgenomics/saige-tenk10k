@@ -148,7 +148,7 @@ def main(
             bcftools_job.command(
                 f'bcftools annotate --rename-chrs chr_update.txt {vcf_input} -o {bcftools_job.vcf}'
             )
-            bcftools_job.command(f'bgzip {bcftools_job.vcf} > {bcftools_job.vcf}.bgz')
+            bcftools_job.command(f'bgzip -c {bcftools_job.vcf} > {bcftools_job.vcf}.bgz')
             # add index (.csi)
             bcftools_job.command(
                 f'bcftools index -c {bcftools_job.vcf}.bgz -o {bcftools_job.csi}'
