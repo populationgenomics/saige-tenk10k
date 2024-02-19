@@ -45,23 +45,6 @@ def can_reuse(path: str):
     return False
 
 
-# def create_rename_chr(rename_file: str):
-#     """
-#     The annotate --rename-chrs method in bcftools
-#     requires a file specifying the map from old to new names
-#     one chromosome per line
-
-#     see https://samtools.github.io/bcftools/bcftools.html#annotate
-#     """
-#     with open(rename_file, "w") as f:
-#         # Auto-generate lines for chromosomes 1-22
-#         f.writelines(["chr{} {}\n".format(i, i) for i in range(1, 23)])
-#         # Deal with chromosomes X and Y
-#         f.write("chrX X\n")
-#         f.write("chrY Y\n")
-#     return rename_file
-
-
 def remove_chr_from_bim(input_bim, output_bim):
     """
     Method powered by Gemini
@@ -157,8 +140,7 @@ def main(
             bcftools_job.image(BCFTOOLS_IMAGE)
             bcftools_job.cpu(4)
             bcftools_job.storage('15G')
-            # now remove "chr" from chromosome names
-            # rename_file = create_rename_chr(rename_file)
+            # now remove "chr" from chromosome names using bcftools
             bcftools_job.command(
                 f'for num in {{1..22}} X Y; do echo "chr${{num}} ${{num}}" >> chr_update.txt; done && bcftools annotate --rename-chrs chr_update.txt {vcf_input} -o {bcftools_job.vcf}'
             )
