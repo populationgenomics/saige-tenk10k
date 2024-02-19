@@ -45,6 +45,23 @@ def can_reuse(path: str):
     return False
 
 
+def create_rename_chr(rename_file: str):
+    """
+    The annotate --rename-chrs method in bcftools
+    requires a file specifying the map from old to new names
+    one chromosome per line
+
+    see https://samtools.github.io/bcftools/bcftools.html#annotate
+    """
+    with open(rename_file, "w") as f:
+        # Auto-generate lines for chromosomes 1-22
+        f.writelines(["chr{} {}\n".format(i, i) for i in range(1, 23)])
+        # Deal with chromosomes X and Y
+        f.write("chrX X\n")
+        f.write("chrY Y\n")
+    return rename_file
+
+
 def remove_chr_from_bim(input_bim, output_bim):
     """
     Method powered by Gemini
@@ -142,18 +159,16 @@ def main(
             bcftools_job.image(BCFTOOLS_IMAGE)
             bcftools_job.cpu(4)
             bcftools_job.storage('15G')
+            # now remove "chr" from chromosome names
+            rename_file = create_rename_chr(rename_file)
+            bcftools_job.command(
+                f'bcftools annotate --rename-chrs {rename_file} {vcf_input} -o {vcf_input}'
+            )
+            get_batch().write_output(bcftools_job, cv_vcf_path)
             # add index (.csi)
             bcftools_job.command(f'bcftools index -c {vcf_input} -o {bcftools_job.csi}')
             # save
             get_batch().write_output(bcftools_job.csi, f'{cv_vcf_path}.csi')
-            # now remove "chr" from chromosome names
-            # bcftools_job.command( # print chrom
-            #     f"bcftools query -f '%CHROM' {vcf_input}\uniq"
-            # )
-            bcftools_job.command(
-                f'bcftools annotate --rename-chrs {vcf_input} | bgzip > {vcf_input}'
-            )
-            get_batch().write_output(bcftools_job, cv_vcf_path)
 
     # subset variants for variance ratio estimation
     vre_plink_path = output_path(f'vds{vds_version}/vre_plink_2000_variants')
