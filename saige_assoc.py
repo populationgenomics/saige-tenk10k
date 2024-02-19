@@ -302,7 +302,7 @@ def run_fit_null_job(
 def summarise_cv_results(
     celltype: str,
     gene_results_path: str,
-    output_path: str,
+    out_path: str,
 ):
     """
     Summarise gene-specific results
@@ -317,7 +317,7 @@ def summarise_cv_results(
             for pv_df in existing_cv_assoc_results
         ]
     )
-    result_all_filename = to_path(output_path, 'analysis')
+    result_all_filename = to_path(out_path, 'analysis')
     logging.info(f'Write summary results to {result_all_filename}')
     with result_all_filename.open('w') as rf:
         results_all_df.to_csv(rf)
@@ -453,14 +453,16 @@ def main(
 
     # summarise results (per cell type)
     for celltype in celltypes.split(','):
-        output_path = f'output_files/summary_stats/{celltype}_all_cis_cv_results.tsv'
+        summary_output_path = (
+            f'output_files/summary_stats/{celltype}_all_cis_cv_results.tsv'
+        )
         summarise_job = get_batch().new_python_job(
             f'Summarise CV results for {celltype}'
         )
         summarise_job.call(
             summarise_cv_results,
             gene_results_path='output_files/',
-            output_path=output_path,
+            out_path=summary_output_path,
         )
         summarise_cv_results
     # set jobs running
