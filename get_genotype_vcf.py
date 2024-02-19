@@ -160,7 +160,7 @@ def main(
             # now remove "chr" from chromosome names
             # rename_file = create_rename_chr(rename_file)
             bcftools_job.command(
-                f'for num in {{1..22}} X Y; do echo "chr${num} ${num}" >> chr_update.txt; done && bcftools annotate --rename-chrs chr_update.txt {vcf_input} -o {bcftools_job.vcf}'
+                f'for num in {{1..22}} X Y; do echo "chr${{num}} ${{num}}" >> chr_update.txt; done && bcftools annotate --rename-chrs chr_update.txt {vcf_input} -o {bcftools_job.vcf}'
             )
             # add index (.csi)
             bcftools_job.command(
