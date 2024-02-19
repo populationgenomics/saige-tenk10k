@@ -29,6 +29,7 @@ analysis-runner \
 import click
 
 import logging
+import pandas as pd
 
 import hailtop.batch as hb
 
@@ -298,6 +299,30 @@ def run_fit_null_job(
     return gene_job, gene_job.output
 
 
+def summarise_cv_results(
+    celltype: str,
+    gene_results_path: str,
+    output_path: str,
+):
+    """
+    Summarise gene-specific results
+    """
+    existing_cv_assoc_results = [
+        file.name
+        for file in to_path(gene_results_path).glob(f'{celltype}_*_cis_gene_pval')
+    ]
+    results_all_df = pd.concat(
+        [
+            pd.read_csv(to_path(pv_df), index_col=0)
+            for pv_df in existing_cv_assoc_results
+        ]
+    )
+    result_all_filename = to_path(output_path, 'analysis')
+    logging.info(f'Write summary results to {result_all_filename}')
+    with result_all_filename.open('w') as rf:
+        results_all_df.to_csv(rf)
+
+
 @click.command()
 @click.option('--celltypes', help='add as one string, separated by comma')
 @click.option('--chromosomes', help='add as one string, separated by comma')
@@ -425,6 +450,19 @@ def main(
 
                 if job3:
                     manage_concurrency_for_job(job3)
+
+    # summarise results (per cell type)
+    for celltype in celltypes.split(','):
+        output_path = f'output_files/summary_stats/{celltype}_all_cis_cv_results.tsv'
+        summarise_job = get_batch().new_python_job(
+            f'Summarise CV results for {celltype}'
+        )
+        summarise_job.call(
+            summarise_cv_results,
+            gene_results_path='output_files/',
+            output_path=output_path,
+        )
+        summarise_cv_results
     # set jobs running
     batch.run(wait=False)
 
