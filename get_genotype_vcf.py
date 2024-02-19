@@ -142,14 +142,18 @@ def main(
             bcftools_job.image(BCFTOOLS_IMAGE)
             bcftools_job.cpu(4)
             bcftools_job.storage('15G')
-            # remove chr
+            # add index (.csi)
+            bcftools_job.command(f'bcftools index -c {vcf_input} -o {bcftools_job.csi}')
+            # save
+            get_batch().write_output(bcftools_job.csi, f'{cv_vcf_path}.csi')
+            # now remove "chr" from chromosome names
+            # bcftools_job.command( # print chrom
+            #     f"bcftools query -f '%CHROM' {vcf_input}\uniq"
+            # )
             bcftools_job.command(
                 f'bcftools annotate --rename-chrs {vcf_input} | bgzip > {vcf_input}'
             )
             get_batch().write_output(bcftools_job, cv_vcf_path)
-            # add index (.csi)
-            bcftools_job.command(f'bcftools index -c {vcf_input} -o {bcftools_job.csi}')
-            get_batch().write_output(bcftools_job.csi, f'{cv_vcf_path}.csi')
 
     # subset variants for variance ratio estimation
     vre_plink_path = output_path(f'vds{vds_version}/vre_plink_2000_variants')
