@@ -162,12 +162,12 @@ def main(
             # now remove "chr" from chromosome names
             rename_file = create_rename_chr(rename_file)
             bcftools_job.command(
-                f'bcftools annotate --rename-chrs {rename_file} {vcf_input} -o {vcf_input}'
+                f'bcftools annotate --rename-chrs {rename_file} {vcf_input} -o {bcftools_job.vcf}'
             )
-            get_batch().write_output(bcftools_job, cv_vcf_path)
             # add index (.csi)
-            bcftools_job.command(f'bcftools index -c {vcf_input} -o {bcftools_job.csi}')
-            # save
+            bcftools_job.command(f'bcftools index -c {bcftools_job.vcf} -o {bcftools_job.csi}')
+            # save both output files
+            get_batch().write_output(bcftools_job.vcf, cv_vcf_path)
             get_batch().write_output(bcftools_job.csi, f'{cv_vcf_path}.csi')
 
     # subset variants for variance ratio estimation
