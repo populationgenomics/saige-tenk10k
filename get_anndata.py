@@ -108,7 +108,9 @@ def make_pheno_cov(
     # determine avg age to fill in later
     if fill_in_age:
         mean_age = sample_covs_df['age'].mean()
-    cell_ind_df = expression_adata.obs.loc[:, ['cell', 'individual']]
+    cell_ind_df = expression_adata.obs.loc[
+        :, ['cell', 'individual', 'total_counts', 'sequencing_library']
+    ]
     sample_covs_cells_df = cell_ind_df.merge(
         sample_covs_df, on='individual', how='left'
     )
