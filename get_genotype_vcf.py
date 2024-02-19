@@ -94,8 +94,8 @@ def remove_chr_from_bim(input_bim, output_bim):
 @click.option('--cv-maf-threshold', default=0.01)
 @click.option('--vre-mac-threshold', default=20)
 @click.option('--vre-n-markers', default=2000)
-@click.option('--exclude-multiallelic', default=False)
-@click.option('--exclude-indels', default=False)
+@click.option('--exclude-multiallelic', is_flag=False)
+@click.option('--exclude-indels', is_flag=False)
 @click.command()
 def main(
     vds_version: str,
@@ -165,7 +165,9 @@ def main(
                 f'bcftools annotate --rename-chrs {rename_file} {vcf_input} -o {bcftools_job.vcf}'
             )
             # add index (.csi)
-            bcftools_job.command(f'bcftools index -c {bcftools_job.vcf} -o {bcftools_job.csi}')
+            bcftools_job.command(
+                f'bcftools index -c {bcftools_job.vcf} -o {bcftools_job.csi}'
+            )
             # save both output files
             get_batch().write_output(bcftools_job.vcf, cv_vcf_path)
             get_batch().write_output(bcftools_job.csi, f'{cv_vcf_path}.csi')
