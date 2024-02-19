@@ -19,7 +19,7 @@ analysis-runner \
 import click
 import hail as hl
 
-from cpg_utils.hail_batch import dataset_path, get_batch, init_batch, output_path
+from cpg_utils.hail_batch import dataset_path, init_batch, output_path
 
 
 @click.option('--vds-version', help=' e.g., 1-0 ')
