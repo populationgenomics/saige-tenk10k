@@ -21,12 +21,10 @@ import hail as hl
 
 from cpg_utils.hail_batch import dataset_path, get_batch, init_batch, output_path
 
+
 @click.option('--vds-version', help=' e.g., 1-0 ')
 @click.command()
-def main(
-    vds_version: str,
-    out_path: str,
-    ):
+def main(vds_version):
     """
     Write genotypes as VCF
     """
@@ -45,7 +43,6 @@ def main(
     # write
     scores.write(output_path(f'{vds_version}/geno_pca_scores.ht'), overwrite=True)
     loadings.write(output_path(f'{vds_version}/geno_pca_loadings.ht'), overwrite=True)
-
 
 
 if __name__ == '__main__':
