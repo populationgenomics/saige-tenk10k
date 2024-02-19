@@ -143,8 +143,12 @@ def main(
             bcftools_job.storage('15G')
             # now remove "chr" from chromosome names using bcftools
             bcftools_job.command(
-                f'for num in {{1..22}} X Y; do echo "chr${{num}} ${{num}}" >> chr_update.txt; done && bcftools annotate --rename-chrs chr_update.txt {vcf_input} -o {bcftools_job.vcf}'
+                f'for num in {{1..22}} X Y; do echo "chr${{num}} ${{num}}" >> chr_update.txt; done'
             )
+            bcftools_job.command(
+                f'bcftools annotate --rename-chrs chr_update.txt {vcf_input} -o {bcftools_job.vcf}'
+            )
+            bcftools_job.command(f'bgzip {vcf_input} -o {bcftools_job.vcf}')
             # add index (.csi)
             bcftools_job.command(
                 f'bcftools index -c {bcftools_job.vcf} -o {bcftools_job.csi}'
