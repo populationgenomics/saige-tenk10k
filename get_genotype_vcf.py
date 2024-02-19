@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# pylint: disable=import-error,name-defined
 
 """
 This script will
@@ -143,7 +142,7 @@ def main(
             bcftools_job.storage('15G')
             # now remove "chr" from chromosome names using bcftools
             bcftools_job.command(
-                'for num in {{1..22}} X Y; do echo "chr${num} ${num}" >> chr_update.txt; done'
+                'for num in {1..22} X Y; do echo "chr${num} ${num}" >> chr_update.txt; done'
             )
             bcftools_job.command(
                 f'bcftools annotate --rename-chrs chr_update.txt {vcf_input} -o {bcftools_job.vcf}'
