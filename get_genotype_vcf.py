@@ -80,10 +80,8 @@ def remove_chr_from_bim(input_bim, output_bim):
         header=None,
         names=['chrom', 'rsid', 'cm', 'bp', 'ref', 'alt'],
     )
-    print(data.head())
     # Extract numerical chromosome values
     data['chrom'] = data['chrom'].str.extract('(\d+)')[0]
-    print(data.head())
     # Save the modified DataFrame to a new .bim file
     data.to_csv(output_bim, sep='\t', header=None, index=False)
 
