@@ -112,6 +112,7 @@ def main(
 
             # densify to matrix table object
             mt = hl.vds.to_dense_mt(chrom_vds)
+            # remove me when done testing
             mt = mt.head(1000)
 
             # filter out loci & variant QC
