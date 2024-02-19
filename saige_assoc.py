@@ -339,7 +339,7 @@ def summarise_cv_results(
     '--genotype-files-prefix', default=dataset_path('saige-qtl/input_files/genotypes')
 )
 @click.option('--sample-id', default='individual')
-@click.option('--covs', default='sex,age,harmony_PC1')
+@click.option('--covs', default='sex,age,harmony_PC1,total_counts,sequencing_library')
 @click.option('--sample-covs', default='sex,age')
 @click.option(
     '--max-parallel-jobs',
