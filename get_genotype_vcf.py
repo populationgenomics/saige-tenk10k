@@ -102,6 +102,8 @@ def main(
         cv_vcf_path = output_path(
             f'vds{vds_version}/{chromosome}_common_variants.vcf.bgz'
         )
+        vcf_existence_outcome = can_reuse(cv_vcf_path)
+        logging.info(f'Does {cv_vcf_path} exist? {vcf_existence_outcome}')
         if not can_reuse(cv_vcf_path):
 
             # consider only relevant chromosome
@@ -136,6 +138,8 @@ def main(
             export_vcf(cv_mt, cv_vcf_path)
 
         # check existence of index file separately
+        index_file_existence_outcome = can_reuse(f'{cv_vcf_path}.csi')
+        logging.info(f'Does {cv_vcf_path}.csi exist? {index_file_existence_outcome}')
         if not can_reuse(f'{cv_vcf_path}.csi'):
             # remove chr & add index file using bcftools
             vcf_input = get_batch().read_input(cv_vcf_path)
@@ -166,7 +170,9 @@ def main(
 
     # subset variants for variance ratio estimation
     vre_plink_path = output_path(f'vds{vds_version}/vre_plink_2000_variants')
-    if not can_reuse(vre_plink_path):
+    plink_existence_outcome = can_reuse(f'{vre_plink_path}.bim')
+    logging.info(f'Does {vre_plink_path}.bim exist? {plink_existence_outcome}')
+    if not can_reuse(f'{vre_plink_path}.bim'):
         vds = hl.vds.split_multi(vds, filter_changed_loci=True)
         mt = hl.vds.to_dense_mt(vds)
         # remove me when done testing
