@@ -211,14 +211,14 @@ def main(
         # # check existence of bim file separately
         # if not can_reuse(f'{vre_plink_path}.bim'):
         # remove chr using awk
-        plink_input = get_batch().read_input(vre_plink_path)
+        plink_input_bim = get_batch().read_input(f'{vre_plink_path}.bim')
         remove_chr_job = get_batch().new_python_job(name='remove chr from plink bim')
         remove_chr_job.cpu(4)
         remove_chr_job.storage('15G')
         # remove chr
-        remove_chr_job.call(remove_chr_from_bim, plink_input.bim, plink_input.bim)
+        remove_chr_job.call(remove_chr_from_bim, plink_input_bim, plink_input_bim)
         logging.info('chr removed from bim')
-        get_batch().write_output(remove_chr_job.bim, f'{plink_input}.bim')
+        get_batch().write_output(remove_chr_job.bim, plink_input_bim)
 
     get_batch().run(wait=False)
 
