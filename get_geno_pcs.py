@@ -35,7 +35,7 @@ def main(vds_version):
     vds_path = dataset_path(f'vds/{vds_version}.vds')
     vds = hl.vds.read_vds(vds_path)
         # get pcs
-    _, scores, loadings = hl.hwe_normalized_pca(vds.GT, k=15, compute_loadings=True)
+    _, scores, loadings = hl.hwe_normalized_pca(vds.LGT, k=15, compute_loadings=True)
     # write
     scores.write(output_path(f'{vds_version}/geno_pca_scores.ht'), overwrite=True)
     loadings.write(output_path(f'{vds_version}/geno_pca_loadings.ht'), overwrite=True)
