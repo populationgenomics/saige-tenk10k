@@ -192,16 +192,17 @@ def main(
             return
         # since pruning is very costly, subset first a bit
         random.seed(0)
-        vre_mt = vre_mt.sample_rows(p=0.01)
+        # vre_mt = vre_mt.sample_rows(p=0.01)
         logging.info('subset completed')
         # perform LD pruning
         pruned_variant_table = hl.ld_prune(vre_mt.GT, r2=0.2, bp_window_size=500000)
         vre_mt = vre_mt.filter_rows(hl.is_defined(pruned_variant_table[vre_mt.row_key]))
-        logging.info('pruning completed')
+        logging.info(f'pruning completed, {vre_mt.count()} variants left')
         # randomly sample {vre_n_markers} variants
         random.seed(0)
         vre_mt = vre_mt.sample_rows((vre_n_markers * 1.1) / vre_mt.count()[0])
         vre_mt = vre_mt.head(vre_n_markers)
+        logging.info(f'sampling completed, {vre_mt.count()} variants left')
 
         # export to plink common variants only for sparse GRM
         export_plink(vre_mt, vre_plink_path, ind_id=vre_mt.s)
