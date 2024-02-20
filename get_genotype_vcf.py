@@ -176,7 +176,7 @@ def main(
         vds = hl.vds.split_multi(vds, filter_changed_loci=True)
         mt = hl.vds.to_dense_mt(vds)
         # remove me when done testing
-        mt = mt.head(1000)
+        mt = mt.head(5000)
         mt = mt.filter_rows(
             ~(mt.was_split)  # biallelic (exclude multiallelic)
             & (hl.len(mt.alleles) == 2)  # remove hom-ref
@@ -186,8 +186,8 @@ def main(
 
         # minor allele count (MAC) > {vre_mac_threshold}
         vre_mt = mt.filter_rows(mt.variant_qc.AC[1] > vre_mac_threshold)
-        logging.info('MT filtered to common enough variants')
         n_ac_vars = vre_mt.count()[0]  # to avoid evaluating this 2X
+        logging.info(f'MT filtered to common enough variants, {n_ac_vars} left')
         if n_ac_vars == 0:
             return
         # since pruning is very costly, subset first a bit
@@ -197,7 +197,7 @@ def main(
         # perform LD pruning
         pruned_variant_table = hl.ld_prune(vre_mt.GT, r2=0.2, bp_window_size=500000)
         vre_mt = vre_mt.filter_rows(hl.is_defined(pruned_variant_table[vre_mt.row_key]))
-        logging.info(f'pruning completed, {vre_mt.count()} variants left')
+        logging.info(f'pruning completed, {vre_mt.count()[0]} variants left')
         # randomly sample {vre_n_markers} variants
         random.seed(0)
         vre_mt = vre_mt.sample_rows((vre_n_markers * 1.1) / vre_mt.count()[0])
