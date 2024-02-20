@@ -31,14 +31,16 @@ def main(vds_version):
 
     init_batch(worker_memory='highmem')
 
-    # load vds object
-    vds_path = dataset_path(f'vds/{vds_version}.vds')
-    vds = hl.vds.read_vds(vds_path)
-    # split multiallelic loci (this step is necessary for densifying below)
-    vds = hl.vds.split_multi(vds, filter_changed_loci=True)
-    # densify to matrix table object
-    mt = hl.vds.to_dense_mt(vds)
-    mt.write(output_path(f'{vds_version}/dense_matrix.mt'), overwrite=True)
+    # # load vds object
+    # vds_path = dataset_path(f'vds/{vds_version}.vds')
+    # vds = hl.vds.read_vds(vds_path)
+    # # split multiallelic loci (this step is necessary for densifying below)
+    # vds = hl.vds.split_multi(vds, filter_changed_loci=True)
+    # # densify to matrix table object
+    # mt = hl.vds.to_dense_mt(vds)
+    # mt.write(output_path(f'{vds_version}/dense_matrix.mt'), overwrite=True)
+    mt_path = dataset_path('saige-qtl/input_files/covariates/dense_matrix.mt')
+    mt = hl.read_matrix_table(mt_path)
     # get pcs
     _, scores, loadings = hl.hwe_normalized_pca(mt.GT, k=15, compute_loadings=True)
     # write
