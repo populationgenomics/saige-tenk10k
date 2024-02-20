@@ -208,19 +208,17 @@ def main(
         export_plink(vre_mt, vre_plink_path, ind_id=vre_mt.s)
         logging.info('plink export completed')
 
-        # check existence of bim file separately
-        if not can_reuse(f'{vre_plink_path}.bim'):
-            # remove chr using awk
-            plink_input = get_batch().read_input(vre_plink_path)
-            remove_chr_job = get_batch().new_python_job(
-                name='remove chr from plink bim'
-            )
-            remove_chr_job.cpu(4)
-            remove_chr_job.storage('15G')
-            # remove chr
-            remove_chr_job.call(remove_chr_from_bim, plink_input.bim, plink_input.bim)
-            logging.info('chr removed from bim')
-            get_batch().write_output(remove_chr_job.bim, f'{plink_input}.bim')
+        # # check existence of bim file separately
+        # if not can_reuse(f'{vre_plink_path}.bim'):
+        # remove chr using awk
+        plink_input = get_batch().read_input(vre_plink_path)
+        remove_chr_job = get_batch().new_python_job(name='remove chr from plink bim')
+        remove_chr_job.cpu(4)
+        remove_chr_job.storage('15G')
+        # remove chr
+        remove_chr_job.call(remove_chr_from_bim, plink_input.bim, plink_input.bim)
+        logging.info('chr removed from bim')
+        get_batch().write_output(remove_chr_job.bim, f'{plink_input}.bim')
 
     get_batch().run(wait=False)
 
