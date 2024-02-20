@@ -37,7 +37,7 @@ def main(vds_version):
     vds = hl.vds.split_multi(vds, filter_changed_loci=True)
     # densify to matrix table object
     mt = hl.vds.to_dense_mt(vds)
-    mt.write(output_path('dense_matrix.mt'), overwrite=True)
+    mt.write(output_path(f'{vds_version}/dense_matrix.mt'), overwrite=True)
     # get pcs
     _, scores, loadings = hl.hwe_normalized_pca(mt.GT, k=15, compute_loadings=True)
     # write
