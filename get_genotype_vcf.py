@@ -45,7 +45,7 @@ def can_reuse(path: str):
     return False
 
 
-def remove_chr_from_bim(input_bim, output_bim):
+def remove_chr_from_bim(input_bim: str, output_bim: str):
     """
     Method powered by Gemini
 
@@ -65,8 +65,10 @@ def remove_chr_from_bim(input_bim, output_bim):
     )
     # Extract numerical chromosome values
     data['chrom'] = data['chrom'].str.extract('(\d+)')[0]
+
     # Save the modified DataFrame to a new .bim file
-    data.to_csv(output_bim, sep='\t', header=None, index=False)
+    with to_path(output_bim).open('w') as f:
+        data.to_csv(f, sep='\t', header=None, index=False)  # noqa
 
 
 # inputs:
@@ -170,9 +172,10 @@ def main(
 
     # subset variants for variance ratio estimation
     vre_plink_path = output_path(f'vds{vds_version}/vre_plink_2000_variants')
-    plink_existence_outcome = can_reuse(f'{vre_plink_path}.bim')
-    logging.info(f'Does {vre_plink_path}.bim exist? {plink_existence_outcome}')
-    if not can_reuse(f'{vre_plink_path}.bim'):
+    vre_bim_path = f'{vre_plink_path}.bim'
+    plink_existence_outcome = can_reuse(vre_bim_path)
+    logging.info(f'Does {vre_bim_path} exist? {plink_existence_outcome}')
+    if not can_reuse(vre_bim_path):
         vds = hl.vds.split_multi(vds, filter_changed_loci=True)
         mt = hl.vds.to_dense_mt(vds)
         # remove me when done testing
@@ -211,14 +214,13 @@ def main(
         # # check existence of bim file separately
         # if not can_reuse(f'{vre_plink_path}.bim'):
         # remove chr using awk
-        plink_input_bim = get_batch().read_input(f'{vre_plink_path}.bim')
+        plink_input_bim = get_batch().read_input(vre_bim_path)
         remove_chr_job = get_batch().new_python_job(name='remove chr from plink bim')
-        remove_chr_job.cpu(4)
-        remove_chr_job.storage('15G')
-        # remove chr
-        remove_chr_job.call(remove_chr_from_bim, plink_input_bim, plink_input_bim)
+        remove_chr_job.cpu(1)
+        remove_chr_job.storage('1G')
+        # remove chr, then write direct to the BIM source location
+        remove_chr_job.call(remove_chr_from_bim, plink_input_bim, vre_bim_path)
         logging.info('chr removed from bim')
-        get_batch().write_output(remove_chr_job.bim, plink_input_bim)
 
     get_batch().run(wait=False)
 
