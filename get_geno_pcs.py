@@ -26,14 +26,15 @@ from cpg_utils.hail_batch import dataset_path, init_batch, output_path
 @click.command()
 def main(vds_version):
     """
-    Write genotypes as VCF
+    Obtain genotype PCs and write loading and scores
     """
 
     init_batch(worker_memory='highmem')
 
+    # load vds object
     vds_path = dataset_path(f'vds/{vds_version}.vds')
     vds = hl.vds.read_vds(vds_path)
-    # split multiallelic loci
+    # split multiallelic loci (this step is necessary for densifying below)
     vds = hl.vds.split_multi(vds, filter_changed_loci=True)
     # densify to matrix table object
     mt = hl.vds.to_dense_mt(vds)
