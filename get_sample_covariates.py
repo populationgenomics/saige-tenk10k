@@ -92,48 +92,49 @@ def main(
 
     # sex
     # check if files exist
-    try:
-        # TOB sex info from Vlad's metadata file
-        tob_meta = pd.read_csv(tob_sex_file_path)
-        # BioHEART sex info from Hope's Somalier stand alone run
-        bioheart_meta = pd.read_csv(bioheart_sex_file_path, sep="\t")
-    except FileNotFoundError as e:
-        print(f"Error: File not found - {e}")
-        sys.exit(1)
-    # extract sex for TOB
-    # remove samples with ambiguous sex inference
-    tob_meta = tob_meta[tob_meta['sex_karyotype'].isin(["XX", "XY"])]
-    # encode sex as 1,2 instead
-    tob_meta['sex'] = tob_meta['sex_karyotype'].replace('XY', '1')
-    tob_meta['sex'] = tob_meta['sex'].replace('XX', '2')
-    # rename s as sample id to match bioheart file
-    tob_meta['sample_id'] = tob_meta['new_CPG_id']
-    tob_sex = tob_meta.loc[:, ["sample_id", "sex"]]
-    # extract sex for BioHEART
-    bioheart_sex = bioheart_meta.loc[:, ["sample_id", "sex"]]
-    # combine_info
-    sex_df = pd.concat([tob_sex, bioheart_sex], axis=0)
+    # try:
+    #     # TOB sex info from Vlad's metadata file
+    #     tob_meta = pd.read_csv(tob_sex_file_path)
+    #     # BioHEART sex info from Hope's Somalier stand alone run
+    #     bioheart_meta = pd.read_csv(bioheart_sex_file_path, sep="\t")
+    # except FileNotFoundError as e:
+    #     print(f"Error: File not found - {e}")
+    #     sys.exit(1)
+    # # extract sex for TOB
+    # # remove samples with ambiguous sex inference
+    # tob_meta = tob_meta[tob_meta['sex_karyotype'].isin(["XX", "XY"])]
+    # # encode sex as 1,2 instead
+    # tob_meta['sex'] = tob_meta['sex_karyotype'].replace('XY', '1')
+    # tob_meta['sex'] = tob_meta['sex'].replace('XX', '2')
+    # # rename s as sample id to match bioheart file
+    # tob_meta['sample_id'] = tob_meta['new_CPG_id']
+    # tob_sex = tob_meta.loc[:, ["sample_id", "sex"]]
+    # # extract sex for BioHEART
+    # bioheart_sex = bioheart_meta.loc[:, ["sample_id", "sex"]]
+    # # combine_info
+    # sex_df = pd.concat([tob_sex, bioheart_sex], axis=0)
 
-    # age
-    # create a list from dictionary to populate
-    age_dict_list: list(dict) = []
-    # loop over projects (tob-wgs, bioheart)
-    for project_name in project_names.split(','):
-        query_vars = {'project_name': project_name}
-        # run query above, which returns a dict
-        meta = query(GET_PARTICIPANT_META_QUERY, variables=query_vars)
-        for sg in meta['project']['sequencingGroups']:
-            cpg_id = sg['id']
-            try:
-                age = sg['sample']['participant']['meta']['age']
-            except KeyError as e:
-                print(f"Key Error: - no {e} available for {cpg_id}")
-                age = 'NA'
-            age_dict_list.append({'sample_id': cpg_id, 'age': age})
-    age_df = pd.DataFrame(age_dict_list)
+    # # age
+    # # create a list from dictionary to populate
+    # age_dict_list: list(dict) = []
+    # # loop over projects (tob-wgs, bioheart)
+    # for project_name in project_names.split(','):
+    #     query_vars = {'project_name': project_name}
+    #     # run query above, which returns a dict
+    #     meta = query(GET_PARTICIPANT_META_QUERY, variables=query_vars)
+    #     for sg in meta['project']['sequencingGroups']:
+    #         cpg_id = sg['id']
+    #         try:
+    #             age = sg['sample']['participant']['meta']['age']
+    #         except KeyError as e:
+    #             print(f"Key Error: - no {e} available for {cpg_id}")
+    #             age = 'NA'
+    #         age_dict_list.append({'sample_id': cpg_id, 'age': age})
+    # age_df = pd.DataFrame(age_dict_list)
 
     # genotype PCs
     pcs_ht_path = dataset_path(f'/large_cohort/{vds_version}/ancestry/scores.ht')
+    print(pcs_ht_path)
     pcs_ht = hl.read_table(pcs_ht_path)
     # convert to pandas
     pcs_df = pcs_ht.to_pandas()
@@ -155,17 +156,18 @@ def main(
     pcs_df.drop(columns=['s', 'scores'], inplace=True)
 
     # index with sample id
-    sex_df.index = sex_df['sample_id']
-    sex_df.drop(['sample_id'], axis=1, inplace=True)
-    age_df.index = age_df['sample_id']
-    age_df.drop(['sample_id'], axis=1, inplace=True)
+    # sex_df.index = sex_df['sample_id']
+    # sex_df.drop(['sample_id'], axis=1, inplace=True)
+    # age_df.index = age_df['sample_id']
+    # age_df.drop(['sample_id'], axis=1, inplace=True)
     pcs_df.index = pcs_df['sample_id']
     pcs_df.drop(['sample_id'], axis=1, inplace=True)
+    print(pcs_df)
 
     # combine sex, age and geno PC info
-    combined_sex_age_pcs = pd.concat([sex_df, age_df, pcs_df], axis=1)
-    sex_age_pcs_out_file = output_path('sex_age_geno_pcs_tob_bioheart.csv', 'analysis')
-    combined_sex_age_pcs.to_csv(sex_age_pcs_out_file)
+    # combined_sex_age_pcs = pd.concat([sex_df, age_df, pcs_df], axis=1)
+    # sex_age_pcs_out_file = output_path('sex_age_geno_pcs_tob_bioheart.csv', 'analysis')
+    # combined_sex_age_pcs.to_csv(sex_age_pcs_out_file)
 
 
 if __name__ == '__main__':
