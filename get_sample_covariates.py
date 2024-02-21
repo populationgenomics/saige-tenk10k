@@ -39,7 +39,7 @@ analysis-runner \
 
 """
 
-from cpg_utils.hail_batch import dataset_path, output_path
+from cpg_utils.hail_batch import dataset_path, init_batch, output_path
 
 import click
 import sys
@@ -87,6 +87,9 @@ def main(
     """
     Get sex, age and genotype PCs for TOB and BioHEART individuals
     """
+
+    init_batch()
+
     # sex
     # check if files exist
     try:
