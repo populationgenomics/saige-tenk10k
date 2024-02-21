@@ -5,6 +5,7 @@ This script will
 
 - extract sex information
 - extract age information
+- extract genotype PCs
 
 for the TOB and BioHEART cohorts as part of TenK10K part1
 
@@ -23,7 +24,7 @@ analysis-runner \
     --output-dir "saige-qtl/input_files/covariates/" \
     python3 get_sample_covariates.py --tob-sex-file-path 'gs://cpg-bioheart-test/saige-qtl/input_files/mapping_for_anna.csv' \
                 --bioheart-sex-file-path 'gs://cpg-bioheart-test-analysis/hoptan-str/somalier/somalier.samples.tsv' \
-                --project-names 'tob-wgs,bioheart'
+                --project-names 'tob-wgs,bioheart' --vds-version 1-0
 
 in main:
 
@@ -34,15 +35,16 @@ analysis-runner \
     --output-dir "saige-qtl/input_files/covariates/" \
     python3 get_sample_covariates.py --tob-sex-file-path 'gs://cpg-bioheart-test/saige-qtl/input_files/mapping_for_anna.csv' \
                 --bioheart-sex-file-path 'gs://cpg-bioheart-main-analysis/qc-stand-alone/somalier/990_samples_somalier.samples.tsv' \
-                --project-names 'tob-wgs,bioheart'
+                --project-names 'tob-wgs,bioheart' --vds-version v1-0
 
 """
 
-from cpg_utils.hail_batch import output_path
+from cpg_utils.hail_batch import dataset_path, init_batch, output_path
 
 import click
-
 import sys
+
+import hail as hl
 import pandas as pd
 
 from metamist.graphql import gql, query
@@ -73,16 +75,22 @@ GET_PARTICIPANT_META_QUERY = gql(
     '--bioheart-sex-file-path',
     help='this file should contain sample id and inferred sex info for the bioheart cohort',
 )
+@click.option('--vds-version', help=' e.g. 1-0 ')
 @click.option('--project-names', default='tob-wgs,bioheart')
 @click.command()
 def main(
     tob_sex_file_path,
     bioheart_sex_file_path,
+    vds_version,
     project_names,
 ):
     """
-    Get sex and age info for TOB and BioHEART individuals
+    Get sex, age and genotype PCs for TOB and BioHEART individuals
     """
+
+    init_batch()
+
+    # sex
     # check if files exist
     try:
         # TOB sex info from Vlad's metadata file
@@ -124,15 +132,42 @@ def main(
             age_dict_list.append({'sample_id': cpg_id, 'age': age})
     age_df = pd.DataFrame(age_dict_list)
 
+    # genotype PCs
+    pcs_ht_path = dataset_path(f'large_cohort/{vds_version}/ancestry/scores.ht')
+    print(pcs_ht_path)
+    pcs_ht = hl.read_table(pcs_ht_path)
+    # convert to pandas
+    pcs_df = pcs_ht.to_pandas()
+    # extract info and reformat to table
+    pcs_df['sample_id'] = [str(s) for s in pcs_df['s']]
+    for i in range(len(pcs_df['scores'][0])):
+        # extract individual PC values, make numeric after splitting
+        pcs_df[f'geno_PC{i+1}'] = [
+            float(
+                str(score)
+                .split(",")[i]
+                .replace("[", "")
+                .replace("]", "")
+                .replace(" ", "")
+            )
+            for score in pcs_df['scores']
+        ]
+    # drop unused columns
+    pcs_df.drop(columns=['s', 'scores'], inplace=True)
+
     # index with sample id
     sex_df.index = sex_df['sample_id']
     sex_df.drop(['sample_id'], axis=1, inplace=True)
     age_df.index = age_df['sample_id']
     age_df.drop(['sample_id'], axis=1, inplace=True)
-    # combine sex and age info
-    combined_sex_age = pd.concat([sex_df, age_df], axis=1)
-    sex_age_out_file = output_path('sex_age_tob_bioheart.csv', 'analysis')
-    combined_sex_age.to_csv(sex_age_out_file)
+    pcs_df.index = pcs_df['sample_id']
+    pcs_df.drop(['sample_id'], axis=1, inplace=True)
+    print(pcs_df)
+
+    # combine sex, age and geno PC info
+    combined_sex_age_pcs = pd.concat([sex_df, age_df, pcs_df], axis=1)
+    sex_age_pcs_out_file = output_path('sex_age_geno_pcs_tob_bioheart.csv', 'analysis')
+    combined_sex_age_pcs.to_csv(sex_age_pcs_out_file)
 
 
 if __name__ == '__main__':
