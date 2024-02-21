@@ -68,7 +68,7 @@ def remove_chr_from_bim(input_bim: str, output_bim: str):
 
     # Save the modified DataFrame to a new .bim file
     with to_path(output_bim).open('w') as f:
-        data.to_csv(f, sep='\t', header=None, index=False)  # noqa
+        data.to_csv(f, sep='\t', header=None, index=False)
 
 
 # inputs:
@@ -111,13 +111,11 @@ def main(
             # consider only relevant chromosome
             chrom_vds = hl.vds.filter_chromosomes(vds, keep=chromosome)
 
-            # split multiallelic loci
+            # split multiallelic loci (necessary pre-densifying)
             chrom_vds = hl.vds.split_multi(chrom_vds, filter_changed_loci=True)
 
             # densify to matrix table object
             mt = hl.vds.to_dense_mt(chrom_vds)
-            # remove me when done testing
-            mt = mt.head(1000)
 
             # filter out loci & variant QC
             mt = mt.filter_rows(hl.len(mt.alleles) == 2)  # remove hom-ref
@@ -178,8 +176,7 @@ def main(
     if not can_reuse(vre_bim_path):
         vds = hl.vds.split_multi(vds, filter_changed_loci=True)
         mt = hl.vds.to_dense_mt(vds)
-        # remove me when done testing
-        mt = mt.head(5000)
+        # again filter for biallelic SNPs
         mt = mt.filter_rows(
             ~(mt.was_split)  # biallelic (exclude multiallelic)
             & (hl.len(mt.alleles) == 2)  # remove hom-ref
@@ -192,6 +189,7 @@ def main(
         n_ac_vars = vre_mt.count()[0]  # to avoid evaluating this 2X
         logging.info(f'MT filtered to common enough variants, {n_ac_vars} left')
         if n_ac_vars == 0:
+            logging.info('No variants left, exiting!')
             return
         # since pruning is very costly, subset first a bit
         random.seed(0)
@@ -211,9 +209,8 @@ def main(
         export_plink(vre_mt, vre_plink_path, ind_id=vre_mt.s)
         logging.info('plink export completed')
 
-        # # check existence of bim file separately
-        # if not can_reuse(f'{vre_plink_path}.bim'):
-        # remove chr using awk
+        # saige requires numerical values for chromosomes, so
+        # removing "chr" from the bim file
         plink_input_bim = get_batch().read_input(vre_bim_path)
         remove_chr_job = get_batch().new_python_job(name='remove chr from plink bim')
         remove_chr_job.cpu(1)
