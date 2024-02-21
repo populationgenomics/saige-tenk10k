@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# pylint: disable=import-error
 
 """
 This script will
@@ -29,6 +28,7 @@ from cpg_utils.config import get_config
 from cpg_utils.hail_batch import dataset_path, get_batch, init_batch, output_path
 
 import click
+import logging
 import random
 import pandas as pd
 
@@ -45,7 +45,7 @@ def can_reuse(path: str):
     return False
 
 
-def remove_chr_from_bim(input_bim, output_bim):
+def remove_chr_from_bim(input_bim: str, output_bim: str):
     """
     Method powered by Gemini
 
@@ -58,14 +58,17 @@ def remove_chr_from_bim(input_bim, output_bim):
     """
     # Read the .bim file into a DataFrame
     data = pd.read_csv(
-        input_bim, sep='\t', header=None, names=['chrom', 'rsid', 'cm', 'bp']
+        input_bim,
+        sep='\t',
+        header=None,
+        names=['chrom', 'rsid', 'cm', 'bp', 'ref', 'alt'],
     )
-
     # Extract numerical chromosome values
     data['chrom'] = data['chrom'].str.extract('(\d+)')[0]
 
     # Save the modified DataFrame to a new .bim file
-    data.to_csv(output_bim, sep='\t', header=None, index=False)
+    with to_path(output_bim).open('w') as f:
+        data.to_csv(f, sep='\t', header=None, index=False)
 
 
 # inputs:
@@ -74,8 +77,18 @@ def remove_chr_from_bim(input_bim, output_bim):
 @click.option('--cv-maf-threshold', default=0.01)
 @click.option('--vre-mac-threshold', default=20)
 @click.option('--vre-n-markers', default=2000)
+@click.option('--exclude-multiallelic', is_flag=False)
+@click.option('--exclude-indels', is_flag=False)
 @click.command()
-def main(vds_version, chromosomes, cv_maf_threshold, vre_mac_threshold, vre_n_markers):
+def main(
+    vds_version: str,
+    chromosomes: str,
+    cv_maf_threshold: float,
+    vre_mac_threshold: int,
+    vre_n_markers: int,
+    exclude_multiallelic: bool,
+    exclude_indels: bool,
+):
     """
     Write genotypes as VCF
     """
@@ -91,27 +104,32 @@ def main(vds_version, chromosomes, cv_maf_threshold, vre_mac_threshold, vre_n_ma
         cv_vcf_path = output_path(
             f'vds{vds_version}/{chromosome}_common_variants.vcf.bgz'
         )
+        vcf_existence_outcome = can_reuse(cv_vcf_path)
+        logging.info(f'Does {cv_vcf_path} exist? {vcf_existence_outcome}')
         if not can_reuse(cv_vcf_path):
 
             # consider only relevant chromosome
             chrom_vds = hl.vds.filter_chromosomes(vds, keep=chromosome)
 
-            # split multiallelic loci
+            # split multiallelic loci (necessary pre-densifying)
             chrom_vds = hl.vds.split_multi(chrom_vds, filter_changed_loci=True)
 
             # densify to matrix table object
             mt = hl.vds.to_dense_mt(chrom_vds)
 
             # filter out loci & variant QC
-            mt = mt.filter_rows(
-                ~(mt.was_split)  # biallelic (exclude multiallelic)
-                & (hl.len(mt.alleles) == 2)  # remove hom-ref
-                & (hl.is_snp(mt.alleles[0], mt.alleles[1]))  # SNPs (exclude indels)
-            )
+            mt = mt.filter_rows(hl.len(mt.alleles) == 2)  # remove hom-ref
+            if exclude_multiallelic:  # biallelic only (exclude multiallelic)
+                mt = mt.filter_rows(~(mt.was_split))
+            if exclude_indels:  # SNPs only (exclude indels)
+                mt = mt.filter_rows(hl.is_snp(mt.alleles[0], mt.alleles[1]))
+            logging.info(f'Number of variants left after filtering: {mt.count()}')
+
             mt = hl.variant_qc(mt)
 
             # common variants only
             cv_mt = mt.filter_rows(mt.variant_qc.AF[1] > cv_maf_threshold)
+            logging.info(f'Number of common variants left: {cv_mt.count()}')
 
             # remove fields not in the VCF
             cv_mt = cv_mt.drop('gvcf_info')
@@ -120,6 +138,8 @@ def main(vds_version, chromosomes, cv_maf_threshold, vre_mac_threshold, vre_n_ma
             export_vcf(cv_mt, cv_vcf_path)
 
         # check existence of index file separately
+        index_file_existence_outcome = can_reuse(f'{cv_vcf_path}.csi')
+        logging.info(f'Does {cv_vcf_path}.csi exist? {index_file_existence_outcome}')
         if not can_reuse(f'{cv_vcf_path}.csi'):
             # remove chr & add index file using bcftools
             vcf_input = get_batch().read_input(cv_vcf_path)
@@ -127,19 +147,36 @@ def main(vds_version, chromosomes, cv_maf_threshold, vre_mac_threshold, vre_n_ma
             bcftools_job.image(BCFTOOLS_IMAGE)
             bcftools_job.cpu(4)
             bcftools_job.storage('15G')
-            # remove chr
+            # now remove "chr" from chromosome names using bcftools
             bcftools_job.command(
-                f'bcftools annotate --remove-chrs {vcf_input} | bgzip > {vcf_input}'
+                'for num in {1..22} X Y; do echo "chr${num} ${num}" >> chr_update.txt; done'
             )
+            bcftools_job.command(
+                f'bcftools annotate --rename-chrs chr_update.txt {vcf_input} -o {bcftools_job.vcf}'
+            )
+            logging.info('chromosome names now changed (no "chr")!')
+            bcftools_job.command(
+                f'bgzip -c {bcftools_job.vcf} > {bcftools_job.vcf}.bgz'
+            )
+            logging.info('VCF file is now zipped!')
             # add index (.csi)
-            bcftools_job.command(f'bcftools index -c {vcf_input} -o {bcftools_job.csi}')
+            bcftools_job.command(
+                f'bcftools index -c {bcftools_job.vcf}.bgz -o {bcftools_job.csi}'
+            )
+            logging.info('VCF index created!')
+            # save both output files
+            get_batch().write_output(bcftools_job.vcf, cv_vcf_path)
             get_batch().write_output(bcftools_job.csi, f'{cv_vcf_path}.csi')
 
     # subset variants for variance ratio estimation
     vre_plink_path = output_path(f'vds{vds_version}/vre_plink_2000_variants')
-    if not can_reuse(vre_plink_path):
+    vre_bim_path = f'{vre_plink_path}.bim'
+    plink_existence_outcome = can_reuse(vre_bim_path)
+    logging.info(f'Does {vre_bim_path} exist? {plink_existence_outcome}')
+    if not can_reuse(vre_bim_path):
         vds = hl.vds.split_multi(vds, filter_changed_loci=True)
         mt = hl.vds.to_dense_mt(vds)
+        # again filter for biallelic SNPs
         mt = mt.filter_rows(
             ~(mt.was_split)  # biallelic (exclude multiallelic)
             & (hl.len(mt.alleles) == 2)  # remove hom-ref
@@ -150,37 +187,41 @@ def main(vds_version, chromosomes, cv_maf_threshold, vre_mac_threshold, vre_n_ma
         # minor allele count (MAC) > {vre_mac_threshold}
         vre_mt = mt.filter_rows(mt.variant_qc.AC[1] > vre_mac_threshold)
         n_ac_vars = vre_mt.count()[0]  # to avoid evaluating this 2X
+        logging.info(f'MT filtered to common enough variants, {n_ac_vars} left')
         if n_ac_vars == 0:
+            logging.info('No variants left, exiting!')
             return
         # since pruning is very costly, subset first a bit
         random.seed(0)
-        vre_mt = vre_mt.sample_rows(p=0.01)
+        # vre_mt = vre_mt.sample_rows(p=0.01)
+        logging.info('subset completed')
         # perform LD pruning
         pruned_variant_table = hl.ld_prune(vre_mt.GT, r2=0.2, bp_window_size=500000)
         vre_mt = vre_mt.filter_rows(hl.is_defined(pruned_variant_table[vre_mt.row_key]))
+        logging.info(f'pruning completed, {vre_mt.count()[0]} variants left')
         # randomly sample {vre_n_markers} variants
         random.seed(0)
         vre_mt = vre_mt.sample_rows((vre_n_markers * 1.1) / vre_mt.count()[0])
         vre_mt = vre_mt.head(vre_n_markers)
+        logging.info(f'sampling completed, {vre_mt.count()} variants left')
 
         # export to plink common variants only for sparse GRM
         export_plink(vre_mt, vre_plink_path, ind_id=vre_mt.s)
+        logging.info('plink export completed')
 
-        # check existence of bim file separately
-        if not can_reuse(f'{vre_plink_path}.bim'):
-            # remove chr using awk
-            plink_input = get_batch().read_input(vre_plink_path)
-            remove_chr_job = get_batch().new_python_job(
-                name='remove chr from plink bim'
-            )
-            remove_chr_job.cpu(4)
-            remove_chr_job.storage('15G')
-            # remove chr
-            remove_chr_job.call(remove_chr_from_bim, plink_input.bim, plink_input.bim)
-            get_batch().write_output(remove_chr_job.bim, f'{plink_input}.bim')
+        # saige requires numerical values for chromosomes, so
+        # removing "chr" from the bim file
+        plink_input_bim = get_batch().read_input(vre_bim_path)
+        remove_chr_job = get_batch().new_python_job(name='remove chr from plink bim')
+        remove_chr_job.cpu(1)
+        remove_chr_job.storage('1G')
+        # remove chr, then write direct to the BIM source location
+        remove_chr_job.call(remove_chr_from_bim, plink_input_bim, vre_bim_path)
+        logging.info('chr removed from bim')
 
     get_batch().run(wait=False)
 
 
 if __name__ == '__main__':
+    logging.basicConfig(level=logging.INFO)
     main()  # pylint: disable=no-value-for-parameter
