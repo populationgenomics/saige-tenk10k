@@ -130,7 +130,7 @@ def main(
     age_df = pd.DataFrame(age_dict_list)
 
     # genotype PCs
-    pcs_ht_path = dataset_path('/large_cohort/1-0/ancestry/scores.ht')
+    pcs_ht_path = dataset_path(f'/large_cohort/{vds_version}/ancestry/scores.ht')
     pcs_ht = hl.read_table(pcs_ht_path)
     # convert to pandas
     pcs_df = pcs_ht.to_pandas()
