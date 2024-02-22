@@ -93,7 +93,7 @@ def main(
     Write genotypes as VCF
     """
 
-    init_batch()
+    init_batch(worker_memory='highmem')
 
     vds_path = dataset_path(f'vds/{vds_version}.vds')
     vds = hl.vds.read_vds(vds_path)
