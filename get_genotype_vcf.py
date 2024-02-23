@@ -39,6 +39,28 @@ from hail.methods import export_plink, export_vcf
 BCFTOOLS_IMAGE = get_config()['images']['bcftools']
 
 
+def checkpoint_mt(mt: hl.MatrixTable, checkpoint_path: str, force: bool = False):
+    """
+    Checkpoint a MatrixTable to a file.
+    If the checkpoint exists, read instead
+
+    Args:
+      mt: MatrixTable to checkpoint.
+      path: Path to save the MatrixTable to.
+      force: Whether to overwrite an existing checkpoint
+    """
+    if force or not to_path(checkpoint_path).exists():
+        return mt.checkpoint(checkpoint_path, overwrite=True)
+
+    if (
+            to_path(checkpoint_path).exists() and
+            (to_path(checkpoint_path) / '_SUCCESS').exists()
+    ):
+        return hl.read_matrix_table(checkpoint_path)
+    else:
+        return mt.checkpoint(checkpoint_path, overwrite=True)
+
+
 def can_reuse(path: str):
     if path and to_path(path).exists():
         return True
@@ -123,13 +145,13 @@ def main(
                 mt = mt.filter_rows(~(mt.was_split))
             if exclude_indels:  # SNPs only (exclude indels)
                 mt = mt.filter_rows(hl.is_snp(mt.alleles[0], mt.alleles[1]))
-            logging.info(f'Number of variants left after filtering: {mt.count()}')
+            # logging.info(f'Number of variants left after filtering: {mt.count()}')
 
             mt = hl.variant_qc(mt)
 
             # common variants only
             cv_mt = mt.filter_rows(mt.variant_qc.AF[1] > cv_maf_threshold)
-            logging.info(f'Number of common variants left: {cv_mt.count()}')
+            # logging.info(f'Number of common variants left: {cv_mt.count()}')
 
             # remove fields not in the VCF
             cv_mt = cv_mt.drop('gvcf_info')
@@ -176,6 +198,11 @@ def main(
     if not can_reuse(vre_bim_path):
         vds = hl.vds.split_multi(vds, filter_changed_loci=True)
         mt = hl.vds.to_dense_mt(vds)
+
+        # set a checkpoint, and either re-use or write
+        post_dense_checkpoint = output_path('post_dense_checkpoint.mt', category='tmp')
+        mt = checkpoint_mt(mt, post_dense_checkpoint)
+
         # again filter for biallelic SNPs
         mt = mt.filter_rows(
             ~(mt.was_split)  # biallelic (exclude multiallelic)
@@ -186,22 +213,32 @@ def main(
 
         # minor allele count (MAC) > {vre_mac_threshold}
         vre_mt = mt.filter_rows(mt.variant_qc.AC[1] > vre_mac_threshold)
-        n_ac_vars = vre_mt.count()[0]  # to avoid evaluating this 2X
-        logging.info(f'MT filtered to common enough variants, {n_ac_vars} left')
-        if n_ac_vars == 0:
+
+        # set a checkpoint, and either re-use or write
+        post_common_checkpoint = output_path('common_reduced_checkpoint.mt', category='tmp')
+        vre_mt = checkpoint_mt(vre_mt, post_common_checkpoint)
+
+        if (n_ac_vars := vre_mt.count_rows()) == 0:
             logging.info('No variants left, exiting!')
-            return
+            return  # todo fail instead?
+        logging.info(f'MT filtered to common enough variants, {n_ac_vars} left')
+
         # since pruning is very costly, subset first a bit
         random.seed(0)
         # vre_mt = vre_mt.sample_rows(p=0.01)
-        logging.info('subset completed')
+        logging.info('subset completed')  # ? no checkpointing done?
+
         # perform LD pruning
         pruned_variant_table = hl.ld_prune(vre_mt.GT, r2=0.2, bp_window_size=500000)
         vre_mt = vre_mt.filter_rows(hl.is_defined(pruned_variant_table[vre_mt.row_key]))
-        logging.info(f'pruning completed, {vre_mt.count()[0]} variants left')
+
+        post_prune_checkpoint = output_path('post_prune_checkpoint.mt', category='tmp')
+        vre_mt = checkpoint_mt(vre_mt, post_prune_checkpoint)
+
+        logging.info(f'pruning completed, {vre_mt.count_rows()} variants left')
         # randomly sample {vre_n_markers} variants
         random.seed(0)
-        vre_mt = vre_mt.sample_rows((vre_n_markers * 1.1) / vre_mt.count()[0])
+        vre_mt = vre_mt.sample_rows((vre_n_markers * 1.1) / vre_mt.count_rows())
         vre_mt = vre_mt.head(vre_n_markers)
         logging.info(f'sampling completed, {vre_mt.count()} variants left')
 
