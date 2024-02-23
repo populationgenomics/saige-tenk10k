@@ -53,8 +53,8 @@ def checkpoint_mt(mt: hl.MatrixTable, checkpoint_path: str, force: bool = False)
         return mt.checkpoint(checkpoint_path, overwrite=True)
 
     if (
-            to_path(checkpoint_path).exists() and
-            (to_path(checkpoint_path) / '_SUCCESS').exists()
+        to_path(checkpoint_path).exists()
+        and (to_path(checkpoint_path) / '_SUCCESS').exists()
     ):
         return hl.read_matrix_table(checkpoint_path)
     else:
@@ -215,7 +215,9 @@ def main(
         vre_mt = mt.filter_rows(mt.variant_qc.AC[1] > vre_mac_threshold)
 
         # set a checkpoint, and either re-use or write
-        post_common_checkpoint = output_path('common_reduced_checkpoint.mt', category='tmp')
+        post_common_checkpoint = output_path(
+            'common_reduced_checkpoint.mt', category='tmp'
+        )
         vre_mt = checkpoint_mt(vre_mt, post_common_checkpoint)
 
         if (n_ac_vars := vre_mt.count_rows()) == 0:
