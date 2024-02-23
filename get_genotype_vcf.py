@@ -228,7 +228,7 @@ def main(
         # since pruning is very costly, subset first a bit
         random.seed(0)
         # vre_mt = vre_mt.sample_rows(p=0.01)
-        logging.info('subset completed')  # ? no checkpointing done?
+        logging.info('subset completed')  # ? no subsetting done?
 
         # perform LD pruning
         pruned_variant_table = hl.ld_prune(vre_mt.GT, r2=0.2, bp_window_size=500000)
