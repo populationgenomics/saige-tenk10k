@@ -14,12 +14,23 @@ SAIGE-QTL association pipeline.
 
 To run:
 
+In test:
+
 analysis-runner \
     --description "get common variant VCF" \
     --dataset "bioheart" \
     --access-level "test" \
     --output-dir "saige-qtl/input_files/genotypes/" \
     python3 get_genotype_vcf.py --vds-version 1-0 --chromosomes chr1,chr2,chr22 --vre-mac-threshold 1
+
+In main:
+
+analysis-runner \
+    --description "get common variant VCF" \
+    --dataset "bioheart" \
+    --access-level "standard" \
+    --output-dir "saige-qtl/input_files/genotypes/" \
+    python3 get_genotype_vcf.py --vds-version v1-0 --chromosomes chr1,chr2,chr22
 
 """
 
@@ -101,6 +112,8 @@ def remove_chr_from_bim(input_bim: str, output_bim: str):
 @click.option('--vre-n-markers', default=2000)
 @click.option('--exclude-multiallelic', is_flag=False)
 @click.option('--exclude-indels', is_flag=False)
+@click.option('--bcftools-job-storage', default='15G')
+@click.option('--plink-job-storage', default='1G')
 @click.command()
 def main(
     vds_version: str,
@@ -110,6 +123,8 @@ def main(
     vre_n_markers: int,
     exclude_multiallelic: bool,
     exclude_indels: bool,
+    bcftools_job_storage: str,
+    plink_job_storage: str,
 ):
     """
     Write genotypes as VCF
@@ -168,7 +183,7 @@ def main(
             bcftools_job = get_batch().new_job(name='remove chr and index vcf')
             bcftools_job.image(BCFTOOLS_IMAGE)
             bcftools_job.cpu(4)
-            bcftools_job.storage('15G')
+            bcftools_job.storage(bcftools_job_storage)
             # now remove "chr" from chromosome names using bcftools
             bcftools_job.command(
                 'for num in {1..22} X Y; do echo "chr${num} ${num}" >> chr_update.txt; done'
@@ -227,8 +242,8 @@ def main(
 
         # since pruning is very costly, subset first a bit
         random.seed(0)
-        # vre_mt = vre_mt.sample_rows(p=0.01)
-        logging.info('subset completed')  # ? no subsetting done?
+        vre_mt = vre_mt.sample_rows(p=0.01)
+        logging.info('subset completed')
 
         # perform LD pruning
         pruned_variant_table = hl.ld_prune(vre_mt.GT, r2=0.2, bp_window_size=500000)
@@ -253,7 +268,7 @@ def main(
         plink_input_bim = get_batch().read_input(vre_bim_path)
         remove_chr_job = get_batch().new_python_job(name='remove chr from plink bim')
         remove_chr_job.cpu(1)
-        remove_chr_job.storage('1G')
+        remove_chr_job.storage(plink_job_storage)
         # remove chr, then write direct to the BIM source location
         remove_chr_job.call(remove_chr_from_bim, plink_input_bim, vre_bim_path)
         logging.info('chr removed from bim')
