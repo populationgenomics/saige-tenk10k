@@ -28,7 +28,7 @@ In main:
 analysis-runner \
     --description "get common variant VCF" \
     --dataset "bioheart" \
-    --access-level "standard" \
+    --access-level "full" \
     --output-dir "saige-qtl/input_files/genotypes/" \
     python3 get_genotype_vcf.py --vds-version v1-0 --chromosomes chr1,chr2,chr22
 
@@ -147,7 +147,7 @@ def remove_chr_from_bim(input_bim: str, output_bim: str):
 @click.option('--vre-n-markers', default=2000)
 @click.option('--exclude-multiallelic', is_flag=False)
 @click.option('--exclude-indels', is_flag=False)
-@click.option('--bcftools-job-storage', default='15G')
+@click.option('--bcftools-job-storage', default='40G')
 @click.option('--plink-job-storage', default='1G')
 @click.command()
 def main(
@@ -296,8 +296,10 @@ def main(
 
         # export to plink common variants only for sparse GRM
         export_plink(vre_mt, vre_plink_path, ind_id=vre_mt.s)
+        no_chr_bim = False
         logging.info('plink export completed')
 
+    if not no_chr_bim:
         # saige requires numerical values for chromosomes, so
         # removing "chr" from the bim file
         plink_input_bim = get_batch().read_input(vre_bim_path)
@@ -306,6 +308,7 @@ def main(
         remove_chr_job.storage(plink_job_storage)
         # remove chr, then write direct to the BIM source location
         remove_chr_job.call(remove_chr_from_bim, plink_input_bim, vre_bim_path)
+        no_chr_bim = True
         logging.info('chr removed from bim')
 
     get_batch().run(wait=False)
