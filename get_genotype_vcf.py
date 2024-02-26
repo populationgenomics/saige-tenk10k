@@ -245,8 +245,7 @@ def main(
         vre_mt = checkpoint_mt(vre_mt, post_common_checkpoint)
 
         if (n_ac_vars := vre_mt.count_rows()) == 0:
-            logging.info('No variants left, exiting!')
-            return  # todo fail instead?
+            raise ValueError('No variants left, exiting!')
         logging.info(f'MT filtered to common enough variants, {n_ac_vars} left')
 
         # since pruning is very costly, subset first a bit
