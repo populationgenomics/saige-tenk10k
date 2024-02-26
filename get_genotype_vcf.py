@@ -47,10 +47,17 @@ import hail as hl
 from hail.methods import export_plink, export_vcf
 
 
+# this is a guess, let's see how it performs...
+VARS_PER_PARTITION = 2000
+
+
 def checkpoint_mt(mt: hl.MatrixTable, checkpoint_path: str, force: bool = False):
     """
     Checkpoint a MatrixTable to a file.
     If the checkpoint exists, read instead
+
+    inspired by this thread
+    https://discuss.hail.is/t/best-way-to-repartition-heavily-filtered-matrix-tables/2140
 
     Args:
       mt: MatrixTable to checkpoint.
@@ -58,26 +65,45 @@ def checkpoint_mt(mt: hl.MatrixTable, checkpoint_path: str, force: bool = False)
       force: Whether to overwrite an existing checkpoint
     """
 
-    logging.info(f'Checkpoint: {checkpoint_path}')
+    # create a temp checkpoint path
+    temp_checkpoint_path = checkpoint_path + '.temp'
+    logging.info(f'Checkpoint temp: {temp_checkpoint_path}')
 
     # either force an overwrite, or write the first version
-    if force or not to_path(checkpoint_path).exists():
-        logging.info(f'Writing new checkpoint to {checkpoint_path}')
-        mt = mt.checkpoint(checkpoint_path, overwrite=True)
+    if force or not to_path(temp_checkpoint_path).exists():
+        logging.info(f'Writing new temp checkpoint to {temp_checkpoint_path}')
+        mt = mt.checkpoint(temp_checkpoint_path, overwrite=True)
 
-    # unless forced, if the data exists, read it
     elif (
         to_path(checkpoint_path).exists()
         and (to_path(checkpoint_path) / '_SUCCESS').exists()
     ):
-        logging.info(f'Reading existing checkpoint from {checkpoint_path}')
-        mt = hl.read_matrix_table(checkpoint_path)
+        logging.info(f'Reading non-temp checkpoint from {checkpoint_path}')
+        return hl.read_matrix_table(checkpoint_path)
+
+    # unless forced, if the data exists, read it
+    elif (
+        to_path(temp_checkpoint_path).exists()
+        and (to_path(temp_checkpoint_path) / '_SUCCESS').exists()
+    ):
+        logging.info(f'Reading existing temp checkpoint from {temp_checkpoint_path}')
+        mt = hl.read_matrix_table(temp_checkpoint_path)
+
     else:
         raise FileNotFoundError('Checkpoint exists but is incomplete, was not forced')
 
     logging.info(
         f'Dimensions of MT: {mt.count()}, across {mt.n_partitions()} partitions'
     )
+
+    # repartition to a reasonable number of partitions, then re-write
+    hl.read_matrix_table(
+        temp_checkpoint_path, _n_partitions=mt.count_rows() // VARS_PER_PARTITION or 1
+    ).write(checkpoint_path)
+
+    # delete the temp checkpoint
+    hl.current_backend().fs.rmtree(temp_checkpoint_path)
+
     return mt
 
 
@@ -200,16 +226,17 @@ def main(
             bcftools_job.command(
                 f'bcftools annotate --rename-chrs chr_update.txt {vcf_input} -o {bcftools_job.vcf}'
             )
-            logging.info('chromosome names now changed (no "chr")!')
+            # logging.info('chromosome names now changed (no "chr")!')
             bcftools_job.command(
                 f'bgzip -c {bcftools_job.vcf} > {bcftools_job.vcf}.bgz'
             )
-            logging.info('VCF file is now zipped!')
+            # logging.info('VCF file is now zipped!')
             # add index (.csi)
             bcftools_job.command(
                 f'bcftools index -c {bcftools_job.vcf}.bgz -o {bcftools_job.csi}'
             )
-            logging.info('VCF index created!')
+            logging.info('VCF rename/index jobs scheduled!')
+
             # save both output files
             get_batch().write_output(bcftools_job.vcf, cv_vcf_path)
             get_batch().write_output(bcftools_job.csi, f'{cv_vcf_path}.csi')
