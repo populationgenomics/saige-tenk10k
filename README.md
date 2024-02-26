@@ -23,7 +23,7 @@ Variant selection for PLINK files for variance ratio estimation (VRE):
 
 * variants that are: i) QC-passing, ii) not ref-ref variants, and iii) not indels or multi-allelic SNPs.
 * variants that are not rare (MAC > 20) in our population
-* random subset of 2000 variants across all chromosomes
+* random subset of 2,000 variants across all chromosomes
 
 Inputs:
 
