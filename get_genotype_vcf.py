@@ -48,7 +48,7 @@ from hail.methods import export_plink, export_vcf
 
 
 # this is a guess, let's see how it performs...
-VARS_PER_PARTITION = 2000
+VARS_PER_PARTITION = 20000
 
 
 def checkpoint_mt(mt: hl.MatrixTable, checkpoint_path: str, force: bool = False):
