@@ -75,7 +75,9 @@ def checkpoint_mt(mt: hl.MatrixTable, checkpoint_path: str, force: bool = False)
     else:
         raise FileNotFoundError('Checkpoint exists but is incomplete, was not forced')
 
-    logging.info(f'Dimensions of MT: {mt.count()}, across {mt.n_partitions()} partitions')
+    logging.info(
+        f'Dimensions of MT: {mt.count()}, across {mt.n_partitions()} partitions'
+    )
     return mt
 
 
