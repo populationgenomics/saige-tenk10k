@@ -47,9 +47,6 @@ import hail as hl
 from hail.methods import export_plink, export_vcf
 
 
-BCFTOOLS_IMAGE = get_config()['images']['bcftools']
-
-
 def checkpoint_mt(mt: hl.MatrixTable, checkpoint_path: str, force: bool = False):
     """
     Checkpoint a MatrixTable to a file.
@@ -57,19 +54,29 @@ def checkpoint_mt(mt: hl.MatrixTable, checkpoint_path: str, force: bool = False)
 
     Args:
       mt: MatrixTable to checkpoint.
-      path: Path to save the MatrixTable to.
+      checkpoint_path: Path to save the MatrixTable to.
       force: Whether to overwrite an existing checkpoint
     """
-    if force or not to_path(checkpoint_path).exists():
-        return mt.checkpoint(checkpoint_path, overwrite=True)
 
-    if (
+    logging.info(f'Checkpoint: {checkpoint_path}')
+
+    # either force an overwrite, or write the first version
+    if force or not to_path(checkpoint_path).exists():
+        logging.info(f'Writing new checkpoint to {checkpoint_path}')
+        mt = mt.checkpoint(checkpoint_path, overwrite=True)
+
+    # unless forced, if the data exists, read it
+    elif (
         to_path(checkpoint_path).exists()
         and (to_path(checkpoint_path) / '_SUCCESS').exists()
     ):
-        return hl.read_matrix_table(checkpoint_path)
+        logging.info(f'Reading existing checkpoint from {checkpoint_path}')
+        mt = hl.read_matrix_table(checkpoint_path)
     else:
-        return mt.checkpoint(checkpoint_path, overwrite=True)
+        raise FileNotFoundError('Checkpoint exists but is incomplete, was not forced')
+
+    logging.info(f'Dimensions of MT: {mt.count()}, across {mt.n_partitions()} partitions')
+    return mt
 
 
 def can_reuse(path: str):
@@ -143,7 +150,7 @@ def main(
         )
         vcf_existence_outcome = can_reuse(cv_vcf_path)
         logging.info(f'Does {cv_vcf_path} exist? {vcf_existence_outcome}')
-        if not can_reuse(cv_vcf_path):
+        if not vcf_existence_outcome:
 
             # consider only relevant chromosome
             chrom_vds = hl.vds.filter_chromosomes(vds, keep=chromosome)
@@ -177,11 +184,11 @@ def main(
         # check existence of index file separately
         index_file_existence_outcome = can_reuse(f'{cv_vcf_path}.csi')
         logging.info(f'Does {cv_vcf_path}.csi exist? {index_file_existence_outcome}')
-        if not can_reuse(f'{cv_vcf_path}.csi'):
+        if not index_file_existence_outcome:
             # remove chr & add index file using bcftools
             vcf_input = get_batch().read_input(cv_vcf_path)
             bcftools_job = get_batch().new_job(name='remove chr and index vcf')
-            bcftools_job.image(BCFTOOLS_IMAGE)
+            bcftools_job.image(get_config()['images']['bcftools'])
             bcftools_job.cpu(4)
             bcftools_job.storage(bcftools_job_storage)
             # now remove "chr" from chromosome names using bcftools
@@ -210,7 +217,7 @@ def main(
     vre_bim_path = f'{vre_plink_path}.bim'
     plink_existence_outcome = can_reuse(vre_bim_path)
     logging.info(f'Does {vre_bim_path} exist? {plink_existence_outcome}')
-    if not can_reuse(vre_bim_path):
+    if not plink_existence_outcome:
         vds = hl.vds.split_multi(vds, filter_changed_loci=True)
         mt = hl.vds.to_dense_mt(vds)
 
