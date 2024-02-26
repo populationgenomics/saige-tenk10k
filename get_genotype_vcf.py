@@ -140,7 +140,7 @@ def remove_chr_from_bim(input_bim: str, output_bim: str, bim_renamed: str):
         data.to_csv(f, sep='\t', header=None, index=False)
 
     # Write empty success file
-    with to_path(bim_renamed).open('w') as fp:
+    with to_path(bim_renamed).open('w') as fp:  # noqa
         pass
 
 
