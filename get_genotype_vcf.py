@@ -113,7 +113,7 @@ def can_reuse(path: str):
     return False
 
 
-def remove_chr_from_bim(input_bim: str, output_bim: str):
+def remove_chr_from_bim(input_bim: str, output_bim: str, bim_renamed: str):
     """
     Method powered by Gemini
 
@@ -123,6 +123,7 @@ def remove_chr_from_bim(input_bim: str, output_bim: str):
     Args:
       input_bim: Path to the original .bim file.
       output_bim: Path to save the modified .bim file.
+      bim_renamed: Path to success file.
     """
     # Read the .bim file into a DataFrame
     data = pd.read_csv(
@@ -137,6 +138,10 @@ def remove_chr_from_bim(input_bim: str, output_bim: str):
     # Save the modified DataFrame to a new .bim file
     with to_path(output_bim).open('w') as f:
         data.to_csv(f, sep='\t', header=None, index=False)
+
+    # Write empty success file
+    with to_path(bim_renamed).open('w') as fp:
+        pass
 
 
 # inputs:
@@ -299,7 +304,13 @@ def main(
         no_chr_bim = False
         logging.info('plink export completed')
 
-    if not no_chr_bim:
+    # success file for chr renaming in bim file
+    bim_renamed_path = output_path(f'vds{vds_version}/bim_renamed.txt')
+    bim_renamed_existence_outcome = can_reuse(bim_renamed_path)
+    logging.info(
+        f'Have the chr been renamed in the bim file? {bim_renamed_existence_outcome}'
+    )
+    if not bim_renamed_existence_outcome:
         # saige requires numerical values for chromosomes, so
         # removing "chr" from the bim file
         plink_input_bim = get_batch().read_input(vre_bim_path)
@@ -307,8 +318,9 @@ def main(
         remove_chr_job.cpu(1)
         remove_chr_job.storage(plink_job_storage)
         # remove chr, then write direct to the BIM source location
-        remove_chr_job.call(remove_chr_from_bim, plink_input_bim, vre_bim_path)
-        no_chr_bim = True
+        remove_chr_job.call(
+            remove_chr_from_bim, plink_input_bim, vre_bim_path, bim_renamed_path
+        )
         logging.info('chr removed from bim')
 
     get_batch().run(wait=False)
