@@ -301,7 +301,6 @@ def main(
 
         # export to plink common variants only for sparse GRM
         export_plink(vre_mt, vre_plink_path, ind_id=vre_mt.s)
-        no_chr_bim = False
         logging.info('plink export completed')
 
     # success file for chr renaming in bim file
