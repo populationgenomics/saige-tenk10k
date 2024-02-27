@@ -106,7 +106,7 @@ def make_pheno_cov(
         celltype_covs_df (pd.DataFrame): celltype specific covs
         out_path (str): path we're writing to
     """
-    # determine avg age to fill in later
+    # determine average age to fill in later
     if fill_in_age:
         mean_age = sample_covs_df['age'].mean()
     cell_ind_df = expression_adata.obs.loc[:, ['cell', 'individual']]
@@ -161,7 +161,7 @@ def main(
     """
     Run expression processing pipeline
     """
-    # set this up with the default python image
+    # set this up with the default (scanpy) python image
     get_batch(
         default_python_image=get_config()['images']['scanpy'],
         name='prepare all gene files',
@@ -220,7 +220,7 @@ def main(
                 f'AnnData for {celltype}, {chromosome} filtered: {expression_adata.shape[1]} genes left'
             )
 
-            # start up some jobs for all each gene
+            # start up some jobs for each gene
             for gene in expression_adata.var['gene_name']:
 
                 # make pheno cov file
