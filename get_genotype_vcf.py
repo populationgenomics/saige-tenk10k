@@ -221,7 +221,9 @@ def main(
             # remove chr & add index file using bcftools
             vcf_input = get_batch().read_input(cv_vcf_path)
             bcftools_job = get_batch().new_job(name='remove chr and index vcf')
-            bcftools_job.declare_resource_group(output={'vcf.bgz': '{root}', 'vcf.bgz.csi': '{root}.csi'})
+            bcftools_job.declare_resource_group(
+                output={'vcf.bgz': '{root}', 'vcf.bgz.csi': '{root}.csi'}
+            )
             bcftools_job.image(get_config()['images']['bcftools'])
             bcftools_job.cpu(4)
             bcftools_job.storage(bcftools_job_storage)
@@ -229,11 +231,13 @@ def main(
             bcftools_job.command(
                 'for num in {1..22} X Y; do echo "chr${num} ${num}" >> chr_update.txt; done'
             )
-            bcftools_job.command(f"""
+            bcftools_job.command(
+                f"""
                 bcftools annotate --rename-chrs chr_update.txt {vcf_input} | \\
                 bgzip -c > {bcftools_job.output['vcf.bgz']}
                 bcftools index -c {bcftools_job.output['vcf.bgz']}
-            """)
+            """
+            )
             logging.info('VCF rename/index jobs scheduled!')
 
             # save both output files
