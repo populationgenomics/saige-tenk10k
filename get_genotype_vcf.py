@@ -152,7 +152,6 @@ def remove_chr_from_bim(input_bim: str, output_bim: str, bim_renamed: str):
 @click.option('--vre-n-markers', default=2000)
 @click.option('--exclude-multiallelic', is_flag=False)
 @click.option('--exclude-indels', is_flag=False)
-@click.option('--bcftools-job-storage', default='40G')
 @click.option('--plink-job-storage', default='1G')
 @click.command()
 def main(
@@ -163,7 +162,6 @@ def main(
     vre_n_markers: int,
     exclude_multiallelic: bool,
     exclude_indels: bool,
-    bcftools_job_storage: str,
     plink_job_storage: str,
 ):
     """
@@ -220,13 +218,16 @@ def main(
         if not index_file_existence_outcome:
             # remove chr & add index file using bcftools
             vcf_input = get_batch().read_input(cv_vcf_path)
+
+            vcf_size = to_path(cv_vcf_path).stat().st_size
+            storage_required = ((vcf_size // 1024**3) or 1) * 2.2
             bcftools_job = get_batch().new_job(name='remove chr and index vcf')
             bcftools_job.declare_resource_group(
                 output={'vcf.bgz': '{root}', 'vcf.bgz.csi': '{root}.csi'}
             )
             bcftools_job.image(get_config()['images']['bcftools'])
             bcftools_job.cpu(4)
-            bcftools_job.storage(bcftools_job_storage)
+            bcftools_job.storage(f'{storage_required}Gi')
             # now remove "chr" from chromosome names using bcftools
             bcftools_job.command(
                 'for num in {1..22} X Y; do echo "chr${num} ${num}" >> chr_update.txt; done'
