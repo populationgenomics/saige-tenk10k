@@ -231,7 +231,7 @@ def main(
             )
             bcftools_job.command(f"""
                 bcftools annotate --rename-chrs chr_update.txt {vcf_input} | \\
-                bgzip -c {bcftools_job.vcf} > {bcftools_job.output['vcf.bgz']}
+                bgzip -c > {bcftools_job.output['vcf.bgz']}
                 bcftools index -c {bcftools_job.output['vcf.bgz']}
             """)
             logging.info('VCF rename/index jobs scheduled!')
