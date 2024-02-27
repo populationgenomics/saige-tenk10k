@@ -27,6 +27,7 @@ analysis-runner \
 
 
 import click
+import logging
 import math
 import hail as hl
 import hailtop.batch.job as hb_job
@@ -105,7 +106,7 @@ def make_pheno_cov(
         celltype_covs_df (pd.DataFrame): celltype specific covs
         out_path (str): path we're writing to
     """
-    # determine avg age to fill in later
+    # determine average age to fill in later
     if fill_in_age:
         mean_age = sample_covs_df['age'].mean()
     cell_ind_df = expression_adata.obs.loc[:, ['cell', 'individual']]
@@ -160,7 +161,7 @@ def main(
     """
     Run expression processing pipeline
     """
-    # set this up with the default python image
+    # set this up with the default (scanpy) python image
     get_batch(
         default_python_image=get_config()['images']['scanpy'],
         name='prepare all gene files',
@@ -186,6 +187,7 @@ def main(
     )
     sample_covs_df = pd.read_csv(sample_covs_file)
     sample_covs_df['individual'] = sample_covs_df['sample_id']
+    logging.info('sample covariate file opened')
 
     for celltype in celltypes.split(','):
 
@@ -195,6 +197,7 @@ def main(
             f'{celltype_covs_files_prefix}/{celltype}_expression_pcs.csv'
         )
         celltype_covs_df = pd.read_csv(celltype_covs_file, index_col=0)
+        logging.info(f'cell covariate for {celltype} file opened')
 
         for chromosome in chromosomes.split(','):
             chrom_len = hl.get_reference('GRCh38').lengths[chromosome]
@@ -203,15 +206,21 @@ def main(
             expression_h5ad_path = to_path(
                 dataset_path(f'{anndata_files_prefix}/{celltype}_{chromosome}.h5ad')
             ).copy('here.h5ad')
-            expression_adata = sc.read(expression_h5ad_path)
+            expression_adata = sc.read_h5ad(expression_h5ad_path)
             assert isinstance(expression_adata, sc.AnnData), type(expression_adata)
+            logging.info(
+                f'AnnData for {celltype}, {chromosome} opened: {expression_adata.shape[1]} total genes'
+            )
 
             # extract genes expressed in at least X% cells
             expression_adata = filter_lowly_expressed_genes(
                 expression_adata, min_pct=min_pct_expr
             )
+            logging.info(
+                f'AnnData for {celltype}, {chromosome} filtered: {expression_adata.shape[1]} genes left'
+            )
 
-            # start up some jobs for all each gene
+            # start up some jobs for each gene
             for gene in expression_adata.var['gene_name']:
 
                 # make pheno cov file
@@ -233,6 +242,7 @@ def main(
                         str(pheno_cov_filename),
                     )
                     manage_concurrency(pheno_cov_job)
+                    logging.info(f'pheno cov job for {gene}, {celltype} scheduled')
 
                 # make cis window file
                 gene_cis_filename = to_path(
@@ -253,6 +263,7 @@ def main(
                         chrom_len,
                     )
                     manage_concurrency(gene_cis_job)
+                    logging.info(f'cis window job for {gene} scheduled')
             del expression_adata
 
             # delete the local here.h5ad file
@@ -262,4 +273,5 @@ def main(
 
 
 if __name__ == '__main__':
+    logging.basicConfig(level=logging.INFO)
     main()  # pylint: disable=no-value-for-parameter
