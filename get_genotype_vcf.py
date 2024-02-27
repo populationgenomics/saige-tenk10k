@@ -221,6 +221,9 @@ def main(
             # remove chr & add index file using bcftools
             vcf_input = get_batch().read_input(cv_vcf_path)
             bcftools_job = get_batch().new_job(name='remove chr and index vcf')
+            bcftools_job.declare_resource_group(
+                output={'vcf.bgz': '{root}', 'vcf.bgz.csi': '{root}.csi'}
+            )
             bcftools_job.image(get_config()['images']['bcftools'])
             bcftools_job.cpu(4)
             bcftools_job.storage(bcftools_job_storage)
@@ -229,22 +232,16 @@ def main(
                 'for num in {1..22} X Y; do echo "chr${num} ${num}" >> chr_update.txt; done'
             )
             bcftools_job.command(
-                f'bcftools annotate --rename-chrs chr_update.txt {vcf_input} -o {bcftools_job.vcf}'
-            )
-            # logging.info('chromosome names now changed (no "chr")!')
-            bcftools_job.command(
-                f'bgzip -c {bcftools_job.vcf} > {bcftools_job.vcf}.bgz'
-            )
-            # logging.info('VCF file is now zipped!')
-            # add index (.csi)
-            bcftools_job.command(
-                f'bcftools index -c {bcftools_job.vcf}.bgz -o {bcftools_job.csi}'
+                f"""
+                bcftools annotate --rename-chrs chr_update.txt {vcf_input} | \\
+                bgzip -c > {bcftools_job.output['vcf.bgz']}
+                bcftools index -c {bcftools_job.output['vcf.bgz']}
+            """
             )
             logging.info('VCF rename/index jobs scheduled!')
 
             # save both output files
-            get_batch().write_output(bcftools_job.vcf, cv_vcf_path)
-            get_batch().write_output(bcftools_job.csi, f'{cv_vcf_path}.csi')
+            get_batch().write_output(bcftools_job.output, cv_vcf_path)
 
     # subset variants for variance ratio estimation
     vre_plink_path = output_path(f'vds{vds_version}/vre_plink_2000_variants')
