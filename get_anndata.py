@@ -206,7 +206,7 @@ def main(
             expression_h5ad_path = to_path(
                 dataset_path(f'{anndata_files_prefix}/{celltype}_{chromosome}.h5ad')
             ).copy('here.h5ad')
-            expression_adata = sc.read(expression_h5ad_path)
+            expression_adata = sc.read_h5ad(expression_h5ad_path)
             assert isinstance(expression_adata, sc.AnnData), type(expression_adata)
             logging.info(
                 f'AnnData for {celltype}, {chromosome} opened: {expression_adata.shape[1]} total genes'
