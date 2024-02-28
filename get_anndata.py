@@ -42,7 +42,7 @@ from cpg_utils.config import get_config
 from cpg_utils.hail_batch import dataset_path, get_batch, init_batch, output_path
 
 
-def filter_lowly_expressed_genes(expression_adata, min_pct=5) -> sc.AnnData:
+def filter_lowly_expressed_genes(expression_adata, min_pct=1) -> sc.AnnData:
     """
     Remove genes with low expression across cells
 
@@ -254,7 +254,7 @@ def main(
                         writer.write(line)
 
             # start up some jobs for each gene
-            for gene in expression_adata.var['gene_name']:
+            for gene in expression_adata.var['gene_name'][0:5]:
 
                 # make pheno cov file
                 pheno_cov_filename = to_path(
