@@ -33,6 +33,7 @@ import hail as hl
 import hailtop.batch.job as hb_job
 import pandas as pd
 import scanpy as sc
+from pathlib import Path
 from typing import List
 
 from cpg_utils import to_path
@@ -60,7 +61,7 @@ def filter_lowly_expressed_genes(expression_adata, min_pct=5) -> sc.AnnData:
 
 
 def get_gene_cis_info(
-    gene_info_df: pd.DataFrame,
+    gene_info_df_path: str,
     gene: str,
     window_size: int,
     out_path: str,
@@ -69,12 +70,15 @@ def get_gene_cis_info(
     """
     Get gene cis window file
     Args:
-        gene_info_df (pd.DataFrame): gene chrom, start, end
+        gene_info_df_path (str): path to whole adata object
         gene (str): gene name
         window_size (int): bp to consider in window, up and downstream of gene
         out_path (str): path we're writing to
         chrom_len (int): length of chromosome
     """
+
+    gene_info_df = copy_h5ad_local_and_open(gene_info_df_path).var
+
     # select the gene from df
     gene_info_gene = gene_info_df[gene_info_df['gene_name'] == gene]
     # get gene chromosome
@@ -90,7 +94,7 @@ def get_gene_cis_info(
 
 def make_pheno_cov(
     gene: str,
-    expression_adata: sc.AnnData,
+    expression_adata_path: str,
     sample_covs_df: pd.DataFrame,
     celltype_covs_df: pd.DataFrame,
     out_path: str,
@@ -101,11 +105,13 @@ def make_pheno_cov(
     Combine expression and covariates into a single file
      Args:
         gene (str): gene name
-        expression_adata (sc.AnnData): expression object all genes
+        expression_adata_path (str): path to expression object all genes
         sample_covs_df (pd.DataFrame): sex, age
         celltype_covs_df (pd.DataFrame): celltype specific covs
         out_path (str): path we're writing to
     """
+    expression_adata = copy_h5ad_local_and_open(expression_adata_path)
+
     # determine average age to fill in later
     if fill_in_age:
         mean_age = sample_covs_df['age'].mean()
@@ -126,6 +132,22 @@ def make_pheno_cov(
     pheno_cov_df = pd.concat([sample_covs_cells_df, expr_df, celltype_covs_df], axis=1)
     with to_path(out_path).open('w') as pcf:
         pheno_cov_df.to_csv(pcf, index=False)
+
+
+def copy_h5ad_local_and_open(adata_path: str) -> sc.AnnData:
+    """
+    Copy h5ad file to local, then open it
+    Args:
+        adata_path (str): path to h5ad file
+
+    Returns:
+        sc.AnnData: opened AnnData object
+    """
+    # copy in h5ad file to local, then load it
+    expression_h5ad_path = to_path(adata_path).copy('here.h5ad')
+    expression_adata = sc.read_h5ad(expression_h5ad_path)
+    assert isinstance(expression_adata, sc.AnnData), type(expression_adata)
+    return expression_adata
 
 
 @click.command()
@@ -203,11 +225,10 @@ def main(
             chrom_len = hl.get_reference('GRCh38').lengths[chromosome]
 
             # copy in h5ad file to local, then load it
-            expression_h5ad_path = to_path(
-                dataset_path(f'{anndata_files_prefix}/{celltype}_{chromosome}.h5ad')
-            ).copy('here.h5ad')
-            expression_adata = sc.read_h5ad(expression_h5ad_path)
-            assert isinstance(expression_adata, sc.AnnData), type(expression_adata)
+            expression_h5ad_path = dataset_path(
+                f'{anndata_files_prefix}/{celltype}_{chromosome}.h5ad'
+            )
+            expression_adata = copy_h5ad_local_and_open(expression_h5ad_path)
             logging.info(
                 f'AnnData for {celltype}, {chromosome} opened: {expression_adata.shape[1]} total genes'
             )
@@ -219,6 +240,19 @@ def main(
             logging.info(
                 f'AnnData for {celltype}, {chromosome} filtered: {expression_adata.shape[1]} genes left'
             )
+
+            # dump the adata to a local file
+            tmp_adata_name = f'{celltype}_{chromosome}.h5ad'
+            expression_adata.write_h5ad(filename=Path(tmp_adata_name))
+
+            # then write that to GCP
+            tmp_path = (
+                to_path(get_config()['storage']['default']['tmp']) / tmp_adata_name
+            )
+            with open(tmp_adata_name) as reader:
+                with tmp_path.open('w') as writer:
+                    for line in reader:
+                        writer.write(line)
 
             # start up some jobs for each gene
             for gene in expression_adata.var['gene_name']:
@@ -237,7 +271,7 @@ def main(
                     pheno_cov_job.call(
                         make_pheno_cov,
                         gene,
-                        expression_adata,
+                        str(tmp_path),
                         sample_covs_df,
                         celltype_covs_df,
                         str(pheno_cov_filename),
@@ -258,7 +292,7 @@ def main(
                     gene_cis_job.storage('10G')
                     gene_cis_job.call(
                         get_gene_cis_info,
-                        expression_adata.var,
+                        str(tmp_path),
                         gene,
                         cis_window_size,
                         str(gene_cis_filename),
@@ -266,10 +300,12 @@ def main(
                     )
                     manage_concurrency(gene_cis_job)
                     logging.info(f'cis window job for {gene} scheduled')
-            del expression_adata
 
-            # delete the local here.h5ad file
-            expression_h5ad_path.unlink()
+            ## these aren't necessary with fewer loops, for removal?
+            # del expression_adata
+            #
+            # # delete the local here.h5ad file
+            # to_path(expression_h5ad_path).unlink()
 
     get_batch().run(wait=False)
 
