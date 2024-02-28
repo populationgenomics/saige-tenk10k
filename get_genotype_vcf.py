@@ -223,7 +223,7 @@ def main(
             storage_required = ((vcf_size // 1024**3) or 1) * 2.2
             bcftools_job = get_batch().new_job(name='remove chr and index vcf')
             bcftools_job.declare_resource_group(
-                output={'vcf.bgz': '{root}', 'vcf.bgz.csi': '{root}.csi'}
+                output={'vcf.bgz': '{root}.vcf.bgz', 'vcf.bgz.csi': '{root}.vcf.bgz.csi'}
             )
             bcftools_job.image(get_config()['images']['bcftools'])
             bcftools_job.cpu(4)
@@ -242,7 +242,7 @@ def main(
             logging.info('VCF rename/index jobs scheduled!')
 
             # save both output files
-            get_batch().write_output(bcftools_job.output, cv_vcf_path)
+            get_batch().write_output(bcftools_job.output, cv_vcf_path.removesuffix('.vcf.bgz'))
 
     # subset variants for variance ratio estimation
     vre_plink_path = output_path(f'vds{vds_version}/vre_plink_2000_variants')
