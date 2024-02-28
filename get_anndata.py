@@ -249,8 +249,8 @@ def main(
             tmp_path = (
                 to_path(get_config()['storage']['default']['tmp']) / tmp_adata_name
             )
-            with open(tmp_adata_name) as reader:
-                with tmp_path.open('w') as writer:
+            with open(tmp_adata_name, 'rb') as reader:
+                with tmp_path.open('wb') as writer:
                     for line in reader:
                         writer.write(line)
 
