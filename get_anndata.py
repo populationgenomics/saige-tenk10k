@@ -33,6 +33,7 @@ import hail as hl
 import hailtop.batch.job as hb_job
 import pandas as pd
 import scanpy as sc
+from os.path import join
 from pathlib import Path
 from typing import List
 
@@ -41,7 +42,7 @@ from cpg_utils.config import get_config
 from cpg_utils.hail_batch import dataset_path, get_batch, init_batch, output_path
 
 
-def filter_lowly_expressed_genes(expression_adata, min_pct=5) -> sc.AnnData:
+def filter_lowly_expressed_genes(expression_adata, min_pct=1) -> sc.AnnData:
     """
     Remove genes with low expression across cells
 
@@ -246,16 +247,14 @@ def main(
             expression_adata.write_h5ad(filename=Path(tmp_adata_name))
 
             # then write that to GCP
-            tmp_path = (
-                to_path(get_config()['storage']['default']['tmp']) / tmp_adata_name
-            )
+            tmp_path = join(get_config()['storage']['default']['tmp'], tmp_adata_name)
             with open(tmp_adata_name, 'rb') as reader:
-                with tmp_path.open('wb') as writer:
+                with hl.hadoop_open(tmp_path, 'wb') as writer:
                     for line in reader:
                         writer.write(line)
 
             # start up some jobs for each gene
-            for gene in expression_adata.var['gene_name']:
+            for gene in expression_adata.var['gene_name'][0:5]:
 
                 # make pheno cov file
                 pheno_cov_filename = to_path(
@@ -302,6 +301,7 @@ def main(
                     logging.info(f'cis window job for {gene} scheduled')
 
             ## these aren't necessary with fewer loops, for removal?
+
             # del expression_adata
             #
             # # delete the local here.h5ad file
