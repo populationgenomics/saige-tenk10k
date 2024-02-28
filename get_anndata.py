@@ -149,6 +149,7 @@ def copy_h5ad_local_and_open(adata_path: str) -> sc.AnnData:
     assert isinstance(expression_adata, sc.AnnData), type(expression_adata)
     return expression_adata
 
+
 @click.command()
 @click.option('--celltypes')
 @click.option('--chromosomes')
@@ -245,7 +246,9 @@ def main(
             expression_adata.write_h5ad(filename=Path(tmp_adata_name))
 
             # then write that to GCP
-            tmp_path = to_path(get_config()['storage']['default']['tmp']) / tmp_adata_name
+            tmp_path = (
+                to_path(get_config()['storage']['default']['tmp']) / tmp_adata_name
+            )
             with open(tmp_adata_name) as reader:
                 with tmp_path.open('w') as writer:
                     for line in reader:
