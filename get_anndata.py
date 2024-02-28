@@ -233,6 +233,7 @@ def main(
                     pheno_cov_job = get_batch().new_python_job(
                         name=f'pheno cov file: {gene}, {celltype}'
                     )
+                    pheno_cov_job.storage('10G')
                     pheno_cov_job.call(
                         make_pheno_cov,
                         gene,
@@ -254,6 +255,7 @@ def main(
                     gene_cis_job = get_batch().new_python_job(
                         name=f'gene cis file: {gene}'
                     )
+                    gene_cis_job.storage('10G')
                     gene_cis_job.call(
                         get_gene_cis_info,
                         expression_adata.var,
