@@ -263,7 +263,7 @@ def main(
                         writer.write(line)
 
             # start up some jobs for each gene
-            for gene in expression_adata.var['gene_name'][0:10]:
+            for gene in expression_adata.var['gene_name'][0:100]:
 
                 # make pheno cov file
                 pheno_cov_filename = to_path(
