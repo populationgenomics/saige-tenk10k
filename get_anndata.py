@@ -120,7 +120,7 @@ def make_pheno_cov(
     sample_covs_df['individual'] = sample_covs_df['sample_id']
     logging.info('sample covariate file opened')
     celltype_covs_df = pd.read_csv(celltype_covs_file, index_col=0)
-    logging.info(f'cell covariate file opened')
+    logging.info('cell covariate file opened')
 
     # determine average age to fill in later
     if fill_in_age:
