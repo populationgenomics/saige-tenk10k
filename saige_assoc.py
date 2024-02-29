@@ -467,6 +467,7 @@ def main(
         summarise_job.depends_on(job3)
         summarise_job.call(
             summarise_cv_results,
+            celltype=celltype,
             gene_results_path=str('output_files/'),
             out_path=summary_output_path,
         )
