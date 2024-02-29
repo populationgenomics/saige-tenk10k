@@ -302,13 +302,6 @@ def main(
                     manage_concurrency(gene_cis_job)
                     logging.info(f'cis window job for {gene} scheduled')
 
-            ## these aren't necessary with fewer loops, for removal?
-
-            # del expression_adata
-            #
-            # # delete the local here.h5ad file
-            # to_path(expression_h5ad_path).unlink()
-
     get_batch().run(wait=False)
 
 
