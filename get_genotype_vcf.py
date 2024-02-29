@@ -28,7 +28,7 @@ In main:
 analysis-runner \
     --description "get common variant VCF" \
     --dataset "bioheart" \
-    --access-level "standard" \
+    --access-level "full" \
     --output-dir "saige-qtl/input_files/genotypes/" \
     python3 get_genotype_vcf.py --vds-version v1-0 --chromosomes chr1,chr2,chr22
 
@@ -47,10 +47,17 @@ import hail as hl
 from hail.methods import export_plink, export_vcf
 
 
+# this is a guess, let's see how it performs...
+VARS_PER_PARTITION = 20000
+
+
 def checkpoint_mt(mt: hl.MatrixTable, checkpoint_path: str, force: bool = False):
     """
     Checkpoint a MatrixTable to a file.
     If the checkpoint exists, read instead
+
+    inspired by this thread
+    https://discuss.hail.is/t/best-way-to-repartition-heavily-filtered-matrix-tables/2140
 
     Args:
       mt: MatrixTable to checkpoint.
@@ -58,26 +65,45 @@ def checkpoint_mt(mt: hl.MatrixTable, checkpoint_path: str, force: bool = False)
       force: Whether to overwrite an existing checkpoint
     """
 
-    logging.info(f'Checkpoint: {checkpoint_path}')
+    # create a temp checkpoint path
+    temp_checkpoint_path = checkpoint_path + '.temp'
+    logging.info(f'Checkpoint temp: {temp_checkpoint_path}')
 
     # either force an overwrite, or write the first version
-    if force or not to_path(checkpoint_path).exists():
-        logging.info(f'Writing new checkpoint to {checkpoint_path}')
-        mt = mt.checkpoint(checkpoint_path, overwrite=True)
+    if force or not to_path(temp_checkpoint_path).exists():
+        logging.info(f'Writing new temp checkpoint to {temp_checkpoint_path}')
+        mt = mt.checkpoint(temp_checkpoint_path, overwrite=True)
 
-    # unless forced, if the data exists, read it
     elif (
         to_path(checkpoint_path).exists()
         and (to_path(checkpoint_path) / '_SUCCESS').exists()
     ):
-        logging.info(f'Reading existing checkpoint from {checkpoint_path}')
-        mt = hl.read_matrix_table(checkpoint_path)
+        logging.info(f'Reading non-temp checkpoint from {checkpoint_path}')
+        return hl.read_matrix_table(checkpoint_path)
+
+    # unless forced, if the data exists, read it
+    elif (
+        to_path(temp_checkpoint_path).exists()
+        and (to_path(temp_checkpoint_path) / '_SUCCESS').exists()
+    ):
+        logging.info(f'Reading existing temp checkpoint from {temp_checkpoint_path}')
+        mt = hl.read_matrix_table(temp_checkpoint_path)
+
     else:
         raise FileNotFoundError('Checkpoint exists but is incomplete, was not forced')
 
     logging.info(
         f'Dimensions of MT: {mt.count()}, across {mt.n_partitions()} partitions'
     )
+
+    # repartition to a reasonable number of partitions, then re-write
+    hl.read_matrix_table(
+        temp_checkpoint_path, _n_partitions=mt.count_rows() // VARS_PER_PARTITION or 1
+    ).write(checkpoint_path)
+
+    # delete the temp checkpoint
+    hl.current_backend().fs.rmtree(temp_checkpoint_path)
+
     return mt
 
 
@@ -87,7 +113,7 @@ def can_reuse(path: str):
     return False
 
 
-def remove_chr_from_bim(input_bim: str, output_bim: str):
+def remove_chr_from_bim(input_bim: str, output_bim: str, bim_renamed: str):
     """
     Method powered by Gemini
 
@@ -97,6 +123,7 @@ def remove_chr_from_bim(input_bim: str, output_bim: str):
     Args:
       input_bim: Path to the original .bim file.
       output_bim: Path to save the modified .bim file.
+      bim_renamed: Path to success file.
     """
     # Read the .bim file into a DataFrame
     data = pd.read_csv(
@@ -112,6 +139,10 @@ def remove_chr_from_bim(input_bim: str, output_bim: str):
     with to_path(output_bim).open('w') as f:
         data.to_csv(f, sep='\t', header=None, index=False)
 
+    # Write empty success file
+    with to_path(bim_renamed).open('w') as fp:  # noqa
+        pass
+
 
 # inputs:
 @click.option('--vds-version', help=' e.g., 1-0 ')
@@ -121,7 +152,6 @@ def remove_chr_from_bim(input_bim: str, output_bim: str):
 @click.option('--vre-n-markers', default=2000)
 @click.option('--exclude-multiallelic', is_flag=False)
 @click.option('--exclude-indels', is_flag=False)
-@click.option('--bcftools-job-storage', default='15G')
 @click.option('--plink-job-storage', default='1G')
 @click.command()
 def main(
@@ -132,7 +162,6 @@ def main(
     vre_n_markers: int,
     exclude_multiallelic: bool,
     exclude_indels: bool,
-    bcftools_job_storage: str,
     plink_job_storage: str,
 ):
     """
@@ -189,30 +218,36 @@ def main(
         if not index_file_existence_outcome:
             # remove chr & add index file using bcftools
             vcf_input = get_batch().read_input(cv_vcf_path)
+
+            vcf_size = to_path(cv_vcf_path).stat().st_size
+            storage_required = ((vcf_size // 1024**3) or 1) * 2.2
             bcftools_job = get_batch().new_job(name='remove chr and index vcf')
+            bcftools_job.declare_resource_group(
+                output={
+                    'vcf.bgz': '{root}.vcf.bgz',
+                    'vcf.bgz.csi': '{root}.vcf.bgz.csi',
+                }
+            )
             bcftools_job.image(get_config()['images']['bcftools'])
             bcftools_job.cpu(4)
-            bcftools_job.storage(bcftools_job_storage)
+            bcftools_job.storage(f'{storage_required}Gi')
             # now remove "chr" from chromosome names using bcftools
             bcftools_job.command(
                 'for num in {1..22} X Y; do echo "chr${num} ${num}" >> chr_update.txt; done'
             )
             bcftools_job.command(
-                f'bcftools annotate --rename-chrs chr_update.txt {vcf_input} -o {bcftools_job.vcf}'
+                f"""
+                bcftools annotate --rename-chrs chr_update.txt {vcf_input} | \\
+                bgzip -c > {bcftools_job.output['vcf.bgz']}
+                bcftools index -c {bcftools_job.output['vcf.bgz']}
+            """
             )
-            logging.info('chromosome names now changed (no "chr")!')
-            bcftools_job.command(
-                f'bgzip -c {bcftools_job.vcf} > {bcftools_job.vcf}.bgz'
-            )
-            logging.info('VCF file is now zipped!')
-            # add index (.csi)
-            bcftools_job.command(
-                f'bcftools index -c {bcftools_job.vcf}.bgz -o {bcftools_job.csi}'
-            )
-            logging.info('VCF index created!')
+            logging.info('VCF rename/index jobs scheduled!')
+
             # save both output files
-            get_batch().write_output(bcftools_job.vcf, cv_vcf_path)
-            get_batch().write_output(bcftools_job.csi, f'{cv_vcf_path}.csi')
+            get_batch().write_output(
+                bcftools_job.output, cv_vcf_path.removesuffix('.vcf.bgz')
+            )
 
     # subset variants for variance ratio estimation
     vre_plink_path = output_path(f'vds{vds_version}/vre_plink_2000_variants')
@@ -271,6 +306,13 @@ def main(
         export_plink(vre_mt, vre_plink_path, ind_id=vre_mt.s)
         logging.info('plink export completed')
 
+    # success file for chr renaming in bim file
+    bim_renamed_path = output_path(f'vds{vds_version}/bim_renamed.txt')
+    bim_renamed_existence_outcome = can_reuse(bim_renamed_path)
+    logging.info(
+        f'Have the chr been renamed in the bim file? {bim_renamed_existence_outcome}'
+    )
+    if not bim_renamed_existence_outcome:
         # saige requires numerical values for chromosomes, so
         # removing "chr" from the bim file
         plink_input_bim = get_batch().read_input(vre_bim_path)
@@ -278,7 +320,9 @@ def main(
         remove_chr_job.cpu(1)
         remove_chr_job.storage(plink_job_storage)
         # remove chr, then write direct to the BIM source location
-        remove_chr_job.call(remove_chr_from_bim, plink_input_bim, vre_bim_path)
+        remove_chr_job.call(
+            remove_chr_from_bim, plink_input_bim, vre_bim_path, bim_renamed_path
+        )
         logging.info('chr removed from bim')
 
     get_batch().run(wait=False)
