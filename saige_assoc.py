@@ -414,7 +414,9 @@ def main(
                 pheno_cov_path = (
                     f'{pheno_cov_files_path_ct_chrom}/{gene}_{celltype}_pheno_cov.tsv'
                 )
-                cis_window_path = f'{cis_window_files_path_chrom}/{gene}_{cis_window_size}bp.tsv'
+                cis_window_path = (
+                    f'{cis_window_files_path_chrom}/{gene}_{cis_window_size}bp.tsv'
+                )
 
                 # check if these outputs already exist, if so don't make a new job
                 null_job, null_output = run_fit_null_job(
