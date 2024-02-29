@@ -296,7 +296,7 @@ def run_fit_null_job(
     if null_output_path:
         get_batch().write_output(gene_job.output, null_output_path)
 
-    return gene_job, gene_job.output
+    return gene_job
 
 
 def summarise_cv_results(
