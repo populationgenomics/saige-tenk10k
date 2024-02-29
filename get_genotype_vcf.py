@@ -4,7 +4,8 @@
 This script will
 
 - extract common variants
-- export as VCF (one per chrom)
+- extract rare variants
+- export (both) as VCF files (one per chrom)
 - also create a plink file for a subset of variants
 for variance ratio estimation
 
@@ -26,7 +27,7 @@ analysis-runner \
 In main:
 
 analysis-runner \
-    --description "get common variant VCF" \
+    --description "get common and rare variant VCFs" \
     --dataset "bioheart" \
     --access-level "full" \
     --output-dir "saige-qtl/input_files/genotypes/" \
@@ -148,6 +149,7 @@ def remove_chr_from_bim(input_bim: str, output_bim: str, bim_renamed: str):
 @click.option('--vds-version', help=' e.g., 1-0 ')
 @click.option('--chromosomes', help=' e.g., chr22,chrX ')
 @click.option('--cv-maf-threshold', default=0.01)
+@click.option('--rv-maf-threshold', default=0.01)
 @click.option('--vre-mac-threshold', default=20)
 @click.option('--vre-n-markers', default=2000)
 @click.option('--exclude-multiallelic', is_flag=False)
@@ -158,6 +160,7 @@ def main(
     vds_version: str,
     chromosomes: str,
     cv_maf_threshold: float,
+    rv_maf_threshold: float,
     vre_mac_threshold: int,
     vre_n_markers: int,
     exclude_multiallelic: bool,
@@ -175,13 +178,20 @@ def main(
 
     for chromosome in chromosomes.split(','):
 
-        # create path and check if it exists already
+        # create paths and check if they exist already
         cv_vcf_path = output_path(
             f'vds{vds_version}/{chromosome}_common_variants.vcf.bgz'
         )
-        vcf_existence_outcome = can_reuse(cv_vcf_path)
-        logging.info(f'Does {cv_vcf_path} exist? {vcf_existence_outcome}')
-        if not vcf_existence_outcome:
+        cv_vcf_existence_outcome = can_reuse(cv_vcf_path)
+        logging.info(f'Does {cv_vcf_path} exist? {cv_vcf_existence_outcome}')
+
+        rv_vcf_path = output_path(
+            f'vds{vds_version}/{chromosome}_rare_variants.vcf.bgz'
+        )
+        rv_vcf_existence_outcome = can_reuse(rv_vcf_path)
+        logging.info(f'Does {cv_vcf_path} exist? {rv_vcf_existence_outcome}')
+
+        if not cv_vcf_existence_outcome or not rv_vcf_existence_outcome:
 
             # consider only relevant chromosome
             chrom_vds = hl.vds.filter_chromosomes(vds, keep=chromosome)
@@ -198,19 +208,28 @@ def main(
                 mt = mt.filter_rows(~(mt.was_split))
             if exclude_indels:  # SNPs only (exclude indels)
                 mt = mt.filter_rows(hl.is_snp(mt.alleles[0], mt.alleles[1]))
-            # logging.info(f'Number of variants left after filtering: {mt.count()}')
 
             mt = hl.variant_qc(mt)
 
-            # common variants only
-            cv_mt = mt.filter_rows(mt.variant_qc.AF[1] > cv_maf_threshold)
-            # logging.info(f'Number of common variants left: {cv_mt.count()}')
+            if not cv_vcf_existence_outcome:
+                # common variants only
+                cv_mt = mt.filter_rows(mt.variant_qc.AF[1] >= cv_maf_threshold)
 
-            # remove fields not in the VCF
-            cv_mt = cv_mt.drop('gvcf_info')
+                # remove fields not in the VCF
+                cv_mt = cv_mt.drop('gvcf_info')
 
-            # export to vcf common variants only
-            export_vcf(cv_mt, cv_vcf_path)
+                # export to vcf common variants only
+                export_vcf(cv_mt, cv_vcf_path)
+
+            if not rv_vcf_existence_outcome:
+                # common variants only
+                rv_mt = mt.filter_rows(mt.variant_qc.AF[1] < rv_maf_threshold)
+
+                # remove fields not in the VCF
+                rv_mt = rv_mt.drop('gvcf_info')
+
+                # export to vcf rare variants only
+                export_vcf(rv_mt, rv_vcf_path)
 
         # check existence of index file separately
         index_file_existence_outcome = can_reuse(f'{cv_vcf_path}.csi')
