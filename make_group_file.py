@@ -25,11 +25,13 @@ analysis-runner \
 import click
 import logging
 
-import hailtop.batch.job as hb_job
+# import hailtop.batch.job as hb_job
+# from typing import List
 
 from cpg_utils import to_path
 from cpg_utils.config import get_config
 from cpg_utils.hail_batch import get_batch, init_batch
+
 
 @click.command()
 @click.option('--cis-window-files-path')
@@ -57,7 +59,7 @@ def main(
         default_python_image=get_config()['images']['scanpy'],
         name='prepare all gene files',
     )
-    all_jobs: List[hb_job.Job] = []
+    # all_jobs: List[hb_job.Job] = []
 
     # def manage_concurrency(new_job: hb_job.Job):
     #     """
@@ -74,18 +76,14 @@ def main(
     # do a glob, then pull out all file names as Strings
     files = [
         file.name
-        for file in to_path(cis_window_files_path).glob(
-            'cis_window_files/*/*bp.csv'
-        )
+        for file in to_path(cis_window_files_path).glob('cis_window_files/*/*bp.csv')
     ]
     logging.info(f'I found these files: {", ".join(files)}')
 
     genes = [f.replace(f'_{cis_window}bp.tsv', '') for f in files]
     logging.info(f'I found these genes: {", ".join(genes)}')
 
-
     # for gene in genes:
-
 
     get_batch().run(wait=False)
 
