@@ -96,8 +96,8 @@ def get_gene_cis_info(
 def make_pheno_cov(
     gene: str,
     expression_adata_path: str,
-    sample_covs_df: pd.DataFrame,
-    celltype_covs_df: pd.DataFrame,
+    sample_covs_file: str,
+    celltype_covs_file: str,
     out_path: str,
     fill_in_sex: bool = True,
     fill_in_age: bool = True,
@@ -112,6 +112,13 @@ def make_pheno_cov(
         out_path (str): path we're writing to
     """
     expression_adata = copy_h5ad_local_and_open(expression_adata_path)
+
+    # open dataframes
+    sample_covs_df = pd.read_csv(sample_covs_file)
+    sample_covs_df['individual'] = sample_covs_df['sample_id']
+    logging.info('sample covariate file opened')
+    celltype_covs_df = pd.read_csv(celltype_covs_file, index_col=0)
+    logging.info('cell covariate file opened')
 
     # determine average age to fill in later
     if fill_in_age:
@@ -208,9 +215,6 @@ def main(
     sample_covs_file = dataset_path(
         f'{sample_covs_files_prefix}/sex_age_tob_bioheart.csv'
     )
-    sample_covs_df = pd.read_csv(sample_covs_file)
-    sample_covs_df['individual'] = sample_covs_df['sample_id']
-    logging.info('sample covariate file opened')
 
     for celltype in celltypes.split(','):
 
@@ -219,8 +223,6 @@ def main(
         celltype_covs_file = dataset_path(
             f'{celltype_covs_files_prefix}/{celltype}_expression_pcs.csv'
         )
-        celltype_covs_df = pd.read_csv(celltype_covs_file, index_col=0)
-        logging.info(f'cell covariate for {celltype} file opened')
 
         for chromosome in chromosomes.split(','):
             chrom_len = hl.get_reference('GRCh38').lengths[chromosome]
@@ -254,7 +256,7 @@ def main(
                         writer.write(line)
 
             # start up some jobs for each gene
-            for gene in expression_adata.var['gene_name'][0:5]:
+            for gene in expression_adata.var['gene_name']:
 
                 # make pheno cov file
                 pheno_cov_filename = to_path(
@@ -271,8 +273,8 @@ def main(
                         make_pheno_cov,
                         gene,
                         str(tmp_path),
-                        sample_covs_df,
-                        celltype_covs_df,
+                        str(sample_covs_file),
+                        str(celltype_covs_file),
                         str(pheno_cov_filename),
                     )
                     manage_concurrency(pheno_cov_job)
@@ -299,13 +301,6 @@ def main(
                     )
                     manage_concurrency(gene_cis_job)
                     logging.info(f'cis window job for {gene} scheduled')
-
-            ## these aren't necessary with fewer loops, for removal?
-
-            # del expression_adata
-            #
-            # # delete the local here.h5ad file
-            # to_path(expression_h5ad_path).unlink()
 
     get_batch().run(wait=False)
 
