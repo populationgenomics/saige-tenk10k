@@ -341,6 +341,7 @@ def summarise_cv_results(
 @click.option('--sample-id', default='individual')
 @click.option('--covs', default='sex,age,harmony_PC1,total_counts,sequencing_library')
 @click.option('--sample-covs', default='sex,age')
+@click.option('--cis-window-size', type=int, default=100000)
 @click.option(
     '--max-parallel-jobs',
     type=int,
@@ -360,6 +361,7 @@ def main(
     sample_id: str,
     covs: str,
     sample_covs: str,
+    cis_window_size: int,
     max_parallel_jobs: int = 100,
 ):
     """
@@ -412,7 +414,7 @@ def main(
                 pheno_cov_path = (
                     f'{pheno_cov_files_path_ct_chrom}/{gene}_{celltype}_pheno_cov.tsv'
                 )
-                cis_window_path = f'{cis_window_files_path_chrom}/{gene}_100000bp.tsv'
+                cis_window_path = f'{cis_window_files_path_chrom}/{gene}_{cis_window_size}bp.tsv'
 
                 # check if these outputs already exist, if so don't make a new job
                 null_job, null_output = run_fit_null_job(
@@ -453,6 +455,7 @@ def main(
 
     # summarise results (per cell type)
     for celltype in celltypes.split(','):
+        logging.info(f'start summarising results for {celltype}')
         summary_output_path = (
             f'output_files/summary_stats/{celltype}_all_cis_cv_results.tsv'
         )
@@ -461,7 +464,7 @@ def main(
         )
         summarise_job.call(
             summarise_cv_results,
-            gene_results_path='output_files/',
+            gene_results_path=str('output_files/'),
             out_path=summary_output_path,
         )
         summarise_cv_results
