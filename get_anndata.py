@@ -96,8 +96,6 @@ def get_gene_cis_info(
 def make_pheno_cov(
     gene: str,
     expression_adata_path: str,
-    # sample_covs_df: pd.DataFrame,
-    # celltype_covs_df: pd.DataFrame,
     sample_covs_file: str,
     celltype_covs_file: str,
     out_path: str,
@@ -217,9 +215,6 @@ def main(
     sample_covs_file = dataset_path(
         f'{sample_covs_files_prefix}/sex_age_tob_bioheart.csv'
     )
-    # sample_covs_df = pd.read_csv(sample_covs_file)
-    # sample_covs_df['individual'] = sample_covs_df['sample_id']
-    # logging.info('sample covariate file opened')
 
     for celltype in celltypes.split(','):
 
@@ -228,8 +223,6 @@ def main(
         celltype_covs_file = dataset_path(
             f'{celltype_covs_files_prefix}/{celltype}_expression_pcs.csv'
         )
-        # celltype_covs_df = pd.read_csv(celltype_covs_file, index_col=0)
-        # logging.info(f'cell covariate for {celltype} file opened')
 
         for chromosome in chromosomes.split(','):
             chrom_len = hl.get_reference('GRCh38').lengths[chromosome]
@@ -282,8 +275,6 @@ def main(
                         str(tmp_path),
                         str(sample_covs_file),
                         str(celltype_covs_file),
-                        # sample_covs_df,
-                        # celltype_covs_df,
                         str(pheno_cov_filename),
                     )
                     manage_concurrency(pheno_cov_job)
