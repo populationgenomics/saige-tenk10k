@@ -48,7 +48,7 @@ def build_fit_null_command(
     plink_path: str,
     pheno_col: str = 'y',
     trait_type: str = 'count',
-    # this is a boolean but that's encoded differently between R and python
+    # these are boolean but those are encoded differently in R and python
     skip_vre: str = 'FALSE',
     pheno_remove_zeros: str = 'FALSE',
     use_sparse_grm_null: str = 'FALSE',
@@ -243,6 +243,8 @@ def run_fit_null_job(
     sample_id_pheno: str,
     plink_path: str,
     pheno_col: str,
+    skip_vre: str = 'FALSE',
+    is_cov_transform: str = 'TRUE',
 ):
     """
     Check if the output file already exists;
@@ -289,6 +291,8 @@ def run_fit_null_job(
             output_prefix=gene_job.output,
             plink_path=plink_path,
             pheno_col=pheno_col,
+            skip_vre=skip_vre,
+            is_cov_transform=is_cov_transform,
         )
     )
 
@@ -348,6 +352,8 @@ def summarise_cv_results(
     default=100,
     help=('To avoid exceeding Google Cloud quotas, set this concurrency as a limit.'),
 )
+@click.option('--skip-vre', type=str, default='FALSE')
+@click.option('--is-cov-transform', type=str, default='TRUE')
 def main(
     celltypes: str,
     chromosomes: str,
@@ -363,6 +369,8 @@ def main(
     sample_covs: str,
     cis_window_size: int,
     max_parallel_jobs: int = 100,
+    skip_vre: str = 'FALSE',
+    is_cov_transform: str = 'TRUE',
 ):
     """
     Run SAIGE-QTL pipeline for all cell types
@@ -427,6 +435,8 @@ def main(
                     sample_id_pheno=sample_id,
                     plink_path=vre_plink_path,
                     pheno_col=gene,
+                    skip_vre=skip_vre,
+                    is_cov_transform=is_cov_transform,
                 )
                 if null_job:
                     manage_concurrency_for_job(null_job)
