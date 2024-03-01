@@ -202,7 +202,7 @@ def build_obtain_gene_level_pvals_command(
     - path for output file
     """
     if to_path(saige_gene_pval_output_file).exists():
-        return None, get_batch().read_input(saige_gene_pval_output_file)
+        return None
 
     saige_job = get_batch().new_job(name="saige-qtl part 3")
     saige_command_step3 = 'Rscript /usr/local/bin/step3_gene_pvalue_qtl.R'
@@ -211,7 +211,7 @@ def build_obtain_gene_level_pvals_command(
     saige_command_step3 += f' --genePval_outputFile={saige_job.output}'
     saige_job.command(saige_command_step3)
     get_batch().write_output(saige_job.output, saige_gene_pval_output_file)
-    return saige_job, saige_job.output
+    return saige_job
 
 
 def apply_job_settings(job: hb.batch.job.Job, job_name: str):
