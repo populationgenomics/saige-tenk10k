@@ -38,75 +38,6 @@ from cpg_utils.config import get_config
 from cpg_utils.hail_batch import dataset_path, get_batch, image_path, output_path
 
 
-# Fit null model (step 1)
-def build_fit_null_command(
-    pheno_file: str,
-    cov_col_list: str,
-    sample_cov_col_list: str,
-    sample_id_pheno: str,
-    output_prefix: str,
-    plink_path: str,
-    pheno_col: str = 'y',
-    trait_type: str = 'count',
-    # this is a boolean but that's encoded differently between R and python
-    skip_vre: str = 'FALSE',
-    pheno_remove_zeros: str = 'FALSE',
-    use_sparse_grm_null: str = 'FALSE',
-    use_grm_null: str = 'FALSE',
-    is_cov_offset: str = 'FALSE',
-    is_cov_transform: str = 'TRUE',
-    skip_model_fitting: str = 'FALSE',
-    tol: float = 0.00001,
-    is_overwrite_vre_file: str = 'TRUE',
-):
-    """Build SAIGE command for fitting null model
-    This will fit a Poisson / NB mixed model under the null hypothesis
-
-    Input:
-    - Phenotype / covariate file - rows: samples, cols: pheno (y), cov1, cov2 etc
-    - Comma separated str of column names from previous file to be used as covariates
-    - Same as above but for sample specific covariates
-    - Column name specifying sample / individual (e.g., IND_ID, or CPG_ID etc)
-    - output prefix: where to save the fitted model (.rda)
-    - Plink path: path to plink file (subset of ~2,000 markers for VRE)
-    - pheno col: name of column specifying pheno (default: "y")
-    - trait type: count = Poisson, count_nb = Negative Binomial, quantitative = Normal
-    - option to skip Variance Ratio estimation (discouraged)
-    - option to add an offset to the fixed covariates (???)
-    - option to transform (scale?) covariates?
-    - option to skip model fitting (discouraged)
-    - tolerance for convergence
-    - overwrite variance ratio file (estimated here)
-
-    Output:
-    Rscript command (str) ready to run (bash)
-    """
-    pheno_file = get_batch().read_input(pheno_file)
-    plink_prefix = get_batch().read_input_group(
-        bim=f'{plink_path}.bim', bed=f'{plink_path}.bed', fam=f'{plink_path}.fam'
-    )
-    return f"""
-        Rscript /usr/local/bin/step1_fitNULLGLMM_qtl.R \
-        --useSparseGRMtoFitNULL={use_sparse_grm_null} \
-        --useGRMtoFitNULL={use_grm_null} \
-        --phenoFile={pheno_file} \
-        --phenoCol={pheno_col} \
-        --covarColList={cov_col_list} \
-        --sampleCovarColList={sample_cov_col_list} \
-        --sampleIDColinphenoFile={sample_id_pheno} \
-        --traitType={trait_type} \
-        --outputPrefix={output_prefix} \
-        --skipVarianceRatioEstimation={skip_vre} \
-        --isRemoveZerosinPheno={pheno_remove_zeros} \
-        --isCovariateOffset={is_cov_offset} \
-        --isCovariateTransform={is_cov_transform} \
-        --skipModelFitting={skip_model_fitting} \
-        --tol={tol} \
-        --plinkFile={plink_prefix} \
-        --IsOverwriteVarianceRatioFile={is_overwrite_vre_file}
-    """
-
-
 # Run single variant association (step 2)
 def build_run_single_variant_test_command(
     output_path: str,
@@ -243,6 +174,17 @@ def run_fit_null_job(
     sample_id_pheno: str,
     plink_path: str,
     pheno_col: str,
+    trait_type: str = 'count',
+    # this is a boolean but that's encoded differently between R and python
+    skip_vre: str = 'FALSE',
+    pheno_remove_zeros: str = 'FALSE',
+    use_sparse_grm_null: str = 'FALSE',
+    use_grm_null: str = 'FALSE',
+    is_cov_offset: str = 'FALSE',
+    is_cov_transform: str = 'TRUE',
+    skip_model_fitting: str = 'FALSE',
+    tol: float = 0.00001,
+    is_overwrite_vre_file: str = 'TRUE',
 ):
     """
     Check if the output file already exists;
@@ -259,6 +201,26 @@ def run_fit_null_job(
 
     Returns:
         Tuple: (Job | None, ResourceGroup)
+
+    ---
+    Build SAIGE command for fitting null model
+    This will fit a Poisson / NB mixed model under the null hypothesis
+
+    Input:
+    - Phenotype / covariate file - rows: samples, cols: pheno (y), cov1, cov2 etc
+    - Comma separated str of column names from previous file to be used as covariates
+    - Same as above but for sample specific covariates
+    - Column name specifying sample / individual (e.g., IND_ID, or CPG_ID etc)
+    - output prefix: where to save the fitted model (.rda)
+    - Plink path: path to plink file (subset of ~2,000 markers for VRE)
+    - pheno col: name of column specifying pheno (default: "y")
+    - trait type: count = Poisson, count_nb = Negative Binomial, quantitative = Normal
+    - option to skip Variance Ratio estimation (discouraged)
+    - option to add an offset to the fixed covariates (???)
+    - option to transform (scale?) covariates?
+    - option to skip model fitting (discouraged)
+    - tolerance for convergence
+    - overwrite variance ratio file (estimated here)
 
     """
     if to_path(f'{null_output_path}.rda').exists():
@@ -279,29 +241,31 @@ def run_fit_null_job(
             'varianceRatio.txt': '{root}.varianceRatio.txt',
         }
     )
-
-    null_cmd = build_fit_null_command(
-        pheno_file=pheno_file,
-        cov_col_list=cov_col_list,
-        sample_cov_col_list=sample_cov_col_list,
-        sample_id_pheno=sample_id_pheno,
-        output_prefix=gene_job.output,
-        plink_path=plink_path,
-        pheno_col=pheno_col,
+    pheno_file = get_batch().read_input(pheno_file)
+    plink_prefix = get_batch().read_input_group(
+        bim=f'{plink_path}.bim', bed=f'{plink_path}.bed', fam=f'{plink_path}.fam'
     )
-    print(null_cmd)
-
     gene_job.command(
-        build_fit_null_command(
-            pheno_file=pheno_file,
-            cov_col_list=cov_col_list,
-            sample_cov_col_list=sample_cov_col_list,
-            sample_id_pheno=sample_id_pheno,
-            output_prefix=gene_job.output,
-            plink_path=plink_path,
-            pheno_col=pheno_col,
-        )
-    )
+        f"""
+        Rscript /usr/local/bin/step1_fitNULLGLMM_qtl.R \
+        --useSparseGRMtoFitNULL={use_sparse_grm_null} \
+        --useGRMtoFitNULL={use_grm_null} \
+        --phenoFile={pheno_file} \
+        --phenoCol={pheno_col} \
+        --covarColList={cov_col_list} \
+        --sampleCovarColList={sample_cov_col_list} \
+        --sampleIDColinphenoFile={sample_id_pheno} \
+        --traitType={trait_type} \
+        --outputPrefix={gene_job.output} \
+        --skipVarianceRatioEstimation={skip_vre} \
+        --isRemoveZerosinPheno={pheno_remove_zeros} \
+        --isCovariateOffset={is_cov_offset} \
+        --isCovariateTransform={is_cov_transform} \
+        --skipModelFitting={skip_model_fitting} \
+        --tol={tol} \
+        --plinkFile={plink_prefix} \
+        --IsOverwriteVarianceRatioFile={is_overwrite_vre_file}
+    """)
 
     # copy the output file to persistent storage
     if null_output_path:
