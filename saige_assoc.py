@@ -83,6 +83,7 @@ def build_fit_null_command(
     """
     pheno_file = get_batch().read_input(pheno_file)
     print(plink_path)
+    print(output_prefix)
     plink_prefix = get_batch().read_input_group(
         bim=f'{plink_path}.bim', bed=f'{plink_path}.bed', fam=f'{plink_path}.fam'
     )
@@ -279,6 +280,7 @@ def run_fit_null_job(
     gene_job = get_batch().new_job(name="saige-qtl")
     gene_job.image(image_path('saige-qtl'))
     apply_job_settings(gene_job, 'fit_null')
+    print('settings applied')
 
     # create output group for first command in gene job
     gene_job.declare_resource_group(
