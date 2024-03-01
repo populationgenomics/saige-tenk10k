@@ -317,7 +317,7 @@ def summarise_cv_results(
             for pv_df in existing_cv_assoc_results
         ]
     )
-    result_all_filename = to_path(out_path, 'analysis')
+    result_all_filename = to_path(output_path(out_path, category='analysis'))
     logging.info(f'Write summary results to {result_all_filename}')
     with result_all_filename.open('w') as rf:
         results_all_df.to_csv(rf)
