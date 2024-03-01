@@ -261,6 +261,13 @@ def run_fit_null_job(
         Tuple: (Job | None, ResourceGroup)
 
     """
+    print(null_output_path)
+    print(pheno_file)
+    print(cov_col_list)
+    print(sample_cov_col_list)
+    print(sample_id_pheno)
+    print(plink_path)
+    print(pheno_col)
     if to_path(f'{null_output_path}.rda').exists():
         return None, get_batch().read_input_group(
             **{
