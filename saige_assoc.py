@@ -261,11 +261,11 @@ def run_fit_null_job(
         Tuple: (Job | None, ResourceGroup)
 
     """
-    if to_path(null_output_path).exists():
+    if to_path(f'{null_output_path}.rda').exists():
         return None, get_batch().read_input_group(
             **{
-                'rda': '{null_output_path}.rda',
-                'varianceRatio': '{null_output_path}.varianceRatio.txt',
+                'rda': f'{null_output_path}.rda',
+                'varianceRatio': f'{null_output_path}.varianceRatio.txt',
             }
         )
     gene_job = get_batch().new_job(name="saige-qtl")
