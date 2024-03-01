@@ -82,8 +82,6 @@ def build_fit_null_command(
     Rscript command (str) ready to run (bash)
     """
     pheno_file = get_batch().read_input(pheno_file)
-    print(plink_path)
-    print(output_prefix)
     plink_prefix = get_batch().read_input_group(
         bim=f'{plink_path}.bim', bed=f'{plink_path}.bed', fam=f'{plink_path}.fam'
     )
@@ -263,13 +261,6 @@ def run_fit_null_job(
         Tuple: (Job | None, ResourceGroup)
 
     """
-    print(null_output_path)
-    print(pheno_file)
-    print(cov_col_list)
-    print(sample_cov_col_list)
-    print(sample_id_pheno)
-    print(plink_path)
-    print(pheno_col)
     if to_path(f'{null_output_path}.rda').exists():
         return None, get_batch().read_input_group(
             **{
@@ -280,15 +271,25 @@ def run_fit_null_job(
     gene_job = get_batch().new_job(name="saige-qtl")
     gene_job.image(image_path('saige-qtl'))
     apply_job_settings(gene_job, 'fit_null')
-    print('settings applied')
 
     # create output group for first command in gene job
     gene_job.declare_resource_group(
         output={
             'rda': '{root}.rda',
-            'varianceRatio': '{root}.varianceRatio.txt',
+            'varianceRatio.txt': '{root}.varianceRatio.txt',
         }
     )
+
+    null_cmd = build_fit_null_command(
+        pheno_file=pheno_file,
+        cov_col_list=cov_col_list,
+        sample_cov_col_list=sample_cov_col_list,
+        sample_id_pheno=sample_id_pheno,
+        output_prefix=gene_job.output,
+        plink_path=plink_path,
+        pheno_col=pheno_col,
+    )
+    print(null_cmd)
 
     gene_job.command(
         build_fit_null_command(
@@ -440,6 +441,7 @@ def main(
                     plink_path=vre_plink_path,
                     pheno_col=gene,
                 )
+                print('null job done')
                 if null_job:
                     manage_concurrency_for_job(null_job)
 
