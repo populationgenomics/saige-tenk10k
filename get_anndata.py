@@ -107,7 +107,7 @@ def make_pheno_cov(
      Args:
         gene (str): gene name
         expression_adata_path (str): path to expression object all genes
-        sample_covs_df (pd.DataFrame): sex, age
+        sample_covs_df (pd.DataFrame): sex, age, genotype PCs
         celltype_covs_df (pd.DataFrame): celltype specific covs
         out_path (str): path we're writing to
     """
@@ -210,10 +210,10 @@ def main(
 
     init_batch()
 
-    # sample level covariates (age + sex)
+    # sample level covariates (age + sex + genotype PCs)
     # age from metamist, sex from somalier + Vlad's file for now
     sample_covs_file = dataset_path(
-        f'{sample_covs_files_prefix}/sex_age_tob_bioheart.csv'
+        f'{sample_covs_files_prefix}/sex_age_geno_pcs_tob_bioheart.csv'
     )
 
     for celltype in celltypes.split(','):
