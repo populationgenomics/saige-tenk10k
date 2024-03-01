@@ -369,26 +369,28 @@ def main(
     """
 
     batch = get_batch('SAIGE-QTL pipeline')
-    jobs: list[hb.batch.job.Job] = []
-
-    def manage_concurrency_for_job(job: hb.batch.job.Job):
-        """
-        To avoid having too many jobs running at once, we have to limit concurrency.
-        """
-        if len(jobs) >= max_parallel_jobs:
-            job.depends_on(jobs[-max_parallel_jobs])
-        jobs.append(job)
 
     vre_plink_path = f'{genotype_files_prefix}/{vds_version}/vre_plink_2000_variants'
 
-    for chromosome in chromosomes.split(','):
+    for celltype in celltypes.split(','):
 
-        # genotype vcf files are one per chromosome
-        vcf_file_path = f'{genotype_files_prefix}/{vds_version}/{chromosome}_common_variants.vcf.bgz'
-        # cis window files are split by gene but organised by chromosome also
-        cis_window_files_path_chrom = f'{cis_window_files_path}/{chromosome}'
+        cell_type_jobs: list[hb.batch.job.Job] = []
 
-        for celltype in celltypes.split(','):
+        def manage_concurrency_for_job(job: hb.batch.job.Job):
+            """
+            To avoid having too many jobs running at once, we have to limit concurrency.
+            """
+            if len(cell_type_jobs) >= max_parallel_jobs:
+                job.depends_on(cell_type_jobs[-max_parallel_jobs])
+            cell_type_jobs.append(job)
+
+        for chromosome in chromosomes.split(','):
+
+            # genotype vcf files are one per chromosome
+            vcf_file_path = f'{genotype_files_prefix}/{vds_version}/{chromosome}_common_variants.vcf.bgz'
+
+            # cis window files are split by gene but organised by chromosome also
+            cis_window_files_path_chrom = f'{cis_window_files_path}/{chromosome}'
 
             # extract gene list based on genes for which we have pheno cov files
             pheno_cov_files_path_ct_chrom = (
@@ -455,8 +457,6 @@ def main(
                 if job3:
                     manage_concurrency_for_job(job3)
 
-    # summarise results (per cell type)
-    for celltype in celltypes.split(','):
         logging.info(f'start summarising results for {celltype}')
         summary_output_path = (
             f'output_files/summary_stats/{celltype}_all_cis_cv_results.tsv'
@@ -464,7 +464,7 @@ def main(
         summarise_job = get_batch().new_python_job(
             f'Summarise CV results for {celltype}'
         )
-        summarise_job.depends_on(*jobs)
+        summarise_job.depends_on(*cell_type_jobs)
         summarise_job.call(
             summarise_cv_results,
             celltype=celltype,
