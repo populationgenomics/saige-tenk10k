@@ -292,14 +292,11 @@ def run_fit_null_job(
         )
     )
 
-    print(gene_job.output, type(gene_job.output))
-    print(null_output_path, type(null_output_path))
-
     # copy the output file to persistent storage
     if null_output_path:
         get_batch().write_output(gene_job.output, null_output_path)
 
-    return gene_job
+    return gene_job, gene_job.output
 
 
 def summarise_cv_results(
