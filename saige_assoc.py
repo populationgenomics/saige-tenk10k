@@ -464,14 +464,13 @@ def main(
         summarise_job = get_batch().new_python_job(
             f'Summarise CV results for {celltype}'
         )
-        summarise_job.depends_on(job3)
+        summarise_job.depends_on(*jobs)
         summarise_job.call(
             summarise_cv_results,
             celltype=celltype,
             gene_results_path=str('output_files/'),
             out_path=summary_output_path,
         )
-        summarise_cv_results
     # set jobs running
     batch.run(wait=False)
 
