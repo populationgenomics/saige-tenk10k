@@ -66,15 +66,15 @@ Outputs:
 
 Fit null model ([step 1](https://weizhou0.github.io/SAIGE-QTL-doc/docs/step1.html)):
 
-* ```pheno_file```: path specifying the location of the phenotype covariate file described above (build during part 2 of the pipeline) 
+* ```pheno_file```: path specifying the location of the phenotype covariate file described above (build during part 2 of the pipeline)
 * ```cov_col_list```: string specifying the columns of the pheno_file that should be used as covariates (separated by a comma)
 * ```sample_cov_col_list```: same as above, but specifying only, out of the columns above, the ones that are well defined at individual level (e.g., sex, age)
 * ```sample_id_pheno```: specify the column that represents individual IDs
 * ```output_prefix```: path to where the output files from step 1 (which will be read by step 2) should be written to
-* ```plink_path```: path to VRE plink files (specify just the prefix, but a .bim, .fam, and .bed files with the same prefix and in the same location should exist (these are built in part 1)
-* pheno_col: str = 'y',
-* trait_type: str = 'count',
-* skip_vre: str = 'FALSE',
+* ```plink_path```: path to VRE plink files (specify just the prefix, but a .bim, .fam, and .bed files with the same prefix and in the same location should exist -- these are built in part 1)
+* ```pheno_col```: specify the column that should be used as phenotype, in our case the gene to test
+* ```trait_type```: specify the model to be used, ```count``` is the Poisson model which should be used here.
+* ```skip_vre```: boolean specifying whether the variance ratio estimation should be run or skipped, should always be false (Note that because the syntax is different between Python and R we encode this as the string ```FALSE``` instead of the boolean ```False```)
 * pheno_remove_zeros: str = 'FALSE',
 * use_sparse_grm_null: str = 'FALSE',
 * use_grm_null: str = 'FALSE',
@@ -82,7 +82,23 @@ Fit null model ([step 1](https://weizhou0.github.io/SAIGE-QTL-doc/docs/step1.htm
 * is_cov_transform: str = 'TRUE',
 * skip_model_fitting: str = 'FALSE',
 * tol: float = 0.00001,
-* is_overwrite_vre_file: str = 'TRUE',
+* ```is_overwrite_vre_file```: str = 'TRUE',
+
+Single-variant association testing ([common variants step 2](https://weizhou0.github.io/SAIGE-QTL-doc/docs/single_step2.html)):
+
+* vcf_file: path to VCF file containing genetic variants to be tested
+* vcf_file_index: corresponding .csi index file
+* vcf_field:
+* saige_output_file
+* ```chrom```: chromosome tested
+* cis_window_file: str,
+* gmmat_model_path: str,
+* variance_ratio_path: str,
+* min_maf: float = 0,
+* min_mac: int = 5,
+* loco_bool: str = 'FALSE',
+* n_markers: int = 10000,
+* spa_cutoff: int = 10000,
 
 
 ## To run
