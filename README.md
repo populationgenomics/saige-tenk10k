@@ -64,6 +64,9 @@ Outputs:
 
 ### SAIGE-QTL parameters explanation
 
+Clarifying the reasoning behind the parameters / flags used to run SAIGE-QTL.
+Most of these are (or will be) included in the official [documentation](https://weizhou0.github.io/SAIGE-QTL-doc/).
+
 Fit null model ([step 1](https://weizhou0.github.io/SAIGE-QTL-doc/docs/step1.html)):
 
 * ```pheno_file```: path specifying the location of the phenotype covariate file described above (build during part 2 of the pipeline)
@@ -100,6 +103,11 @@ Single-variant association testing ([common variants step 2](https://weizhou0.gi
 * n_markers: int = 10000,
 * spa_cutoff: int = 10000,
 
+Obtain gene-level p-values ([common variants only, step 3](https://weizhou0.github.io/SAIGE-QTL-doc/docs/gene_step3.html))
+
+* gene_name
+* saige_sv_output_file: str,
+* saige_gene_pval_output_file: str,
 
 ## To run
 
