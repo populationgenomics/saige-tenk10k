@@ -15,15 +15,15 @@ Script: get_genotype_vcf.py
 
 Variant selection for VCF files:
 
-* variants that are: i) QC-passing, ii) non ref-ref variants, and iii) (for now) indels and multi-allelic SNPs.
+* variants that are: i) QC-passing, ii) not ref-ref variants, and iii) not indels or multi-allelic SNPs (when run with --exclude-indels and --exclude-multiallelic).
 * variants that are common (MAF > 0.01) in our population
 * one per chromosome
 
 Variant selection for PLINK files for variance ratio estimation (VRE):
 
-* variants that are: i) QC-passing, ii) non ref-ref variants, and iii) (for now) indels and multi-allelic SNPs.
-* variants that are non rare (MAC > 20) in our population
-* random subset of 20,000 variants across all chromosomes
+* variants that are: i) QC-passing, ii) not ref-ref variants, and iii) not indels or multi-allelic SNPs.
+* variants that are not rare (MAC > 20) in our population
+* random subset of 2,000 variants across all chromosomes
 
 Inputs:
 
