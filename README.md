@@ -78,25 +78,25 @@ Fit null model ([step 1](https://weizhou0.github.io/SAIGE-QTL-doc/docs/step1.htm
 * ```pheno_col```: specify the column that should be used as phenotype, in our case the gene to test
 * ```trait_type```: specify the model to be used, ```count``` is the Poisson model which should be used here.
 * ```skip_vre```: boolean specifying whether the variance ratio estimation should be run or skipped, should always be false (Note that because the syntax is different between Python and R we encode this as the string ```FALSE``` instead of the boolean ```False```)
-* ```pheno_remove_zeros```: str = (default: ```FALSE```)
-* ```use_sparse_grm_null```: str = (default: ```FALSE```)
+* ```pheno_remove_zeros```: option to remove 0s from phenotype vector (default: ```FALSE``` as it does not make sense for the very sparse scRNA-seq data)
+* ```use_sparse_grm_null```:  (default: ```FALSE```)
 * ```use_grm_null```: str = (default: ```FALSE```)
 * ```is_cov_offset```: str = (default: ```FALSE```)
 * ```is_cov_transform```: transform (explain) covariates (default: ```TRUE```)
-* ```skip_model_fitting```: str = (default: ```FALSE```)
-* ```tol```: float = 0.00001,
+* ```skip_model_fitting```: boolean (default: ```FALSE```)
+* ```tol```: convergence tolerance (default 0.00001, which works well in our hands)
 * ```is_overwrite_vre_file```: str = (default: ```TRUE```)
 
 Single-variant association testing ([common variants step 2](https://weizhou0.github.io/SAIGE-QTL-doc/docs/single_step2.html)):
 
 * ```vcf_file```: path to VCF file containing genetic variants to be tested
 * ```vcf_file_index```: corresponding .csi index file
-* ```vcf_field```:
-* ```saige_output_file```:
-* ```chrom```: chromosome tested
-* ```cis_window_file```: str,
-* ```gmmat_model_path```: str,
-* ```variance_ratio_path```: str,
+* ```vcf_field```: (default = 'GT')
+* ```saige_output_file```: path to output file
+* ```chrom```: chromosome to be tested
+* ```cis_window_file```: path to file specifying cis window / region to test (generated in part 2 of the pipeline, get anndata script)
+* ```gmmat_model_path```: path to estimated null model (.rda) generated in step 2
+* ```variance_ratio_path```: path to variance ratio txt file generated in step 1
 * ```min_maf```: minimum minor allele frequency (MAF) (default: 0)
 * ```min_mac```: minimum minor allele count (default: 5)
 * ```loco_bool```: boolean specifying whether leave-one-chromosome-out should be used (default: ```FALSE```)
