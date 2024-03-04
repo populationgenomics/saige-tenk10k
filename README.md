@@ -78,36 +78,36 @@ Fit null model ([step 1](https://weizhou0.github.io/SAIGE-QTL-doc/docs/step1.htm
 * ```pheno_col```: specify the column that should be used as phenotype, in our case the gene to test
 * ```trait_type```: specify the model to be used, ```count``` is the Poisson model which should be used here.
 * ```skip_vre```: boolean specifying whether the variance ratio estimation should be run or skipped, should always be false (Note that because the syntax is different between Python and R we encode this as the string ```FALSE``` instead of the boolean ```False```)
-* pheno_remove_zeros: str = 'FALSE',
-* use_sparse_grm_null: str = 'FALSE',
-* use_grm_null: str = 'FALSE',
-* is_cov_offset: str = 'FALSE',
-* is_cov_transform: str = 'TRUE',
-* skip_model_fitting: str = 'FALSE',
-* tol: float = 0.00001,
-* ```is_overwrite_vre_file```: str = 'TRUE',
+* ```pheno_remove_zeros```: str = (default: ```FALSE```)
+* ```use_sparse_grm_null```: str = (default: ```FALSE```)
+* ```use_grm_null```: str = (default: ```FALSE```)
+* ```is_cov_offset```: str = (default: ```FALSE```)
+* ```is_cov_transform```: transform (explain) covariates (default: ```TRUE```)
+* ```skip_model_fitting```: str = (default: ```FALSE```)
+* ```tol```: float = 0.00001,
+* ```is_overwrite_vre_file```: str = (default: ```TRUE```)
 
 Single-variant association testing ([common variants step 2](https://weizhou0.github.io/SAIGE-QTL-doc/docs/single_step2.html)):
 
-* vcf_file: path to VCF file containing genetic variants to be tested
-* vcf_file_index: corresponding .csi index file
-* vcf_field:
-* saige_output_file
+* ```vcf_file```: path to VCF file containing genetic variants to be tested
+* ```vcf_file_index```: corresponding .csi index file
+* ```vcf_field```:
+* ```saige_output_file```:
 * ```chrom```: chromosome tested
-* cis_window_file: str,
-* gmmat_model_path: str,
-* variance_ratio_path: str,
-* min_maf: float = 0,
-* min_mac: int = 5,
-* loco_bool: str = 'FALSE',
-* n_markers: int = 10000,
-* spa_cutoff: int = 10000,
+* ```cis_window_file```: str,
+* ```gmmat_model_path```: str,
+* ```variance_ratio_path```: str,
+* ```min_maf```: minimum minor allele frequency (MAF) (default: 0)
+* ```min_mac```: minimum minor allele count (default: 5)
+* ```loco_bool```: boolean specifying whether leave-one-chromosome-out should be used (default: ```FALSE```)
+* ```n_markers```: int = 10000,
+* ```spa_cutoff```: int = 10000,
 
 Obtain gene-level p-values ([common variants only, step 3](https://weizhou0.github.io/SAIGE-QTL-doc/docs/gene_step3.html))
 
-* gene_name
-* saige_sv_output_file: str,
-* saige_gene_pval_output_file: str,
+* ```gene_name```: gene to aggregate values for
+* ```saige_sv_output_file```: path to output from step 2 (input here)
+* ```saige_gene_pval_output_file```: path to output (step 3)
 
 ## To run
 
