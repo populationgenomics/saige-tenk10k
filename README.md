@@ -62,7 +62,30 @@ Outputs:
 
 * association summary statistics
 
-### To run
+### SAIGE-QTL parameters explanation
+
+Fit null model ([step 1](https://weizhou0.github.io/SAIGE-QTL-doc/docs/step1.html)):
+
+* ```pheno_file```: path specifying the location of the phenotype covariate file described above (build during part 2 of the pipeline) 
+* ```cov_col_list```: string specifying the columns of the pheno_file that should be used as covariates (separated by a comma)
+* ```sample_cov_col_list```: same as above, but specifying only, out of the columns above, the ones that are well defined at individual level (e.g., sex, age)
+* ```sample_id_pheno```: specify the column that represents individual IDs
+* ```output_prefix```: path to where the output files from step 1 (which will be read by step 2) should be written to
+* ```plink_path```: path to VRE plink files (specify just the prefix, but a .bim, .fam, and .bed files with the same prefix and in the same location should exist (these are built in part 1)
+* pheno_col: str = 'y',
+* trait_type: str = 'count',
+* skip_vre: str = 'FALSE',
+* pheno_remove_zeros: str = 'FALSE',
+* use_sparse_grm_null: str = 'FALSE',
+* use_grm_null: str = 'FALSE',
+* is_cov_offset: str = 'FALSE',
+* is_cov_transform: str = 'TRUE',
+* skip_model_fitting: str = 'FALSE',
+* tol: float = 0.00001,
+* is_overwrite_vre_file: str = 'TRUE',
+
+
+## To run
 
 Instructions to run each component of the pipeline using analysis runner are provided at the top of each script
 
