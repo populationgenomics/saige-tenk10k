@@ -15,7 +15,7 @@ Script: get_genotype_vcf.py
 
 Variant selection for VCF files:
 
-* variants that are: i) QC-passing, ii) not ref-ref variants, and iii) (for now) not indels or multi-allelic SNPs.
+* variants that are: i) QC-passing, ii) not ref-ref variants, and iii) not indels or multi-allelic SNPs (when run with --exclude-indels and --exclude-multiallelic).
 * variants that are common (MAF > 0.01) in our population
 * one per chromosome
 
