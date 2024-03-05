@@ -315,7 +315,7 @@ def summarise_cv_results(
     Summarise gene-specific results
     """
     existing_cv_assoc_results = [
-        file.name
+        str(file)
         for file in to_path(gene_results_path).glob(f'{celltype}_*_cis_gene_pval')
     ]
     print(existing_cv_assoc_results)
@@ -482,7 +482,7 @@ def main(
         summarise_job.call(
             summarise_cv_results,
             celltype=celltype,
-            gene_results_path=str(output_path('output_files/')),
+            gene_results_path=output_path('output_files/'),
             out_path=summary_output_path,
         )
     # set jobs running
