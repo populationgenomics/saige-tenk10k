@@ -439,7 +439,7 @@ def main(
                     chrom=chromosome,
                     cis_window_file=cis_window_path,
                     gmmat_model_path=null_output['rda'],
-                    variance_ratio_path=null_output['varianceRatio'],
+                    variance_ratio_path=null_output['varianceRatio.txt'],
                 )
                 if step2_job:
                     manage_concurrency_for_job(step2_job)
