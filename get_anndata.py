@@ -138,8 +138,9 @@ def make_pheno_cov(
     if fill_in_age:
         sample_covs_cells_df['age'] = sample_covs_cells_df['age'].fillna(mean_age)
     gene_adata = expression_adata[:, expression_adata.var['gene_name'] == gene]
+    gene_name = gene.replace("-", "_")
     expr_df = pd.DataFrame(
-        data=gene_adata.X.todense(), index=gene_adata.obs.index, columns=[gene]
+        data=gene_adata.X.todense(), index=gene_adata.obs.index, columns=[gene_name]
     )
     pheno_cov_df = pd.concat([sample_covs_cells_df, expr_df, celltype_covs_df], axis=1)
     with to_path(out_path).open('w') as pcf:
@@ -262,11 +263,11 @@ def main(
             # start up some jobs for each gene
             for gene in expression_adata.var['gene_name']:
                 # change hyphens to underscore for R usage
-                gene = gene.replace("-", "_")
+                gene_name = gene.replace("-", "_")
                 # make pheno cov file
                 pheno_cov_filename = to_path(
                     output_path(
-                        f'pheno_cov_files/{celltype}/{chromosome}/{gene}_{celltype}_pheno_cov.tsv'
+                        f'pheno_cov_files/{celltype}/{chromosome}/{gene_name}_{celltype}_pheno_cov.tsv'
                     )
                 )
                 if not pheno_cov_filename.exists():
@@ -288,7 +289,7 @@ def main(
                 # make cis window file
                 gene_cis_filename = to_path(
                     output_path(
-                        f'cis_window_files/{chromosome}/{gene}_{cis_window_size}bp.tsv'
+                        f'cis_window_files/{chromosome}/{gene_name}_{cis_window_size}bp.tsv'
                     )
                 )
                 if not gene_cis_filename.exists():
