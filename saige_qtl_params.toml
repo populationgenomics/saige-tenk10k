@@ -11,10 +11,34 @@ y
 count
 
 [skip-vre]
-False
+FALSE
 
 [pheno-remove-zeros]
-False
+FALSE
 
 [use-sparse-grm-null]
-False
+FALSE
+
+[use-grm-null]
+FALSE
+
+[is-cov-offset]
+FALSE
+
+[is-cov-transform]
+TRUE
+
+[skip-model-fitting]
+FALSE
+
+[tol]
+0.00001
+
+[is-overwrite-vre-file]
+TRUE
+
+[min-maf]
+0
+
+[min-mac]
+5
