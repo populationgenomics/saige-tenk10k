@@ -318,7 +318,6 @@ def summarise_cv_results(
         str(file)
         for file in to_path(gene_results_path).glob(f'{celltype}_*_cis_gene_pval')
     ]
-    print(existing_cv_assoc_results)
     results_all_df = pd.concat(
         [
             pd.read_csv(to_path(pv_df), index_col=0)
@@ -421,8 +420,7 @@ def main(
             logging.info(f'I found these genes: {", ".join(genes)}')
 
             # extract relevant gene-related files
-            for gene in genes[0:2]:
-                print(gene)
+            for gene in genes:
                 pheno_cov_path = (
                     f'{pheno_cov_files_path_ct_chrom}/{gene}_{celltype}_pheno_cov.tsv'
                 )
