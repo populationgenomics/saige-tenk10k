@@ -25,7 +25,7 @@ analysis-runner \
 import click
 import logging
 
-import hail as hl
+# import hail as hl
 import pandas as pd
 
 # import hailtop.batch.job as hb_job
@@ -33,7 +33,9 @@ import pandas as pd
 
 from cpg_utils import to_path
 from cpg_utils.config import get_config
-from cpg_utils.hail_batch import dataset_path, get_batch, init_batch
+
+# from cpg_utils.hail_batch import dataset_path, get_batch, init_batch
+from cpg_utils.hail_batch import get_batch, init_batch
 
 
 def distance_to_weight(distance: int, gamma: float = 1e-5):
