@@ -85,7 +85,7 @@ def get_gene_cis_info(
     # get gene chromosome
     chrom = gene_info_gene['chr'][0]
     # remove "chr"
-    chrom = chrom.replace('chr','')
+    chrom = chrom.replace('chr', '')
     # get gene body position (start and end) and add window
     left_boundary = max(1, int(gene_info_gene['start'][0]) - window_size)
     right_boundary = min(int(gene_info_gene['end'][0]) + window_size, chrom_len)
