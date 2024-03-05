@@ -90,7 +90,7 @@ def get_gene_cis_info(
     data = {'chromosome': chrom, 'start': left_boundary, 'end': right_boundary}
     gene_cis_df = pd.DataFrame(data, index=[gene])
     with to_path(out_path).open('w') as gcf:
-        gene_cis_df.to_csv(gcf, index=False, sep='\t')
+        gene_cis_df.to_csv(gcf, index=False, header=False, sep='\t')
 
 
 def make_pheno_cov(
