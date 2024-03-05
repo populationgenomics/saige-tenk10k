@@ -281,7 +281,7 @@ def run_fit_null_job(
     gene_job.declare_resource_group(
         output={
             'rda': '{root}.rda',
-            'varianceRatio': '{root}.varianceRatio.txt',
+            'varianceRatio.txt': '{root}.varianceRatio.txt',
         }
     )
 
