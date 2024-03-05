@@ -261,6 +261,8 @@ def main(
 
             # start up some jobs for each gene
             for gene in expression_adata.var['gene_name']:
+                # change hyphens to underscore for R usage
+                gene = gene.replace("-", "_")
                 # make pheno cov file
                 pheno_cov_filename = to_path(
                     output_path(
