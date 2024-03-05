@@ -158,6 +158,7 @@ def build_run_single_variant_test_command(
 
     vcf_group = get_batch().read_input_group(vcf=vcf_file, index=f'{vcf_file}.csi')
     second_job = get_batch().new_job(name="saige-qtl part 2")
+    second_job.image(image_path('saige-qtl'))
 
     second_job.command(
         f"""
@@ -209,6 +210,7 @@ def build_obtain_gene_level_pvals_command(
     saige_command_step3 += f' --assocFile={saige_sv_output_file}'
     saige_command_step3 += f' --geneName={gene_name}'
     saige_command_step3 += f' --genePval_outputFile={saige_job.output}'
+    saige_job.image(image_path('saige-qtl'))
     saige_job.command(saige_command_step3)
     get_batch().write_output(saige_job.output, saige_gene_pval_output_file)
     return saige_job
