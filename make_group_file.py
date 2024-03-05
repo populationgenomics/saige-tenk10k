@@ -33,6 +33,13 @@ from cpg_utils.config import get_config
 from cpg_utils.hail_batch import get_batch, init_batch
 
 
+def distance_to_weight(distance: int, gamma: float = 1e-5):
+    import math
+
+    weight = math.exp(-gamma * abs(distance))
+    return weight
+
+
 @click.command()
 @click.option('--cis-window-files-path')
 @click.option('--cis-window', default=100000)
@@ -72,6 +79,10 @@ def main(
     #     all_jobs.append(new_job)
 
     init_batch()
+
+    # loop over chromosomes
+
+    # extract hail tables with variants info
 
     # do a glob, then pull out all file names as Strings
     files = [
