@@ -270,7 +270,7 @@ def run_fit_null_job(
         return None, get_batch().read_input_group(
             **{
                 'rda': f'{null_output_path}.rda',
-                'varianceRatio': f'{null_output_path}.varianceRatio.txt',
+                'varianceRatio.txt': f'{null_output_path}.varianceRatio.txt',
             }
         )
     gene_job = get_batch().new_job(name="saige-qtl")
