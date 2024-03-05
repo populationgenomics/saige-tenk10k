@@ -25,22 +25,47 @@ analysis-runner \
 import click
 import logging
 
+import hail as hl
+import pandas as pd
+
 # import hailtop.batch.job as hb_job
 # from typing import List
 
 from cpg_utils import to_path
 from cpg_utils.config import get_config
-from cpg_utils.hail_batch import get_batch, init_batch
+from cpg_utils.hail_batch import dataset_path, get_batch, init_batch
 
 
 def distance_to_weight(distance: int, gamma: float = 1e-5):
+    """
+    Define weight for a genetic variant based on
+    the distance of that variant from the gene
+
+    Following the approach used by the APEX authors
+    doi: https://doi.org/10.1101/2020.12.18.423490
+    """
     import math
 
     weight = math.exp(-gamma * abs(distance))
     return weight
 
 
+def build_group_file(gene: str, out_path: str):
+    """
+    Build group file for SAIGE-QTL
+
+    First row: genetic variants to test
+    Second row: annotations (none here)
+    Third row: weights (dTSS here)
+    """
+    data = {'gene': gene, 'category': 'var'}
+    group_df = pd.DataFrame(data)
+    with to_path(out_path).open('w') as gdf:
+        group_df.to_csv(gdf, index=False, header=False)
+
+
 @click.command()
+@click.option('--chromosomes', help=' chr1,chr22 ')
 @click.option('--cis-window-files-path')
 @click.option('--cis-window', default=100000)
 # @click.option(
@@ -54,6 +79,7 @@ def distance_to_weight(distance: int, gamma: float = 1e-5):
 #     ),
 # )
 def main(
+    chromosomes: str,
     cis_window_files_path: str,
     cis_window: int,
     # concurrent_job_cap: int,
@@ -81,20 +107,31 @@ def main(
     init_batch()
 
     # loop over chromosomes
+    for chrom in chromosomes.split(','):
 
-    # extract hail tables with variants info
+        # load rare variant vcf file for specific chromosome
+        vcf_path = dataset_path(
+            f'saige-qtl/input_files/genotypes/vds1-0/{chrom}_rare_variants.vcf.bgz'
+        )
+        ds = hl.import_vcf(vcf_path, reference_genome='GRCh37')
 
-    # do a glob, then pull out all file names as Strings
-    files = [
-        file.name
-        for file in to_path(cis_window_files_path).glob('cis_window_files/*/*bp.csv')
-    ]
-    logging.info(f'I found these files: {", ".join(files)}')
+        # do a glob, then pull out all file names as Strings
+        files = [
+            str(file)
+            for file in to_path(cis_window_files_path).glob(
+                f'cis_window_files/{chrom}/*bp.csv'
+            )
+        ]
+        logging.info(f'I found these files: {", ".join(files)}')
 
-    genes = [f.replace(f'_{cis_window}bp.tsv', '') for f in files]
-    logging.info(f'I found these genes: {", ".join(genes)}')
+        genes = [f.replace(f'_{cis_window}bp.tsv', '') for f in files]
+        logging.info(f'I found these genes: {", ".join(genes)}')
 
-    # for gene in genes:
+        # for gene in genes:
+        #     gene_interval = '21:17688974-17919386'
+        #     ds_result = hl.filter_intervals(
+        #         ds, [hl.parse_locus_interval(gene_interval)]
+        #     )
 
     get_batch().run(wait=False)
 
