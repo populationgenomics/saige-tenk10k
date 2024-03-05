@@ -113,6 +113,7 @@ def can_reuse(path: str):
         return True
     return False
 
+
 def add_remove_chr_and_index_job(vcf_path):
     """
     Reads a VCF file, it creates an .csi index file and
@@ -150,9 +151,7 @@ def add_remove_chr_and_index_job(vcf_path):
     logging.info('CV VCF rename/index jobs scheduled!')
 
     # save both output files
-    get_batch().write_output(
-        bcftools_job.output, vcf_path.removesuffix('.vcf.bgz')
-    )
+    get_batch().write_output(bcftools_job.output, vcf_path.removesuffix('.vcf.bgz'))
 
 
 def remove_chr_from_bim(input_bim: str, output_bim: str, bim_renamed: str):
