@@ -123,31 +123,20 @@ def build_run_single_variant_test_command(
     spa_cutoff: int = 10000,
 ):
     """
-    n.b. I have not edited this method docstring
-            ... but I have definitely edited the method
-
     Build SAIGE command for running single variant test
     This will run a single variant test using a score test
 
     Input:
-    - vcfFile: path to VCF file
-    - vcfFileIndex: path to VCF index file (tbi)
+    - vcfile: path to VCF file
+    - vcfFileIndex: path to VCF index file (csi)
     - saige output path: path to output saige file
     - chrom: chromosome to run this on
     - cis window: file with chrom | start | end to specify window
     - GMMAT model file: null model fit from previous step (.rda)
     - Variance Ratio file: as estimated from previous step (.txt)
-    - group annotation: select only some annos from group file (e.g., lof)
-    - group file: for each gene/set,
-        one row specifying variants,
-        one row specifying each variant's anno,
-        one optional row with all weights
-    - allele order: specifying whether alt-first or ref-first in genotype files
     - min MAF: minimum variant minor allele frequency to include
     - min MAC: minimum variant minor allele count to include
-    - LOCO: leave one chromosome out (for what specifically?)
-    - is no adjusted cov: covariate adjustment?
-    - specify whether we're using a sparse GRM (vs full? vs no GRM at all?)
+    - LOCO: leave one chromosome out
 
     Output:
     Rscript command (str) ready to run
