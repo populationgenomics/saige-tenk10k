@@ -74,7 +74,7 @@ def get_gene_cis_info(
         gene_info_df_path (str): path to whole adata object
         gene (str): gene name
         window_size (int): bp to consider in window, up and downstream of gene
-        out_path (str): path we're writing to
+        out_path (str): path we're writing to (TSV)
         chrom_len (int): length of chromosome
     """
 
@@ -84,13 +84,15 @@ def get_gene_cis_info(
     gene_info_gene = gene_info_df[gene_info_df['gene_name'] == gene]
     # get gene chromosome
     chrom = gene_info_gene['chr'][0]
+    # remove "chr"
+    chrom = chrom.replace('chr', '')
     # get gene body position (start and end) and add window
     left_boundary = max(1, int(gene_info_gene['start'][0]) - window_size)
     right_boundary = min(int(gene_info_gene['end'][0]) + window_size, chrom_len)
     data = {'chromosome': chrom, 'start': left_boundary, 'end': right_boundary}
     gene_cis_df = pd.DataFrame(data, index=[gene])
     with to_path(out_path).open('w') as gcf:
-        gene_cis_df.to_csv(gcf, index=False)
+        gene_cis_df.to_csv(gcf, index=False, header=False, sep='\t')
 
 
 def make_pheno_cov(
@@ -109,7 +111,7 @@ def make_pheno_cov(
         expression_adata_path (str): path to expression object all genes
         sample_covs_df (pd.DataFrame): sex, age, genotype PCs
         celltype_covs_df (pd.DataFrame): celltype specific covs
-        out_path (str): path we're writing to
+        out_path (str): path we're writing to (TSV)
     """
     expression_adata = copy_h5ad_local_and_open(expression_adata_path)
 
@@ -123,7 +125,9 @@ def make_pheno_cov(
     # determine average age to fill in later
     if fill_in_age:
         mean_age = sample_covs_df['age'].mean()
-    cell_ind_df = expression_adata.obs.loc[:, ['cell', 'individual']]
+    cell_ind_df = expression_adata.obs.loc[
+        :, ['cell', 'individual', 'total_counts', 'sequencing_library']
+    ]
     sample_covs_cells_df = cell_ind_df.merge(
         sample_covs_df, on='individual', how='left'
     )
@@ -134,12 +138,13 @@ def make_pheno_cov(
     if fill_in_age:
         sample_covs_cells_df['age'] = sample_covs_cells_df['age'].fillna(mean_age)
     gene_adata = expression_adata[:, expression_adata.var['gene_name'] == gene]
+    gene_name = gene.replace("-", "_")
     expr_df = pd.DataFrame(
-        data=gene_adata.X.todense(), index=gene_adata.obs.index, columns=[gene]
+        data=gene_adata.X.todense(), index=gene_adata.obs.index, columns=[gene_name]
     )
     pheno_cov_df = pd.concat([sample_covs_cells_df, expr_df, celltype_covs_df], axis=1)
     with to_path(out_path).open('w') as pcf:
-        pheno_cov_df.to_csv(pcf, index=False)
+        pheno_cov_df.to_csv(pcf, index=False, sep='\t')
 
 
 def copy_h5ad_local_and_open(adata_path: str) -> sc.AnnData:
@@ -257,11 +262,12 @@ def main(
 
             # start up some jobs for each gene
             for gene in expression_adata.var['gene_name']:
-
+                # change hyphens to underscore for R usage
+                gene_name = gene.replace("-", "_")
                 # make pheno cov file
                 pheno_cov_filename = to_path(
                     output_path(
-                        f'pheno_cov_files/{celltype}/{chromosome}/{gene}_{celltype}_pheno_cov.csv'
+                        f'pheno_cov_files/{celltype}/{chromosome}/{gene_name}_{celltype}_pheno_cov.tsv'
                     )
                 )
                 if not pheno_cov_filename.exists():
@@ -283,7 +289,7 @@ def main(
                 # make cis window file
                 gene_cis_filename = to_path(
                     output_path(
-                        f'cis_window_files/{chromosome}/{gene}_{cis_window_size}bp.csv'
+                        f'cis_window_files/{chromosome}/{gene_name}_{cis_window_size}bp.tsv'
                     )
                 )
                 if not gene_cis_filename.exists():
