@@ -48,7 +48,6 @@ import hail as hl
 from hail.methods import export_plink, export_vcf
 
 
-# this is a guess, let's see how it performs...
 VARS_PER_PARTITION = 20000
 
 
@@ -276,76 +275,12 @@ def main(
         logging.info(f'Does {cv_vcf_path}.csi exist? {cv_index_file_existence_outcome}')
         if not cv_index_file_existence_outcome:
             add_remove_chr_and_index_job(cv_vcf_path)
-            # # remove chr & add index file using bcftools
-            # vcf_input = get_batch().read_input(cv_vcf_path)
-
-            # vcf_size = to_path(cv_vcf_path).stat().st_size
-            # storage_required = ((vcf_size // 1024**3) or 1) * 2.2
-            # bcftools_job = get_batch().new_job(name='remove chr and index vcf')
-            # bcftools_job.declare_resource_group(
-            #     output={
-            #         'vcf.bgz': '{root}.vcf.bgz',
-            #         'vcf.bgz.csi': '{root}.vcf.bgz.csi',
-            #     }
-            # )
-            # bcftools_job.image(get_config()['images']['bcftools'])
-            # bcftools_job.cpu(4)
-            # bcftools_job.storage(f'{storage_required}Gi')
-            # # now remove "chr" from chromosome names using bcftools
-            # bcftools_job.command(
-            #     'for num in {1..22} X Y; do echo "chr${num} ${num}" >> chr_update.txt; done'
-            # )
-            # bcftools_job.command(
-            #     f"""
-            #     bcftools annotate --rename-chrs chr_update.txt {vcf_input} | \\
-            #     bgzip -c > {bcftools_job.output['vcf.bgz']}
-            #     bcftools index -c {bcftools_job.output['vcf.bgz']}
-            # """
-            # )
-            # logging.info('CV VCF rename/index jobs scheduled!')
-
-            # # save both output files
-            # get_batch().write_output(
-            #     bcftools_job.output, cv_vcf_path.removesuffix('.vcf.bgz')
-            # )
 
         # do the same for rare variants
         rv_index_file_existence_outcome = can_reuse(f'{rv_vcf_path}.csi')
         logging.info(f'Does {rv_vcf_path}.csi exist? {rv_index_file_existence_outcome}')
         if not rv_index_file_existence_outcome:
             add_remove_chr_and_index_job(rv_vcf_path)
-            # # remove chr & add index file using bcftools
-            # vcf_input = get_batch().read_input(rv_vcf_path)
-
-            # vcf_size = to_path(rv_vcf_path).stat().st_size
-            # storage_required = ((vcf_size // 1024**3) or 1) * 2.2
-            # bcftools_job = get_batch().new_job(name='remove chr and index vcf')
-            # bcftools_job.declare_resource_group(
-            #     output={
-            #         'vcf.bgz': '{root}.vcf.bgz',
-            #         'vcf.bgz.csi': '{root}.vcf.bgz.csi',
-            #     }
-            # )
-            # bcftools_job.image(get_config()['images']['bcftools'])
-            # bcftools_job.cpu(4)
-            # bcftools_job.storage(f'{storage_required}Gi')
-            # # now remove "chr" from chromosome names using bcftools
-            # bcftools_job.command(
-            #     'for num in {1..22} X Y; do echo "chr${num} ${num}" >> chr_update.txt; done'
-            # )
-            # bcftools_job.command(
-            #     f"""
-            #     bcftools annotate --rename-chrs chr_update.txt {vcf_input} | \\
-            #     bgzip -c > {bcftools_job.output['vcf.bgz']}
-            #     bcftools index -c {bcftools_job.output['vcf.bgz']}
-            # """
-            # )
-            # logging.info('RV VCF rename/index jobs scheduled!')
-
-            # # save both output files
-            # get_batch().write_output(
-            #     bcftools_job.output, rv_vcf_path.removesuffix('.vcf.bgz')
-            # )
 
     # subset variants for variance ratio estimation
     vre_plink_path = output_path(f'vds{vds_version}/vre_plink_2000_variants')
