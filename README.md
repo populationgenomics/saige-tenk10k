@@ -16,7 +16,7 @@ Script: get_genotype_vcf.py
 Variant selection for VCF files:
 
 * variants that are: i) QC-passing, ii) not ref-ref variants, and iii) not indels or multi-allelic SNPs (when run with --exclude-indels and --exclude-multiallelic).
-* variants that are common (MAF > 0.01) in our population
+* variants that are common at a set threshold (MAF > T) in our population (by default, T=0.01)
 * one per chromosome
 
 Variant selection for PLINK files for variance ratio estimation (VRE):
@@ -27,12 +27,15 @@ Variant selection for PLINK files for variance ratio estimation (VRE):
 
 Inputs:
 
-* joint call VDS object (TOB + BioHEART)
+* joint call VDS object (TOB + BioHEART) after variant and sample QC has been applied.
 
 Outputs:
 
 * VCF file containing all retained common variants (one per chromosome) + corresponding index file (.csi)
+* VCF file containing all retained rare variants (one per chromosome) + corresponding index file (.csi)
 * plink object for only 2,000 variants (minor allele count>20), after LD pruning - this is for the estimation of the variance ratio (VR plinks)
+
+Notes: SAIGE-QTL allows numeric chromosomes only, so both the bim and the vcf files are modified in this script to remove the 'chr' notation (so that e.g. 'chr1' becomes '1').
 
 ## Gene expresion preprocessing
 
@@ -41,11 +44,16 @@ Script: get_anndata.py
 Inputs:
 
 * scanpy AnnData object (one per chromosome and cell type, TOB + BioHEART)
+* cell covariate file (one per cell type, TOB + BioHEART)
+* sample covariate file generated in get_samples_covariates.py
 
 Outputs:
 
 * TSV phenotype covariate files (one per gene, cell type)
 * TSV gene cis window file (one per gene)
+
+Notes: as before, we remove 'chr' from the chromosome name in the gene cis window file.
+Additionally, we turn hyphens ('-') into underscores ('_') in the gene names.
 
 ## SAIGE-QTL association pipeline
 
@@ -90,15 +98,15 @@ Fit null model ([step 1](https://weizhou0.github.io/SAIGE-QTL-doc/docs/step1.htm
 Single-variant association testing ([common variants step 2](https://weizhou0.github.io/SAIGE-QTL-doc/docs/single_step2.html)):
 
 * ```vcf_file```: path to VCF file containing genetic variants to be tested
-* ```vcf_file_index```: corresponding .csi index file
-* ```vcf_field```: (default = 'GT')
+* ```vcf_file_index```: corresponding .csi index file (not .tbi)
+* ```vcf_field```: DS for dosages, GT for genotypes (default = 'GT')
 * ```saige_output_file```: path to output file
 * ```chrom```: chromosome to be tested
 * ```cis_window_file```: path to file specifying cis window / region to test (generated in part 2 of the pipeline, get anndata script)
 * ```gmmat_model_path```: path to estimated null model (.rda) generated in step 2
 * ```variance_ratio_path```: path to variance ratio txt file generated in step 1
 * ```min_maf```: minimum minor allele frequency (MAF) (default: 0)
-* ```min_mac```: minimum minor allele count (default: 5)
+* ```min_mac```: minimum minor allele count (MAC) (default: 5)
 * ```loco_bool```: boolean specifying whether leave-one-chromosome-out should be used (default: ```FALSE```)
 * ```n_markers```: int = 10000,
 * ```spa_cutoff```: int = 10000,
@@ -111,7 +119,7 @@ Obtain gene-level p-values ([common variants only, step 3](https://weizhou0.gith
 
 ## To run
 
-Instructions to run each component of the pipeline using analysis runner are provided at the top of each script
+Instructions to run each component of the pipeline using analysis runner are provided at the top of each script.
 
 ## Data
 
