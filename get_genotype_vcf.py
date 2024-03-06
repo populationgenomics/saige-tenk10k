@@ -4,7 +4,8 @@
 This script will
 
 - extract common variants
-- export as VCF (one per chrom)
+- extract rare variants
+- export (both) as VCF files (one per chrom)
 - also create a plink file for a subset of variants
 for variance ratio estimation
 
@@ -26,7 +27,7 @@ analysis-runner \
 In main:
 
 analysis-runner \
-    --description "get common variant VCF" \
+    --description "get common and rare variant VCFs" \
     --dataset "bioheart" \
     --access-level "full" \
     --output-dir "saige-qtl/input_files/genotypes/" \
@@ -47,7 +48,6 @@ import hail as hl
 from hail.methods import export_plink, export_vcf
 
 
-# this is a guess, let's see how it performs...
 VARS_PER_PARTITION = 20000
 
 
@@ -113,6 +113,46 @@ def can_reuse(path: str):
     return False
 
 
+def add_remove_chr_and_index_job(vcf_path):
+    """
+    Reads a VCF file, it creates an .csi index file and
+    and removes "chr" from the chromosome values
+
+    Args:
+    vcf_path: input path
+    """
+    # remove chr & add index file using bcftools
+    vcf_input = get_batch().read_input(vcf_path)
+
+    vcf_size = to_path(vcf_path).stat().st_size
+    storage_required = ((vcf_size // 1024**3) or 1) * 2.2
+    bcftools_job = get_batch().new_job(name='remove chr and index vcf')
+    bcftools_job.declare_resource_group(
+        output={
+            'vcf.bgz': '{root}.vcf.bgz',
+            'vcf.bgz.csi': '{root}.vcf.bgz.csi',
+        }
+    )
+    bcftools_job.image(get_config()['images']['bcftools'])
+    bcftools_job.cpu(4)
+    bcftools_job.storage(f'{storage_required}Gi')
+    # now remove "chr" from chromosome names using bcftools
+    bcftools_job.command(
+        'for num in {1..22} X Y; do echo "chr${num} ${num}" >> chr_update.txt; done'
+    )
+    bcftools_job.command(
+        f"""
+        bcftools annotate --rename-chrs chr_update.txt {vcf_input} | \\
+        bgzip -c > {bcftools_job.output['vcf.bgz']}
+        bcftools index -c {bcftools_job.output['vcf.bgz']}
+    """
+    )
+    logging.info('CV VCF rename/index jobs scheduled!')
+
+    # save both output files
+    get_batch().write_output(bcftools_job.output, vcf_path.removesuffix('.vcf.bgz'))
+
+
 def remove_chr_from_bim(input_bim: str, output_bim: str, bim_renamed: str):
     """
     Method powered by Gemini
@@ -148,6 +188,7 @@ def remove_chr_from_bim(input_bim: str, output_bim: str, bim_renamed: str):
 @click.option('--vds-version', help=' e.g., 1-0 ')
 @click.option('--chromosomes', help=' e.g., chr22,chrX ')
 @click.option('--cv-maf-threshold', default=0.01)
+@click.option('--rv-maf-threshold', default=0.01)
 @click.option('--vre-mac-threshold', default=20)
 @click.option('--vre-n-markers', default=2000)
 @click.option('--exclude-multiallelic', is_flag=False)
@@ -158,6 +199,7 @@ def main(
     vds_version: str,
     chromosomes: str,
     cv_maf_threshold: float,
+    rv_maf_threshold: float,
     vre_mac_threshold: int,
     vre_n_markers: int,
     exclude_multiallelic: bool,
@@ -175,13 +217,20 @@ def main(
 
     for chromosome in chromosomes.split(','):
 
-        # create path and check if it exists already
+        # create paths and check if they exist already
         cv_vcf_path = output_path(
             f'vds{vds_version}/{chromosome}_common_variants.vcf.bgz'
         )
-        vcf_existence_outcome = can_reuse(cv_vcf_path)
-        logging.info(f'Does {cv_vcf_path} exist? {vcf_existence_outcome}')
-        if not vcf_existence_outcome:
+        cv_vcf_existence_outcome = can_reuse(cv_vcf_path)
+        logging.info(f'Does {cv_vcf_path} exist? {cv_vcf_existence_outcome}')
+
+        rv_vcf_path = output_path(
+            f'vds{vds_version}/{chromosome}_rare_variants.vcf.bgz'
+        )
+        rv_vcf_existence_outcome = can_reuse(rv_vcf_path)
+        logging.info(f'Does {cv_vcf_path} exist? {rv_vcf_existence_outcome}')
+
+        if not cv_vcf_existence_outcome or not rv_vcf_existence_outcome:
 
             # consider only relevant chromosome
             chrom_vds = hl.vds.filter_chromosomes(vds, keep=chromosome)
@@ -198,56 +247,40 @@ def main(
                 mt = mt.filter_rows(~(mt.was_split))
             if exclude_indels:  # SNPs only (exclude indels)
                 mt = mt.filter_rows(hl.is_snp(mt.alleles[0], mt.alleles[1]))
-            # logging.info(f'Number of variants left after filtering: {mt.count()}')
 
             mt = hl.variant_qc(mt)
 
-            # common variants only
-            cv_mt = mt.filter_rows(mt.variant_qc.AF[1] > cv_maf_threshold)
-            # logging.info(f'Number of common variants left: {cv_mt.count()}')
+            if not cv_vcf_existence_outcome:
+                # common variants only
+                cv_mt = mt.filter_rows(mt.variant_qc.AF[1] >= cv_maf_threshold)
 
-            # remove fields not in the VCF
-            cv_mt = cv_mt.drop('gvcf_info')
+                # remove fields not in the VCF
+                cv_mt = cv_mt.drop('gvcf_info')
 
-            # export to vcf common variants only
-            export_vcf(cv_mt, cv_vcf_path)
+                # export to vcf common variants only
+                export_vcf(cv_mt, cv_vcf_path)
 
-        # check existence of index file separately
-        index_file_existence_outcome = can_reuse(f'{cv_vcf_path}.csi')
-        logging.info(f'Does {cv_vcf_path}.csi exist? {index_file_existence_outcome}')
-        if not index_file_existence_outcome:
-            # remove chr & add index file using bcftools
-            vcf_input = get_batch().read_input(cv_vcf_path)
+            if not rv_vcf_existence_outcome:
+                # common variants only
+                rv_mt = mt.filter_rows(mt.variant_qc.AF[1] < rv_maf_threshold)
 
-            vcf_size = to_path(cv_vcf_path).stat().st_size
-            storage_required = ((vcf_size // 1024**3) or 1) * 2.2
-            bcftools_job = get_batch().new_job(name='remove chr and index vcf')
-            bcftools_job.declare_resource_group(
-                output={
-                    'vcf.bgz': '{root}.vcf.bgz',
-                    'vcf.bgz.csi': '{root}.vcf.bgz.csi',
-                }
-            )
-            bcftools_job.image(get_config()['images']['bcftools'])
-            bcftools_job.cpu(4)
-            bcftools_job.storage(f'{storage_required}Gi')
-            # now remove "chr" from chromosome names using bcftools
-            bcftools_job.command(
-                'for num in {1..22} X Y; do echo "chr${num} ${num}" >> chr_update.txt; done'
-            )
-            bcftools_job.command(
-                f"""
-                bcftools annotate --rename-chrs chr_update.txt {vcf_input} | \\
-                bgzip -c > {bcftools_job.output['vcf.bgz']}
-                bcftools index -c {bcftools_job.output['vcf.bgz']}
-            """
-            )
-            logging.info('VCF rename/index jobs scheduled!')
+                # remove fields not in the VCF
+                rv_mt = rv_mt.drop('gvcf_info')
 
-            # save both output files
-            get_batch().write_output(
-                bcftools_job.output, cv_vcf_path.removesuffix('.vcf.bgz')
-            )
+                # export to vcf rare variants only
+                export_vcf(rv_mt, rv_vcf_path)
+
+        # check existence of index file (CV) separately
+        cv_index_file_existence_outcome = can_reuse(f'{cv_vcf_path}.csi')
+        logging.info(f'Does {cv_vcf_path}.csi exist? {cv_index_file_existence_outcome}')
+        if not cv_index_file_existence_outcome:
+            add_remove_chr_and_index_job(cv_vcf_path)
+
+        # do the same for rare variants
+        rv_index_file_existence_outcome = can_reuse(f'{rv_vcf_path}.csi')
+        logging.info(f'Does {rv_vcf_path}.csi exist? {rv_index_file_existence_outcome}')
+        if not rv_index_file_existence_outcome:
+            add_remove_chr_and_index_job(rv_vcf_path)
 
     # subset variants for variance ratio estimation
     vre_plink_path = output_path(f'vds{vds_version}/vre_plink_2000_variants')
