@@ -31,12 +31,12 @@ tol = 0.00001
 IsOverwriteVarianceRatioFile = 'TRUE'
 
 [saige.sv_test]
-vcf_field = 'GT'
-min_maf = 0
-min_mac = 5
-loco_bool = 'FALSE'
-n_markers = 10000
-spa_cutoff = 10000
+vcfField = 'GT'
+minMAF = 0
+minMAC = 5
+LOCO = 'FALSE'
+markers_per_chunk = 10000
+SPAcutoff = 10000
 
 
 [saige.job_specs.fit_null]
