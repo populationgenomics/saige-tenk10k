@@ -51,12 +51,6 @@ def build_fit_null_command(pheno_file: str, output_prefix: str, plink_path: str,
     - output prefix: where to save the fitted model (.rda)
     - Plink path: path to plink file (subset of ~2,000 markers for VRE)
     - pheno col: name of column specifying pheno (default: "y")
-    - trait type: count = Poisson, count_nb = Negative Binomial, quantitative = Normal
-    - option to skip Variance Ratio estimation (discouraged)
-    - option to add an offset to the fixed covariates (???)
-    - option to transform (scale?) covariates?
-    - option to skip model fitting (discouraged)
-    - tolerance for convergence
     - overwrite variance ratio file (estimated here)
 
     Output:
@@ -101,9 +95,6 @@ def build_run_single_variant_test_command(
     - cis window: file with chrom | start | end to specify window
     - GMMAT model file: null model fit from previous step (.rda)
     - Variance Ratio file: as estimated from previous step (.txt)
-    - min MAF: minimum variant minor allele frequency to include
-    - min MAC: minimum variant minor allele count to include
-    - LOCO: leave one chromosome out
 
     Output:
     Rscript command (str) ready to run

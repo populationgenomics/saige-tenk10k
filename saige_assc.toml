@@ -16,17 +16,23 @@ cis_window_size = 100000
 skip_vre = false
 is_cov_transform = true
 
-[saige.build_fit_null]
 # these args are applied directly to step1_fitNULLGLMM_qtl.R
 # as "--{key}={value} "
+[saige.build_fit_null]
+# Poisson, count_nb = Negative Binomial, quantitative = Normal
 traitType = 'count'
+# option to skip Variance Ratio estimation (discouraged)
 skipVarianceRatioEstimation = 'FALSE'
 isRemoveZerosinPheno = 'FALSE'
 useSparseGRMtoFitNULL = 'FALSE'
 useGRMtoFitNULL = 'FALSE'
+# option to add an offset to the fixed covariates (???)
 isCovariateOffset = 'FALSE'
+# option to transform (scale?) covariates?
 isCovariateTransform = 'TRUE'
+# option to skip model fitting (discouraged)
 skipModelFitting = 'FALSE'
+# tolerance for convergence
 tol = 0.00001
 IsOverwriteVarianceRatioFile = 'TRUE'
 
