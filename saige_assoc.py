@@ -28,8 +28,6 @@ import click
 from cpg_utils.config import get_config
 from cpg_utils.hail_batch import dataset_path, get_batch, output_path, image_path
 
-__author__ = 'annacuomo'
-
 
 # Fit null model (step 1)
 def build_fit_null_command(
@@ -213,7 +211,7 @@ def apply_job_settings(job, job_name: str):
     ),
 )
 @click.option('--vcf-field', default='GT')
-@click.option('--covs-list', default='X1,X2,pf1,pf2')
+# @click.option('--covs-list', default='X1,X2,pf1,pf2')
 @click.option('--sample-covs-list', default='X1,X2')
 @click.option('--sample-id', default='IND_ID')
 @click.option(
@@ -238,7 +236,7 @@ def association_pipeline(
     pheno_cov_filename: str,
     vcf_file_path: str,
     vcf_field: str,
-    covs_list: str,
+    # covs_list: str,
     sample_covs_list: str,
     sample_id: str,
     null_output_path: str,
@@ -254,6 +252,10 @@ def association_pipeline(
     """
 
     batch = get_batch('SAIGE-QTL pipeline')
+
+    # get params from toml file
+    params = get_config()['saige-qtl'].get()
+    covs_list = params.get('cov-col-list')
 
     # step 1 (fit null)
     fit_null_job = batch.new_job(name='fit null')
