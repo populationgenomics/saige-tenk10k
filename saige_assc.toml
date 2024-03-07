@@ -1,7 +1,7 @@
 [saige]
 # principal arguments
-celltypes = ['CD4_Naive']
-chromosomes = ['chr1']
+celltypes = ['B_memory']
+chromosomes = ['chr21']
 vds_version = 'vds1-0'
 
 # secondary arguments
