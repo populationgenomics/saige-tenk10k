@@ -1,6 +1,6 @@
 [saige]
 # principal arguments
-celltypes = ['B_memory']
+celltypes = ['B_naive']
 chromosomes = ['chr21']
 vds_version = 'vds1-0'
 
