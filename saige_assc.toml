@@ -5,8 +5,11 @@ chromosomes = ['chr1']
 vds_version = 'vds1-0'
 
 # secondary arguments
-covs = ['sex,age,harmony_PC1,total_counts,sequencing_library']
-sample_covs = ['sex,age']
+
+# these two aren't really lists...
+covs = 'sex,age,harmony_PC1,total_counts,sequencing_library'
+sample_covs = 'sex,age'
+
 sample_id = 'individual'
 max_parallel_jobs = 100
 cis_window_size = 100000
