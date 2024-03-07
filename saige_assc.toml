@@ -6,19 +6,15 @@ vds_version = 'vds1-0'
 
 # secondary arguments
 
-# these two aren't really lists...
-covs = 'sex,age,harmony_PC1,total_counts,sequencing_library'
-sample_covs = 'sex,age'
-
-sample_id = 'individual'
 max_parallel_jobs = 100
 cis_window_size = 100000
-skip_vre = false
-is_cov_transform = true
 
 # these args are applied directly to step1_fitNULLGLMM_qtl.R
 # as "--{key}={value} "
 [saige.build_fit_null]
+covarColList = 'sex,age,harmony_PC1,total_counts,sequencing_library'
+sampleCovarColList = 'sex,age'
+sampleIDColinphenoFile = 'individual'
 # Poisson, count_nb = Negative Binomial, quantitative = Normal
 traitType = 'count'
 # option to skip Variance Ratio estimation (discouraged)
