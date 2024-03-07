@@ -21,7 +21,7 @@ analysis-runner \
     --description "SAIGE-QTL association pipeline" \
     --dataset "bioheart" \
     --access-level "test" \
-    --output-dir "saige-qtl/output_files/" \
+    --output-dir "saige-qtl/" \
      python3 saige_assoc.py
 
 """
