@@ -38,9 +38,6 @@ LOCO = 'FALSE'
 markers_per_chunk = 10000
 SPAcutoff = 10000
 
-
 [saige.job_specs.fit_null]
 storage = "10Gi"
 memory = "10Gi"
-
-
