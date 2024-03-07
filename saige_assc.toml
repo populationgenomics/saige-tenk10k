@@ -32,8 +32,11 @@ IsOverwriteVarianceRatioFile = 'TRUE'
 
 [saige.sv_test]
 vcfField = 'GT'
+# minimum variant minor allele frequency to include
 minMAF = 0
+# minimum variant minor allele count to include
 minMAC = 5
+# leave one chromosome out
 LOCO = 'FALSE'
 markers_per_chunk = 10000
 SPAcutoff = 10000
