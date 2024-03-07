@@ -213,7 +213,7 @@ def run_fit_null_job(
         Tuple: (Job | None, ResourceGroup)
 
     """
-    if to_path(null_output_path).exists():
+    if to_path(f'{null_output_path}.rda').exists():
         return None, get_batch().read_input_group(
             **{
                 'rda': f'{null_output_path}.rda',
