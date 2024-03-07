@@ -39,7 +39,9 @@ from cpg_utils.hail_batch import dataset_path, get_batch, image_path, output_pat
 
 
 # Fit null model (step 1)
-def build_fit_null_command(pheno_file: str, output_prefix: str, plink_path: str, pheno_col: str):
+def build_fit_null_command(
+    pheno_file: str, output_prefix: str, plink_path: str, pheno_col: str
+):
     """Build SAIGE command for fitting null model
     This will fit a Poisson / NB mixed model under the null hypothesis
 
@@ -62,7 +64,12 @@ def build_fit_null_command(pheno_file: str, output_prefix: str, plink_path: str,
     )
 
     # pull all values from the config file's saige.build_fit_null section
-    args_from_config = ' '.join([f'--{key}={value}' for key, value in get_config()['saige']['build_fit_null'].items()])
+    args_from_config = ' '.join(
+        [
+            f'--{key}={value}'
+            for key, value in get_config()['saige']['build_fit_null'].items()
+        ]
+    )
 
     return f"""
         Rscript /usr/local/bin/step1_fitNULLGLMM_qtl.R \
@@ -81,7 +88,7 @@ def build_run_single_variant_test_command(
     chrom: str,
     cis_window_file: str,
     gmmat_model_path: str,
-    variance_ratio_path: str
+    variance_ratio_path: str,
 ):
     """
     Build SAIGE command for running single variant test
@@ -157,7 +164,7 @@ def build_obtain_gene_level_pvals_command(
         Rscript /usr/local/bin/step3_gene_pvalue_qtl.R \
         --assocFile={saige_sv_output_file} \
         --geneName={gene_name} \
-        --genePval_outputFile={saige_job.output} 
+        --genePval_outputFile={saige_job.output}
     """
     saige_job.image(image_path('saige-qtl'))
     saige_job.command(saige_command_step3)
@@ -349,7 +356,7 @@ def main(
                     output_path(f'output_files/{celltype}_{gene}'),
                     pheno_file=pheno_cov_path,
                     plink_path=vre_plink_path,
-                    pheno_col=gene
+                    pheno_col=gene,
                 )
                 if null_job:
                     manage_concurrency_for_job(null_job)
