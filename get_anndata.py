@@ -101,8 +101,8 @@ def make_pheno_cov(
     sample_covs_file: str,
     celltype_covs_file: str,
     out_path: str,
-    fill_in_sex: bool = True,
-    fill_in_age: bool = True,
+    fill_in_sex: bool = False,
+    fill_in_age: bool = False,
 ):
     """
     Combine expression and covariates into a single file
@@ -128,6 +128,10 @@ def make_pheno_cov(
     cell_ind_df = expression_adata.obs.loc[
         :, ['cell', 'individual', 'total_counts', 'sequencing_library']
     ]
+    # make sequencing_library from categorical to dummy numerical covs
+    seq_lib_df = pd.get_dummies(cell_ind_df['sequencing_library'])
+    cell_ind_df = pd.concat([cell_ind_df, seq_lib_df], axis=1)
+    # merge cell and sample covs
     sample_covs_cells_df = cell_ind_df.merge(
         sample_covs_df, on='individual', how='left'
     )
