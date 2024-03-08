@@ -126,7 +126,7 @@ def make_pheno_cov(
     if fill_in_age:
         mean_age = sample_covs_df['age'].mean()
     cell_ind_df = expression_adata.obs.loc[
-        :, ['cell', 'individual', 'total_counts', 'sequencing_library']
+        :, ['cell', 'individual', 'total_counts', 'cohort', 'sequencing_library']
     ]
     # make sequencing_library from categorical to dummy numerical covs
     seq_lib_df = pd.get_dummies(cell_ind_df['sequencing_library'])
