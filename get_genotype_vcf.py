@@ -241,6 +241,15 @@ def main(
             # densify to matrix table object
             mt = hl.vds.to_dense_mt(chrom_vds)
 
+            # filter out related samples
+            # this will get dropped as the vds file will already be clean
+            related_ht = hl.read_table(
+                'gs://cpg-bioheart-main-analysis/large_cohort/v1-0/relateds_to_drop.ht'
+            )
+            related_samples = related_ht.s.collect()
+            related_samples = hl.literal(related_samples)
+            mt = mt.filter_cols(~related_samples.contains(mt['s']))
+
             # filter out loci & variant QC
             mt = mt.filter_rows(hl.len(mt.alleles) == 2)  # remove hom-ref
             if exclude_multiallelic:  # biallelic only (exclude multiallelic)
