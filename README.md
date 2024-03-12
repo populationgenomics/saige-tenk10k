@@ -108,8 +108,8 @@ Single-variant association testing ([common variants step 2](https://weizhou0.gi
 * ```min_maf```: minimum minor allele frequency (MAF) (default: 0)
 * ```min_mac```: minimum minor allele count (MAC) (default: 5)
 * ```loco_bool```: boolean specifying whether leave-one-chromosome-out should be used (default: ```FALSE```)
-* ```n_markers```: int = 10000,
-* ```spa_cutoff```: int = 10000,
+* ```n_markers```: internal parameter to batcify variants tested (default: 10000),
+* ```spa_cutoff```: internal parameter to do with the saddlepoint approximation, does not make much of a difference for us (default: 10000),
 
 Obtain gene-level p-values ([common variants only, step 3](https://weizhou0.github.io/SAIGE-QTL-doc/docs/gene_step3.html))
 
