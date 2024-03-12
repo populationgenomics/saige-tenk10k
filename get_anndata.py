@@ -129,7 +129,9 @@ def make_pheno_cov(
         :, ['cell', 'individual', 'total_counts', 'cohort', 'sequencing_library']
     ]
     # make sequencing_library from categorical to dummy numerical covs
-    seq_lib_df = pd.get_dummies(cell_ind_df['sequencing_library']).rename(columns=lambda x: x.replace('-', '_'))
+    seq_lib_df = pd.get_dummies(cell_ind_df['sequencing_library']).rename(
+        columns=lambda x: x.replace('-', '_')
+    )
     # do the same for cohort
     cohort_df = pd.get_dummies(cell_ind_df['cohort'])
     cell_ind_df = pd.concat([cell_ind_df, cohort_df, seq_lib_df], axis=1)
