@@ -78,8 +78,8 @@ Most of these are (or will be) included in the official [documentation](https://
 Fit null model ([step 1](https://weizhou0.github.io/SAIGE-QTL-doc/docs/step1.html)):
 
 * ```pheno_file```: path specifying the location of the phenotype covariate file described above (build during part 2 of the pipeline)
-* ```cov_col_list```: string specifying the columns of the pheno_file that should be used as covariates (separated by a comma)
-* ```sample_cov_col_list```: same as above, but specifying only, out of the columns above, the ones that are well defined at individual level (e.g., sex, age)
+* ```cov_col_list```: string specifying the columns of the pheno_file that should be used as covariates (separated by a comma, no spaces)
+* ```sample_cov_col_list```: same as above, but specifying only, out of the columns above, the ones that are well defined at individual level (e.g., sex, age, ancestry PCs)
 * ```sample_id_pheno```: specify the column that represents individual IDs
 * ```output_prefix```: path to where the output files from step 1 (which will be read by step 2) should be written to
 * ```plink_path```: path to VRE plink files (specify just the prefix, but a .bim, .fam, and .bed files with the same prefix and in the same location should exist -- these are built in part 1)
@@ -87,13 +87,13 @@ Fit null model ([step 1](https://weizhou0.github.io/SAIGE-QTL-doc/docs/step1.htm
 * ```trait_type```: specify the model to be used, ```count``` is the Poisson model which should be used here.
 * ```skip_vre```: boolean specifying whether the variance ratio estimation should be run or skipped, should always be false (Note that because the syntax is different between Python and R we encode this as the string ```FALSE``` instead of the boolean ```False```)
 * ```pheno_remove_zeros```: option to remove 0s from phenotype vector (default: ```FALSE``` as it does not make sense for the very sparse scRNA-seq data)
-* ```use_sparse_grm_null```:  (default: ```FALSE```)
-* ```use_grm_null```: str = (default: ```FALSE```)
-* ```is_cov_offset```: str = (default: ```FALSE```)
+* ```use_sparse_grm_null```: use sparse GRM to account for relatedness. This is implemented but would require a step0 in the pipeline to first construct this, which is not there at the moment (default: ```FALSE```)
+* ```use_grm_null```: same as above, but without the sparse option (default: ```FALSE```)
+* ```is_cov_offset```: set one of the covariates as offset (default: ```FALSE```)
 * ```is_cov_transform```: transform (explain) covariates (default: ```TRUE```)
 * ```skip_model_fitting```: boolean (default: ```FALSE```)
 * ```tol```: convergence tolerance (default 0.00001, which works well in our hands)
-* ```is_overwrite_vre_file```: str = (default: ```TRUE```)
+* ```is_overwrite_vre_file```: if the file already exists, skip or overwrite, default is the latter (default: ```TRUE```)
 
 Single-variant association testing ([common variants step 2](https://weizhou0.github.io/SAIGE-QTL-doc/docs/single_step2.html)):
 
