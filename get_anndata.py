@@ -17,10 +17,9 @@ analysis-runner \
     --description "make expression input files" \
     --dataset "bioheart" \
     --access-level "test" \
-    --output-dir "saige-qtl/input_files/" \
+    --output-dir "saige-qtl/input_files" \
     --image australia-southeast1-docker.pkg.dev/cpg-common/images/scanpy:1.9.3 \
-    --memory "5Gi" --storage "5Gi" \
-    python3 get_anndata.py --celltypes CD4_Naive --chromosomes chr1
+    python3 get_anndata.py --celltypes B_naive --chromosomes chr21
 
 
 """
@@ -191,6 +190,18 @@ def copy_h5ad_local_and_open(adata_path: str) -> sc.AnnData:
         'risk jobs that are stuck (which are expensive)'
     ),
 )
+@click.option(
+    '--pc-job-cpu',
+    type=float,
+    default=1,
+    help='CPU for each pheno cov job',
+)
+@click.option(
+    '--pc-job-mem',
+    type=str,
+    default='standard',
+    help='Memory for each pheno cov job',
+)
 def main(
     celltypes: str,
     chromosomes: str,
@@ -200,6 +211,8 @@ def main(
     min_pct_expr: int,
     cis_window_size: int,
     concurrent_job_cap: int,
+    pc_job_cpu: float,
+    pc_job_mem: str,
 ):
     """
     Run expression processing pipeline
@@ -282,7 +295,8 @@ def main(
                     pheno_cov_job = get_batch().new_python_job(
                         name=f'pheno cov file: {gene}, {celltype}'
                     )
-                    pheno_cov_job.storage('10G')
+                    pheno_cov_job.cpu(pc_job_cpu)
+                    pheno_cov_job.memory(pc_job_mem)
                     pheno_cov_job.call(
                         make_pheno_cov,
                         gene,
@@ -304,7 +318,8 @@ def main(
                     gene_cis_job = get_batch().new_python_job(
                         name=f'gene cis file: {gene}'
                     )
-                    gene_cis_job.storage('10G')
+                    gene_cis_job.cpu(0.25)
+
                     gene_cis_job.call(
                         get_gene_cis_info,
                         str(tmp_path),
