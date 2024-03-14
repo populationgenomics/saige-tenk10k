@@ -17,7 +17,7 @@ analysis-runner \
     --description "make expression input files" \
     --dataset "bioheart" \
     --access-level "test" \
-    --output-dir "saige-qtl/input_files/hope-test" \
+    --output-dir "saige-qtl/input_files/hope-test33" \
     --image australia-southeast1-docker.pkg.dev/cpg-common/images/scanpy:1.9.3 \
     python3 get_anndata.py --celltypes B_naive --chromosomes chr21
 
@@ -193,7 +193,7 @@ def copy_h5ad_local_and_open(adata_path: str) -> sc.AnnData:
 @click.option(
     '--pc-job-cpu',
     type=float,
-    default=0.5,
+    default=1,
     help='CPU for each pheno covv job',
 )
 @click.option(
