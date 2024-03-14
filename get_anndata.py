@@ -194,7 +194,7 @@ def copy_h5ad_local_and_open(adata_path: str) -> sc.AnnData:
     '--pc-job-cpu',
     type=float,
     default=1,
-    help='CPU for each pheno covv job',
+    help='CPU for each pheno cov job',
 )
 @click.option(
     '--pc-job-mem',
