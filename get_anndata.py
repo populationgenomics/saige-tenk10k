@@ -17,10 +17,9 @@ analysis-runner \
     --description "make expression input files" \
     --dataset "bioheart" \
     --access-level "test" \
-    --output-dir "saige-qtl/input_files/" \
+    --output-dir "saige-qtl/input_files/hope-test" \
     --image australia-southeast1-docker.pkg.dev/cpg-common/images/scanpy:1.9.3 \
-    --memory "5Gi" --storage "5Gi" \
-    python3 get_anndata.py --celltypes CD4_Naive --chromosomes chr1
+    python3 get_anndata.py --celltypes B_naive --chromosomes chr1
 
 
 """
@@ -282,7 +281,7 @@ def main(
                     pheno_cov_job = get_batch().new_python_job(
                         name=f'pheno cov file: {gene}, {celltype}'
                     )
-                    pheno_cov_job.storage('10G')
+                    pheno_cov_job.cpu(0.5)
                     pheno_cov_job.call(
                         make_pheno_cov,
                         gene,
@@ -304,7 +303,7 @@ def main(
                     gene_cis_job = get_batch().new_python_job(
                         name=f'gene cis file: {gene}'
                     )
-                    gene_cis_job.storage('10G')
+
                     gene_cis_job.call(
                         get_gene_cis_info,
                         str(tmp_path),
