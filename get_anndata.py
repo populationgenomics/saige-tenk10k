@@ -144,7 +144,6 @@ def make_pheno_cov(
         sample_covs_cells_df['sex'] = sample_covs_cells_df['sex'].fillna(0)
     if fill_in_age:
         sample_covs_cells_df['age'] = sample_covs_cells_df['age'].fillna(mean_age)
-    if fill_in_sex is False or fill_in_age is False:
         # drop rows with missing values (SAIGE throws an error otherwise:  https://batch.hail.populationgenomics.org.au/batches/435978/jobs/91)
         sample_covs_cells_df = sample_covs_cells_df.dropna()
     gene_adata = expression_adata[:, expression_adata.var['gene_name'] == gene]
