@@ -226,7 +226,7 @@ def main(
     # sample level covariates (age + sex + genotype PCs)
     # age from metamist, sex from somalier + Vlad's file for now
     sample_covs_file = dataset_path(
-        f'{sample_covs_files_prefix}/sex_age_geno_pcs_tob_bioheart.csv'
+        f'{sample_covs_files_prefix}/sex_age_geno_pcs_tob_bioheart.csv', 'analysis'
     )
 
     for celltype in celltypes.split(','):
