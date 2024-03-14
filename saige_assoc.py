@@ -21,7 +21,7 @@ analysis-runner \
     --description "SAIGE-QTL association pipeline" \
     --dataset "bioheart" \
     --access-level "test" \
-    --output-dir "saige-qtl/" \
+    --output-dir "saige-qtl/hope-test-cheaper" \
      python3 saige_assoc.py
 
 """
@@ -113,6 +113,7 @@ def build_run_single_variant_test_command(
     vcf_group = get_batch().read_input_group(vcf=vcf_file, index=f'{vcf_file}.csi')
     cis_window_file = get_batch().read_input(cis_window_file)
     second_job = get_batch().new_job(name="saige-qtl part 2")
+    second_job.cpu(0.5)
     second_job.image(image_path('saige-qtl'))
 
     args_from_config = ' '.join(
@@ -160,6 +161,7 @@ def build_obtain_gene_level_pvals_command(
         return None
 
     saige_job = get_batch().new_job(name="saige-qtl part 3")
+    saige_job.cpu(0.25).memory('lowmem')
     saige_command_step3 = f"""
         Rscript /usr/local/bin/step3_gene_pvalue_qtl.R \
         --assocFile={saige_sv_output_file} \
