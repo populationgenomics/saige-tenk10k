@@ -131,8 +131,12 @@ def make_pheno_cov(
     seq_lib_df = pd.get_dummies(cell_ind_df['sequencing_library']).rename(
         columns=lambda x: x.replace('-', '_')
     )
+    # Convert dummy variables to 0s and 1s
+    seq_lib_df = seq_lib_df.map(lambda x: 1 if x != 0 else 0)
     # do the same for cohort
     cohort_df = pd.get_dummies(cell_ind_df['cohort'])
+    cohort_df = cohort_df.map(lambda x: 1 if x != 0 else 0)
+
     cell_ind_df = pd.concat([cell_ind_df, cohort_df, seq_lib_df], axis=1)
     # merge cell and sample covs
     sample_covs_cells_df = cell_ind_df.merge(
