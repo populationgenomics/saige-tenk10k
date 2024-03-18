@@ -114,6 +114,8 @@ def build_run_single_variant_test_command(
     cis_window_file = get_batch().read_input(cis_window_file)
     second_job = get_batch().new_job(name="saige-qtl part 2")
     second_job.image(image_path('saige-qtl'))
+    second_job.cpu(2)
+    second_job.storage('10G')
 
     args_from_config = ' '.join(
         [f'--{key}={value}' for key, value in get_config()['saige']['sv_test'].items()]
