@@ -131,8 +131,12 @@ def make_pheno_cov(
     seq_lib_df = pd.get_dummies(cell_ind_df['sequencing_library']).rename(
         columns=lambda x: x.replace('-', '_')
     )
+    # Convert dummy variables to 0s and 1s
+    seq_lib_df = seq_lib_df.map(lambda x: 1 if x != 0 else 0)
     # do the same for cohort
     cohort_df = pd.get_dummies(cell_ind_df['cohort'])
+    cohort_df = cohort_df.map(lambda x: 1 if x != 0 else 0)
+
     cell_ind_df = pd.concat([cell_ind_df, cohort_df, seq_lib_df], axis=1)
     # merge cell and sample covs
     sample_covs_cells_df = cell_ind_df.merge(
@@ -146,11 +150,19 @@ def make_pheno_cov(
         sample_covs_cells_df['age'] = sample_covs_cells_df['age'].fillna(mean_age)
     # drop rows with missing values (SAIGE throws an error otherwise:  https://batch.hail.populationgenomics.org.au/batches/435978/jobs/91)
     sample_covs_cells_df = sample_covs_cells_df.dropna()
+    # remove indices (cells) in cell_type_covs_df that are not in sample_covs_cells_df
+    celltype_covs_df = celltype_covs_df[
+        celltype_covs_df.index.isin(list(sample_covs_cells_df.index))
+    ]
     gene_adata = expression_adata[:, expression_adata.var['gene_name'] == gene]
     gene_name = gene.replace("-", "_")
     expr_df = pd.DataFrame(
         data=gene_adata.X.todense(), index=gene_adata.obs.index, columns=[gene_name]
     )
+    # remove indices (cells) in expr_df that are not in sample_covs_cells_df
+
+    expr_df = expr_df[expr_df.index.isin(list(sample_covs_cells_df.index))]
+
     pheno_cov_df = pd.concat([sample_covs_cells_df, expr_df, celltype_covs_df], axis=1)
     with to_path(out_path).open('w') as pcf:
         pheno_cov_df.to_csv(pcf, index=False, sep='\t')
