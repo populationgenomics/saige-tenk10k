@@ -180,7 +180,7 @@ def copy_h5ad_local_and_open(adata_path: str) -> sc.AnnData:
     '--celltype-covs-files-prefix', default='saige-qtl/celltype_covs_from_HPC'
 )
 @click.option('--sample-covs-files-prefix', default='saige-qtl/input_files/covariates')
-@click.option('--min-pct-expr', type=int, default=5)
+@click.option('--min-pct-expr', type=int, default=1)
 @click.option('--cis-window-size', type=int, default=100000)
 @click.option(
     '--concurrent-job-cap',
