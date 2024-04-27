@@ -21,8 +21,8 @@ analysis-runner \
     --description "get common variant VCF" \
     --dataset "bioheart" \
     --access-level "test" \
-    --output-dir "saige-qtl/input_files/genotypes/" \
-    python3 get_genotype_vcf.py --vds-path=gs:// --chromosomes chr1,chr2,chr22 --vre-mac-threshold 1
+    --output-dir "saige-qtl/bioheart_only/input_files/genotypes" \
+    python3 get_genotype_vcf.py --vds-path=gs://cpg-bioheart-test/vds/bioheart1-0.vds --chromosomes chr1,chr2,chr22 --vre-mac-threshold 1
 
 In main:
 
@@ -240,7 +240,7 @@ def main(
             # filter out related samples
             # this will get dropped as the vds file will already be clean
             related_ht = hl.read_table(
-                'gs://cpg-bioheart-main-analysis/large_cohort/v1-0/relateds_to_drop.ht'
+                'gs://cpg-bioheart-test/large_cohort/v1-0/relateds_to_drop.ht'
             )
             related_samples = related_ht.s.collect()
             related_samples = hl.literal(related_samples)
