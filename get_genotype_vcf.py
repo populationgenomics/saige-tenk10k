@@ -223,9 +223,7 @@ def main(
         cv_vcf_existence_outcome = can_reuse(cv_vcf_path)
         logging.info(f'Does {cv_vcf_path} exist? {cv_vcf_existence_outcome}')
 
-        rv_vcf_path = output_path(
-            f'vds-{vds_name}/{chromosome}_rare_variants.vcf.bgz'
-        )
+        rv_vcf_path = output_path(f'vds-{vds_name}/{chromosome}_rare_variants.vcf.bgz')
         rv_vcf_existence_outcome = can_reuse(rv_vcf_path)
         logging.info(f'Does {cv_vcf_path} exist? {rv_vcf_existence_outcome}')
 
