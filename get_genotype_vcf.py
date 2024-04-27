@@ -22,7 +22,7 @@ analysis-runner \
     --dataset "bioheart" \
     --access-level "test" \
     --output-dir "saige-qtl/input_files/genotypes/" \
-    python3 get_genotype_vcf.py --vds-version 1-0 --chromosomes chr1,chr2,chr22 --vre-mac-threshold 1
+    python3 get_genotype_vcf.py --vds-path=gs:// --chromosomes chr1,chr2,chr22 --vre-mac-threshold 1
 
 In main:
 
@@ -31,13 +31,13 @@ analysis-runner \
     --dataset "bioheart" \
     --access-level "full" \
     --output-dir "saige-qtl/input_files/genotypes/" \
-    python3 get_genotype_vcf.py --vds-version v1-0 --chromosomes chr1,chr2,chr22
+    python3 get_genotype_vcf.py --vds-path=gs:// --chromosomes chr1,chr2,chr22
 
 """
 
 from cpg_utils import to_path
 from cpg_utils.config import get_config
-from cpg_utils.hail_batch import dataset_path, get_batch, init_batch, output_path
+from cpg_utils.hail_batch import get_batch, init_batch, output_path
 
 import click
 import logging
@@ -185,7 +185,7 @@ def remove_chr_from_bim(input_bim: str, output_bim: str, bim_renamed: str):
 
 
 # inputs:
-@click.option('--vds-version', help=' e.g., 1-0 ')
+@click.option('--vds-path', help=' GCP gs:// path to the VDS')
 @click.option('--chromosomes', help=' e.g., chr22,chrX ')
 @click.option('--cv-maf-threshold', default=0.01)
 @click.option('--rv-maf-threshold', default=0.01)
@@ -196,7 +196,7 @@ def remove_chr_from_bim(input_bim: str, output_bim: str, bim_renamed: str):
 @click.option('--plink-job-storage', default='1G')
 @click.command()
 def main(
-    vds_version: str,
+    vds_path: str,
     chromosomes: str,
     cv_maf_threshold: float,
     rv_maf_threshold: float,
@@ -212,26 +212,24 @@ def main(
 
     init_batch(worker_memory='highmem')
 
-    vds_path = dataset_path(f'vds/{vds_version}.vds')
     vds = hl.vds.read_vds(vds_path)
+    vds_name = vds_path.split('/')[-1].split('.')[0]
 
     for chromosome in chromosomes.split(','):
-
         # create paths and check if they exist already
         cv_vcf_path = output_path(
-            f'vds{vds_version}/{chromosome}_common_variants.vcf.bgz'
+            f'vds-{vds_name}/{chromosome}_common_variants.vcf.bgz'
         )
         cv_vcf_existence_outcome = can_reuse(cv_vcf_path)
         logging.info(f'Does {cv_vcf_path} exist? {cv_vcf_existence_outcome}')
 
         rv_vcf_path = output_path(
-            f'vds{vds_version}/{chromosome}_rare_variants.vcf.bgz'
+            f'vds-{vds_name}/{chromosome}_rare_variants.vcf.bgz'
         )
         rv_vcf_existence_outcome = can_reuse(rv_vcf_path)
         logging.info(f'Does {cv_vcf_path} exist? {rv_vcf_existence_outcome}')
 
         if not cv_vcf_existence_outcome or not rv_vcf_existence_outcome:
-
             # consider only relevant chromosome
             chrom_vds = hl.vds.filter_chromosomes(vds, keep=chromosome)
 
@@ -292,7 +290,7 @@ def main(
             add_remove_chr_and_index_job(rv_vcf_path)
 
     # subset variants for variance ratio estimation
-    vre_plink_path = output_path(f'vds{vds_version}/vre_plink_2000_variants')
+    vre_plink_path = output_path(f'vds-{vds_name}/vre_plink_2000_variants')
     vre_bim_path = f'{vre_plink_path}.bim'
     plink_existence_outcome = can_reuse(vre_bim_path)
     logging.info(f'Does {vre_bim_path} exist? {plink_existence_outcome}')
@@ -349,7 +347,7 @@ def main(
         logging.info('plink export completed')
 
     # success file for chr renaming in bim file
-    bim_renamed_path = output_path(f'vds{vds_version}/bim_renamed.txt')
+    bim_renamed_path = output_path(f'vds-{vds_name}/bim_renamed.txt')
     bim_renamed_existence_outcome = can_reuse(bim_renamed_path)
     logging.info(
         f'Have the chr been renamed in the bim file? {bim_renamed_existence_outcome}'
