@@ -101,7 +101,7 @@ def checkpoint_mt(mt: hl.MatrixTable, checkpoint_path: str, force: bool = False)
     # repartition to a reasonable number of partitions, then re-write
     hl.read_matrix_table(
         temp_checkpoint_path, _n_partitions=mt.count_rows() // VARS_PER_PARTITION or 1
-    ).write(checkpoint_path)
+    ).write(checkpoint_path, overwrite=True)
 
     # delete the temp checkpoint
     hl.current_backend().fs.rmtree(temp_checkpoint_path)
