@@ -68,8 +68,8 @@ def checkpoint_mt(mt: hl.MatrixTable, checkpoint_path: str, force: bool = False)
 
     # if we generated the full checkpoint, read and return
     if (
-            to_path(checkpoint_path).exists()
-            and (to_path(checkpoint_path) / '_SUCCESS').exists()
+        to_path(checkpoint_path).exists()
+        and (to_path(checkpoint_path) / '_SUCCESS').exists()
     ):
         logging.info(f'Reading non-temp checkpoint from {checkpoint_path}')
         return hl.read_matrix_table(checkpoint_path)
