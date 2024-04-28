@@ -35,17 +35,18 @@ analysis-runner \
 
 """
 
-from cpg_utils import to_path
-from cpg_utils.config import get_config
-from cpg_utils.hail_batch import get_batch, init_batch, output_path
-
-import click
 import logging
 import random
+
+import click
 import pandas as pd
 
 import hail as hl
 from hail.methods import export_plink, export_vcf
+
+from cpg_utils import to_path
+from cpg_utils.config import get_config, output_path
+from cpg_utils.hail_batch import get_batch, init_batch
 
 
 VARS_PER_PARTITION = 20000
@@ -65,6 +66,14 @@ def checkpoint_mt(mt: hl.MatrixTable, checkpoint_path: str, force: bool = False)
       force: Whether to overwrite an existing checkpoint
     """
 
+    # if we generated the full checkpoint, read and return
+    if (
+            to_path(checkpoint_path).exists()
+            and (to_path(checkpoint_path) / '_SUCCESS').exists()
+    ):
+        logging.info(f'Reading non-temp checkpoint from {checkpoint_path}')
+        return hl.read_matrix_table(checkpoint_path)
+
     # create a temp checkpoint path
     temp_checkpoint_path = checkpoint_path + '.temp'
     logging.info(f'Checkpoint temp: {temp_checkpoint_path}')
@@ -73,13 +82,6 @@ def checkpoint_mt(mt: hl.MatrixTable, checkpoint_path: str, force: bool = False)
     if force or not to_path(temp_checkpoint_path).exists():
         logging.info(f'Writing new temp checkpoint to {temp_checkpoint_path}')
         mt = mt.checkpoint(temp_checkpoint_path, overwrite=True)
-
-    elif (
-        to_path(checkpoint_path).exists()
-        and (to_path(checkpoint_path) / '_SUCCESS').exists()
-    ):
-        logging.info(f'Reading non-temp checkpoint from {checkpoint_path}')
-        return hl.read_matrix_table(checkpoint_path)
 
     # unless forced, if the data exists, read it
     elif (
