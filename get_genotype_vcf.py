@@ -114,8 +114,6 @@ def checkpoint_mt(mt: hl.MatrixTable, checkpoint_path: str, force: bool = False)
     if to_path(checkpoint_path).exists():
         logging.info(f'{checkpoint_path} exists')
 
-    # delete the temp checkpoint
-    hl.current_backend().fs.rmtree(temp_checkpoint_path)
 
     return mt
 
