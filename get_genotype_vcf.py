@@ -106,9 +106,16 @@ def checkpoint_mt(mt: hl.MatrixTable, checkpoint_path: str, force: bool = False)
     #hl.read_matrix_table(
         #temp_checkpoint_path).write(checkpoint_path, overwrite=True)
 
+    # repartition to a reasonable number of partitions, then re-write
+    num_rows = mt.count_rows()
+    mt = hl.read_matrix_table(
+        temp_checkpoint_path, _n_partitions=num_rows // VARS_PER_PARTITION or 1
+    )
+    mt.write(checkpoint_path)
+
     # trying to debug - check the checkpoint_path exists
-    #if to_path(checkpoint_path).exists():
-       #logging.info(f'WE WROTE TO THE PERMANENT CHECKPOINT:{checkpoint_path}')
+    if to_path(checkpoint_path).exists():
+       logging.info(f'WE WROTE TO THE PERMANENT CHECKPOINT:{checkpoint_path}')
 
 
     # delete the temp checkpoint
