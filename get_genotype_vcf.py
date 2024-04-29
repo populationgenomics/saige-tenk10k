@@ -21,7 +21,7 @@ analysis-runner \
     --description "get common variant VCF" \
     --dataset "bioheart" \
     --access-level "test" \
-    --output-dir "saige-qtl/bioheart_only/input_files/genotypes" \
+    --output-dir "saige-qtl/bioheart/input_files/genotypes" \
     python3 get_genotype_vcf.py --vds-path=gs://cpg-bioheart-test/vds/bioheart1-0.vds --chromosomes chr1,chr2,chr22 --vre-mac-threshold 1
 
 In main:
@@ -83,6 +83,10 @@ def checkpoint_mt(mt: hl.MatrixTable, checkpoint_path: str, force: bool = False)
         logging.info(f'Writing new temp checkpoint to {temp_checkpoint_path}')
         mt = mt.checkpoint(temp_checkpoint_path, overwrite=True)
 
+    #debug
+    if to_path(temp_checkpoint_path).exists():
+        logging.info(f'WE WROTE TO the TEMPORARY CHECKPOINT: {temp_checkpoint_path}')
+
     # unless forced, if the data exists, read it
     elif (
         to_path(temp_checkpoint_path).exists()
@@ -103,8 +107,17 @@ def checkpoint_mt(mt: hl.MatrixTable, checkpoint_path: str, force: bool = False)
         temp_checkpoint_path, _n_partitions=mt.count_rows() // VARS_PER_PARTITION or 1
     ).write(checkpoint_path, overwrite=True)
 
+    # trying to debug - check the checkpoint_path exists
+    if to_path(checkpoint_path).exists():
+        logging.info(f'WE WROTE TO THE PERMANENT CHECKPOINT:{checkpoint_path}')
+
+
     # delete the temp checkpoint
     hl.current_backend().fs.rmtree(temp_checkpoint_path)
+
+    # trying to debug
+    if not to_path(temp_checkpoint_path).exists():
+        logging.info('WE DELETED THE TEMP CHECKPOINT')
 
     return mt
 
