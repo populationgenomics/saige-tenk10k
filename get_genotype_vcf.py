@@ -83,9 +83,10 @@ def checkpoint_mt(mt: hl.MatrixTable, checkpoint_path: str, force: bool = False)
         logging.info(f'Writing new temp checkpoint to {temp_checkpoint_path}')
         mt = mt.checkpoint(temp_checkpoint_path, overwrite=True)
 
-        #debug
         if to_path(temp_checkpoint_path).exists():
-            logging.info(f'WE WROTE TO the TEMPORARY CHECKPOINT: {temp_checkpoint_path}')
+            logging.info(
+                f'Completed writing to temp checkpoint: {temp_checkpoint_path}'
+            )
 
     # unless forced, if the data exists, read it
     elif (
@@ -103,27 +104,18 @@ def checkpoint_mt(mt: hl.MatrixTable, checkpoint_path: str, force: bool = False)
     )
 
     # repartition to a reasonable number of partitions, then re-write
-    #hl.read_matrix_table(
-        #temp_checkpoint_path).write(checkpoint_path, overwrite=True)
-
-    # repartition to a reasonable number of partitions, then re-write
     num_rows = mt.count_rows()
     mt = hl.read_matrix_table(
         temp_checkpoint_path, _n_partitions=num_rows // VARS_PER_PARTITION or 1
     )
     mt.write(checkpoint_path)
 
-    # trying to debug - check the checkpoint_path exists
+    # check the checkpoint_path exists
     if to_path(checkpoint_path).exists():
-       logging.info(f'WE WROTE TO THE PERMANENT CHECKPOINT:{checkpoint_path}')
-
+        logging.info(f'{checkpoint_path} exists')
 
     # delete the temp checkpoint
-    #hl.current_backend().fs.rmtree(temp_checkpoint_path)
-
-    # trying to debug
-    if to_path(temp_checkpoint_path).exists():
-        logging.info('TEMP CHECKPOINT EXISTS at the end of the method')
+    hl.current_backend().fs.rmtree(temp_checkpoint_path)
 
     return mt
 
