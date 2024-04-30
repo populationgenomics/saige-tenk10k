@@ -38,6 +38,7 @@ import scanpy as sc
 from os.path import join
 from pathlib import Path
 from typing import List
+import subprocess
 
 from cpg_utils import to_path
 from cpg_utils.config import get_config
@@ -289,8 +290,9 @@ def main(
 
             # then write that to GCP
             tmp_path = join(get_config()['storage']['default']['tmp'], tmp_adata_name)
-            local_tmp_adata = get_batch().read_input(tmp_adata_name)
-            get_batch().write_output(local_tmp_adata, tmp_path)
+            cmd = ["gsutil", "cp", tmp_adata_name, tmp_path]
+            subprocess.run(cmd, check=True)
+
 
 
             # start up some jobs for each gene
