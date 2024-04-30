@@ -22,7 +22,11 @@ analysis-runner \
     --dataset "bioheart" \
     --access-level "test" \
     --output-dir "saige-qtl/" \
-     python3 saige_assoc.py
+     python3 saige_assoc.py \
+     --pheno-cov-files-path=gs://cpg-bioheart-test/saige-qtl/input_files/pheno_cov_files \
+        --cis-window-files-path=gs://cpg-bioheart-test/saige-qtl/input_files/cis_window_files \
+        --genotype-files-prefix=gs://cpg-bioheart-test/saige-qtl/input_files/genotypes/vds1-0
+
 
 """
 
@@ -307,23 +311,20 @@ def main(
         jobs.append(job)
 
     # pull principal args from config
-    vds_version: str = get_config()['saige']['vds_version']
     chromosomes: list[str] = get_config()['saige']['chromosomes']
     celltypes: list[str] = get_config()['saige']['celltypes']
 
-    vre_plink_path = f'{genotype_files_prefix}/{vds_version}/vre_plink_2000_variants'
+    vre_plink_path = f'{genotype_files_prefix}/vre_plink_2000_variants'
 
     for chromosome in chromosomes:
-
         # genotype vcf files are one per chromosome
-        vcf_file_path = f'{genotype_files_prefix}/{vds_version}/{chromosome}_common_variants.vcf.bgz'
+        vcf_file_path = f'{genotype_files_prefix}/{chromosome}_common_variants.vcf.bgz'
         # cis window files are split by gene but organised by chromosome also
         cis_window_files_path_chrom = f'{cis_window_files_path}/{chromosome}'
 
         cis_window_size = get_config()['saige']['cis_window_size']
 
         for celltype in celltypes:
-
             # extract gene list based on genes for which we have pheno cov files
             pheno_cov_files_path_ct_chrom = (
                 f'{pheno_cov_files_path}/{celltype}/{chromosome}'
