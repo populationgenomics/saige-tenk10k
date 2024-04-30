@@ -260,6 +260,10 @@ def summarise_cv_results(
     """
     Summarise gene-specific results
     """
+    import logging
+    import pandas as pd
+    from cpg_utils import to_path
+
     existing_cv_assoc_results = [
         str(file)
         for file in to_path(gene_results_path).glob(f'{celltype}_*_cis_gene_pval')
