@@ -19,7 +19,7 @@ analysis-runner \
     --access-level "test" \
     --output-dir "saige-qtl/input_files" \
     --image australia-southeast1-docker.pkg.dev/cpg-common/images/scanpy:1.9.3 \
-    python3 get_anndata.py --celltypes B_naive --chromosomes chr21 \
+    python3 get_anndata.py --celltypes B_naive --chromosomes chr22 \
     --anndata-files-prefix gs://cpg-bioheart-test/str/240_libraries_tenk10kp1_v2/cpg_anndata \
     --celltype-covs-files-prefix gs://cpg-bioheart-test/str/240_libraries_tenk10kp1_v2/cpg_cell_covs \
     --sample-covs-file gs://cpg-bioheart-test/str/associatr/bioheart_n990/input_files/bioheart_covariates_str_run_v1.csv
@@ -292,8 +292,6 @@ def main(
             tmp_path = join(get_config()['storage']['default']['tmp'], tmp_adata_name)
             cmd = ["gsutil", "cp", tmp_adata_name, tmp_path]
             subprocess.run(cmd, check=True)
-
-
 
             # start up some jobs for each gene
             for gene in expression_adata.var['gene_name']:
