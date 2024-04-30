@@ -177,9 +177,9 @@ def copy_h5ad_local_and_open(adata_path: str) -> sc.AnnData:
 @click.option('--chromosomes')
 @click.option('--anndata-files-prefix', default='saige-qtl/anndata_objects_from_HPC')
 @click.option(
-    '--celltype-covs-files-prefix', default='saige-qtl/celltype_covs_from_HPC'
+    '--celltype-covs-files-prefix', help = 'GCP path to celltype covariates file directory'
 )
-@click.option('--sample-covs-files-prefix', default='saige-qtl/input_files/covariates')
+@click.option('--sample-covs-file', help='GCP path to sample covariates file')
 @click.option('--min-pct-expr', type=int, default=1)
 @click.option('--cis-window-size', type=int, default=100000)
 @click.option(
@@ -209,7 +209,7 @@ def main(
     chromosomes: str,
     anndata_files_prefix: str,
     celltype_covs_files_prefix: str,
-    sample_covs_files_prefix: str,
+    sample_covs_file: str,
     min_pct_expr: int,
     cis_window_size: int,
     concurrent_job_cap: int,
@@ -240,25 +240,21 @@ def main(
 
     # sample level covariates (age + sex + genotype PCs)
     # age from metamist, sex from somalier + Vlad's file for now
-    sample_covs_file = dataset_path(
-        f'{sample_covs_files_prefix}/sex_age_geno_pcs_tob_bioheart.csv', 'analysis'
-    )
+
 
     for celltype in celltypes.split(','):
 
         # extract cell-level covariates
         # expression PCs, cell type specific
-        celltype_covs_file = dataset_path(
-            f'{celltype_covs_files_prefix}/{celltype}_expression_pcs.csv'
-        )
+        celltype_covs_file = f'{celltype_covs_files_prefix}/{celltype}_expression_pcs.csv'
+
 
         for chromosome in chromosomes.split(','):
             chrom_len = hl.get_reference('GRCh38').lengths[chromosome]
 
             # copy in h5ad file to local, then load it
-            expression_h5ad_path = dataset_path(
-                f'{anndata_files_prefix}/{celltype}_{chromosome}.h5ad'
-            )
+            expression_h5ad_path = f'{anndata_files_prefix}/{celltype}_{chromosome}.h5ad'
+
             expression_adata = copy_h5ad_local_and_open(expression_h5ad_path)
             logging.info(
                 f'AnnData for {celltype}, {chromosome} opened: {expression_adata.shape[1]} total genes'
