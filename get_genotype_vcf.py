@@ -216,7 +216,6 @@ def main(
     vds = hl.vds.read_vds(vds_path)
 
     for chromosome in chromosomes.split(','):
-
         # create paths and check if they exist already
         cv_vcf_path = output_path(
             f'vds{vds_version}/{chromosome}_common_variants.vcf.bgz'
@@ -231,7 +230,6 @@ def main(
         logging.info(f'Does {cv_vcf_path} exist? {rv_vcf_existence_outcome}')
 
         if not cv_vcf_existence_outcome or not rv_vcf_existence_outcome:
-
             # consider only relevant chromosome
             chrom_vds = hl.vds.filter_chromosomes(vds, keep=chromosome)
 

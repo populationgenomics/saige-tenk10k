@@ -19,7 +19,10 @@ analysis-runner \
     --access-level "test" \
     --output-dir "saige-qtl/input_files" \
     --image australia-southeast1-docker.pkg.dev/cpg-common/images/scanpy:1.9.3 \
-    python3 get_anndata.py --celltypes B_naive --chromosomes chr21
+    python3 get_anndata.py --celltypes B_naive --chromosomes chr21 \
+    --anndata-files-prefix gs://cpg-bioheart-test/str/240_libraries_tenk10kp1_v2/cpg_anndata \
+    --celltype-covs-files-prefix gs://cpg-bioheart-test/str/240_libraries_tenk10kp1_v2/cpg_cell_covs \
+    --sample-covs-file gs://cpg-bioheart-test/str/associatr/bioheart_n990/input_files/bioheart_covariates_str_run_v1.csv
 
 
 """
@@ -38,7 +41,7 @@ from typing import List
 
 from cpg_utils import to_path
 from cpg_utils.config import get_config
-from cpg_utils.hail_batch import dataset_path, get_batch, init_batch, output_path
+from cpg_utils.hail_batch import get_batch, init_batch, output_path
 
 
 def filter_lowly_expressed_genes(expression_adata, min_pct=1) -> sc.AnnData:
@@ -114,6 +117,14 @@ def make_pheno_cov(
     """
     expression_adata = copy_h5ad_local_and_open(expression_adata_path)
 
+    # barcoding discrepancy - to be fixed in the next freeze
+    expression_adata.obs.index = [
+        cell.split("-")[0] for cell in expression_adata.obs.index
+    ]
+    expression_adata.obs.cell = [
+        cell.split("-")[0] for cell in expression_adata.obs.index
+    ]
+
     # open dataframes
     sample_covs_df = pd.read_csv(sample_covs_file)
     sample_covs_df['individual'] = sample_covs_df['sample_id']
@@ -124,19 +135,10 @@ def make_pheno_cov(
     # determine average age to fill in later
     if fill_in_age:
         mean_age = sample_covs_df['age'].mean()
-    cell_ind_df = expression_adata.obs.loc[
-        :, ['cell', 'individual', 'total_counts', 'cohort', 'sequencing_library']
-    ]
-    # make sequencing_library from categorical to dummy numerical covs
-    seq_lib_df = pd.get_dummies(cell_ind_df['sequencing_library']).rename(
-        columns=lambda x: x.replace('-', '_')
-    )
-    # do the same for cohort
-    cohort_df = pd.get_dummies(cell_ind_df['cohort'])
-    cell_ind_df = pd.concat([cell_ind_df, cohort_df, seq_lib_df], axis=1)
+    cell_ind_df = expression_adata.obs.loc[:, ['cell', 'individual', 'total_counts']]
     # merge cell and sample covs
     sample_covs_cells_df = cell_ind_df.merge(
-        sample_covs_df, on='individual', how='left'
+        sample_covs_df, on='individual', how='inner'
     )
     sample_covs_cells_df.index = sample_covs_cells_df['cell']
     # fill missing values for sex and age
@@ -151,7 +153,18 @@ def make_pheno_cov(
     expr_df = pd.DataFrame(
         data=gene_adata.X.todense(), index=gene_adata.obs.index, columns=[gene_name]
     )
-    pheno_cov_df = pd.concat([sample_covs_cells_df, expr_df, celltype_covs_df], axis=1)
+    # move index (barcode) into a 'cell' column and reset the index - required prior to merging
+    expr_df['cell'] = expr_df.index
+    expr_df = expr_df.reset_index(drop=True)
+    sample_covs_cells_df = sample_covs_cells_df.reset_index(drop=True)
+    celltype_covs_df['cell'] = celltype_covs_df.index
+    celltype_covs_df = celltype_covs_df.reset_index(drop=True)
+
+    sample_covs_cells_df = pd.merge(sample_covs_cells_df, expr_df, on='cell')
+    pheno_cov_df = pd.merge(
+        sample_covs_cells_df, celltype_covs_df, on='cell', how='inner'
+    )
+
     with to_path(out_path).open('w') as pcf:
         pheno_cov_df.to_csv(pcf, index=False, sep='\t')
 
@@ -175,9 +188,10 @@ def copy_h5ad_local_and_open(adata_path: str) -> sc.AnnData:
 @click.command()
 @click.option('--celltypes')
 @click.option('--chromosomes')
-@click.option('--anndata-files-prefix', default='saige-qtl/anndata_objects_from_HPC')
+@click.option('--anndata-files-prefix', default='GCP path to anndata file directory')
 @click.option(
-    '--celltype-covs-files-prefix', help = 'GCP path to celltype covariates file directory'
+    '--celltype-covs-files-prefix',
+    help='GCP path to celltype covariates file directory',
 )
 @click.option('--sample-covs-file', help='GCP path to sample covariates file')
 @click.option('--min-pct-expr', type=int, default=1)
@@ -241,19 +255,20 @@ def main(
     # sample level covariates (age + sex + genotype PCs)
     # age from metamist, sex from somalier + Vlad's file for now
 
-
     for celltype in celltypes.split(','):
-
         # extract cell-level covariates
         # expression PCs, cell type specific
-        celltype_covs_file = f'{celltype_covs_files_prefix}/{celltype}_expression_pcs.csv'
-
+        celltype_covs_file = (
+            f'{celltype_covs_files_prefix}/{celltype}_expression_pcs.csv'
+        )
 
         for chromosome in chromosomes.split(','):
             chrom_len = hl.get_reference('GRCh38').lengths[chromosome]
 
             # copy in h5ad file to local, then load it
-            expression_h5ad_path = f'{anndata_files_prefix}/{celltype}_{chromosome}.h5ad'
+            expression_h5ad_path = (
+                f'{anndata_files_prefix}/{celltype}_{chromosome}.h5ad'
+            )
 
             expression_adata = copy_h5ad_local_and_open(expression_h5ad_path)
             logging.info(
