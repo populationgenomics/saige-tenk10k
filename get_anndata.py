@@ -289,10 +289,9 @@ def main(
 
             # then write that to GCP
             tmp_path = join(get_config()['storage']['default']['tmp'], tmp_adata_name)
-            with open(tmp_adata_name, 'rb') as reader:
-                with hl.hadoop_open(tmp_path, 'wb') as writer:
-                    for line in reader:
-                        writer.write(line)
+            local_tmp_adata = get_batch().read_input(tmp_adata_name)
+            get_batch().write_output(local_tmp_adata, tmp_path)
+
 
             # start up some jobs for each gene
             for gene in expression_adata.var['gene_name']:
