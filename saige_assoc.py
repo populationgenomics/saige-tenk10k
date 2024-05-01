@@ -21,12 +21,12 @@ analysis-runner \
     --description "SAIGE-QTL association pipeline" \
     --dataset "bioheart" \
     --access-level "test" \
-    --output-dir "saige-qtl/bioheart_only/str" \
+    --output-dir "saige-qtl/bioheart_only/snp" \
      python3 saige_assoc.py \
-     --pheno-cov-files-path=gs://cpg-bioheart-test/saige-qtl/input_files/pheno_cov_files \
+     --pheno-cov-files-path=gs://cpg-bioheart-test/saige-qtl/input_files/pheno_cov_files/remapped_ids \
         --cis-window-files-path=gs://cpg-bioheart-test/saige-qtl/input_files/cis_window_files \
-        --genotype-files-prefix=gs://cpg-bioheart-test/str/saige-qtl/input_files/vcf/v1-chr-specific \
-        --vre-files-prefix=
+        --genotype-files-prefix=gs://cpg-bioheart-test/saige-qtl/bioheart/input_files/genotypes/vds-bioheart1-0 \
+        --vre-files-prefix=gs://cpg-bioheart-test/saige-qtl/bioheart/input_files/genotypes/vds-bioheart1-0
 
 
 """
@@ -407,7 +407,7 @@ def main(
     # summarise results (per cell type)
     for celltype in celltypes:
         logging.info(f'start summarising results for {celltype}')
-        summary_output_path = (
+        summary_output_path = output_path(
             f'output_files/summary_stats/{celltype}_all_cis_cv_results.tsv'
         )
         summarise_job = get_batch().new_python_job(
