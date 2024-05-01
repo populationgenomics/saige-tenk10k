@@ -14,7 +14,7 @@ analysis-runner --dataset "bioheart" \
     --cell-type=B_naive --chrom=chr22
 
 """
-
+import pandas as pd
 import click
 from cpg_utils import to_path
 
