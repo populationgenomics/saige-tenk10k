@@ -75,7 +75,8 @@ def main(pheno_cov_path: str, cell_type: str, chrom: str):
     for file in files:
         file_path = str(file)
         output_path = f'{pheno_cov_path}/remapped_ids/{cell_type}/{chrom}/{file_path}'
-        get_batch().new_python_job(name=f'id_parser for {file_path}').call(
+        potato = get_batch().new_python_job(name=f'id_parser for {file_path}')
+        potato.call(
             id_parser, file_path, output_path
         )
     get_batch().run(wait=False)
