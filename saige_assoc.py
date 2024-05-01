@@ -33,7 +33,6 @@ analysis-runner \
 import click
 
 import logging
-import pandas as pd
 
 import hailtop.batch as hb
 
