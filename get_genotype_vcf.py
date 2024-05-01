@@ -298,7 +298,7 @@ def main(
             add_remove_chr_and_index_job(rv_vcf_path)
 
     # subset variants for variance ratio estimation
-    vre_plink_path = output_path(f'vds-{vds_name}/vre_plink_2000_variants', 'analysis')
+    vre_plink_path = output_path(f'vds-{vds_name}/vre_plink_2000_variants')
     vre_bim_path = f'{vre_plink_path}.bim'
     plink_existence_outcome = can_reuse(vre_bim_path)
     logging.info(f'Does {vre_bim_path} exist? {plink_existence_outcome}')
