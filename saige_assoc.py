@@ -21,11 +21,12 @@ analysis-runner \
     --description "SAIGE-QTL association pipeline" \
     --dataset "bioheart" \
     --access-level "test" \
-    --output-dir "saige-qtl/" \
+    --output-dir "saige-qtl/bioheart_only/str" \
      python3 saige_assoc.py \
      --pheno-cov-files-path=gs://cpg-bioheart-test/saige-qtl/input_files/pheno_cov_files \
         --cis-window-files-path=gs://cpg-bioheart-test/saige-qtl/input_files/cis_window_files \
-        --genotype-files-prefix=gs://cpg-bioheart-test/saige-qtl/input_files/genotypes/vds1-0
+        --genotype-files-prefix=gs://cpg-bioheart-test/str/saige-qtl/input_files/vcf/v1-chr-specific \
+        --vre-files-prefix=
 
 
 """
@@ -280,7 +281,6 @@ def summarise_cv_results(
         results_all_df.to_csv(rf)
 
 
-@click.command()
 @click.option(
     '--pheno-cov-files-path',
     default=dataset_path('saige-qtl/input_files/pheno_cov_files'),
@@ -292,12 +292,19 @@ def summarise_cv_results(
 @click.option(
     '--genotype-files-prefix', default=dataset_path('saige-qtl/input_files/genotypes')
 )
+@click.option(
+    '--vre-files-prefix', default=dataset_path('saige-qtl/input_files/genotypes')
+)
+@click.option('--test-str', is_flag=True, help='Test with STR VCFs')
+@click.command()
 def main(
     # outputs from gene_expression processing
     pheno_cov_files_path: str,
     cis_window_files_path: str,
     # outputs from genotype processing
     genotype_files_prefix: str,
+    vre_files_prefix: str,
+    test_str: bool = False,
 ):
     """
     Run SAIGE-QTL pipeline for all cell types
@@ -318,11 +325,18 @@ def main(
     chromosomes: list[str] = get_config()['saige']['chromosomes']
     celltypes: list[str] = get_config()['saige']['celltypes']
 
-    vre_plink_path = f'{genotype_files_prefix}/vre_plink_2000_variants'
+    vre_plink_path = f'{vre_files_prefix}/vre_plink_2000_variants'
 
     for chromosome in chromosomes:
         # genotype vcf files are one per chromosome
-        vcf_file_path = f'{genotype_files_prefix}/{chromosome}_common_variants.vcf.bgz'
+        if test_str:
+            vcf_file_path = (
+                f'{genotype_files_prefix}/hail_filtered_{chromosome}.vcf.bgz'
+            )
+        else:
+            vcf_file_path = (
+                f'{genotype_files_prefix}/{chromosome}_common_variants.vcf.bgz'
+            )
         # cis window files are split by gene but organised by chromosome also
         cis_window_files_path_chrom = f'{cis_window_files_path}/{chromosome}'
 
