@@ -245,7 +245,6 @@ def main(
     )
 
     for celltype in celltypes.split(','):
-
         # extract cell-level covariates
         # expression PCs, cell type specific
         celltype_covs_file = dataset_path(
