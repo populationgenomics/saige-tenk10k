@@ -259,9 +259,10 @@ def summarise_cv_results(
     """
     Summarise gene-specific results
     """
-    #import logging
+    import logging
     import pandas as pd
     from cpg_utils import to_path
+    from cpg_utils.hail_batch import output_path
 
     existing_cv_assoc_results = [
         str(file)
@@ -274,7 +275,7 @@ def summarise_cv_results(
         ]
     )
     result_all_filename = to_path(output_path(out_path, category='analysis'))
-    #logging.info(f'Write summary results to {result_all_filename}')
+    logging.info(f'Write summary results to {result_all_filename}')
     with result_all_filename.open('w') as rf:
         results_all_df.to_csv(rf)
 
