@@ -4,7 +4,7 @@ celltypes = ['CD4_TCM']
 chromosomes = ['chr1']
 
 # secondary arguments
-max_parallel_jobs = 300
+max_parallel_jobs = 150
 cis_window_size = 100000
 # these args are applied directly to step1_fitNULLGLMM_qtl.R
 # as "--{key}={value} "
@@ -39,6 +39,8 @@ minMAC = 5
 LOCO = 'FALSE'
 markers_per_chunk = 10000
 SPAcutoff = 10000
+[saige.job_specs.sv_test]
+cpu = 2
 [saige.job_specs.fit_null]
 storage = "0G"
 memory = "4Gi"
