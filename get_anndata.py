@@ -87,7 +87,7 @@ def get_gene_cis_info(
     gene_info_df = copy_h5ad_local_and_open(gene_info_df_path).var
 
     # select the gene from df
-    gene_info_gene = gene_info_df[gene_info_df['gene_name'] == gene]
+    gene_info_gene = gene_info_df[gene_info_df.index == gene]
     # get gene chromosome
     chrom = gene_info_gene['chr'][0]
     # remove "chr"
@@ -152,7 +152,7 @@ def make_pheno_cov(
         sample_covs_cells_df['age'] = sample_covs_cells_df['age'].fillna(mean_age)
     # drop rows with missing values (SAIGE throws an error otherwise:  https://batch.hail.populationgenomics.org.au/batches/435978/jobs/91)
     sample_covs_cells_df = sample_covs_cells_df.dropna()
-    gene_adata = expression_adata[:, expression_adata.var['gene_name'] == gene]
+    gene_adata = expression_adata[:, expression_adata.var.index == gene]
     gene_name = gene.replace("-", "_")
     expr_df = pd.DataFrame(
         data=gene_adata.X.todense(), index=gene_adata.obs.index, columns=[gene_name]
@@ -304,7 +304,7 @@ def main(
             subprocess.run(cmd, check=True)
 
             # start up some jobs for each gene
-            for gene in expression_adata.var['gene_name']:
+            for gene in expression_adata.var.index:
                 # change hyphens to underscore for R usage
                 gene_name = gene.replace("-", "_")
                 # make pheno cov file
