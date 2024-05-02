@@ -21,7 +21,7 @@ analysis-runner \
     --description "SAIGE-QTL association pipeline" \
     --dataset "bioheart" \
     --access-level "test" \
-    --output-dir "saige-qtl/potato/str" \
+    --output-dir "saige-qtl/bioheart_only/str" \
      python3 saige_assoc.py \
      --pheno-cov-files-path=gs://cpg-bioheart-test/saige-qtl/input_files/pheno_cov_files \
         --cis-window-files-path=gs://cpg-bioheart-test/saige-qtl/input_files/cis_window_files \
@@ -90,7 +90,7 @@ def build_fit_null_command(
 def build_run_single_variant_test_command(
     output_path: str,
     vcf_file: str,
-    chrom: str,
+    chrom: int,
     cis_window_file: str,
     gmmat_model_path: str,
     variance_ratio_path: str,
@@ -385,7 +385,7 @@ def main(
                 step2_job, step2_output = build_run_single_variant_test_command(
                     output_path=output_path(f'output_files/{celltype}_{gene}_cis'),
                     vcf_file=vcf_file_path,
-                    chrom=chromosome[3:],
+                    chrom=int(chromosome[3:]),
                     cis_window_file=cis_window_path,
                     gmmat_model_path=null_output['rda'],
                     variance_ratio_path=null_output['varianceRatio.txt'],
