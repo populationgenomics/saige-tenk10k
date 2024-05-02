@@ -18,9 +18,10 @@ analysis-runner \
     --dataset "bioheart" \
     --access-level "test" \
     --output-dir "saige-qtl/bioheart_n990/input_files" \
-    --memory='16G' \
+    --memory='64G' \
+    --storage='100G'\
     --image australia-southeast1-docker.pkg.dev/cpg-common/images/scanpy:1.9.3 \
-    python3 get_anndata.py --celltypes CD4_TCM --chromosomes chr1\
+    python3 get_anndata.py --celltypes CD4_TCM --chromosomes chr2,chr3,chr4,chr5,chr6,chr7,chr8,chr9,chr10,chr11,chr12,chr13,chr14,chr15,chr16,chr17,chr18,chr19,chr20,chr21,chr22 \
     --anndata-files-prefix gs://cpg-bioheart-test/str/240_libraries_tenk10kp1_v2/cpg_anndata \
     --celltype-covs-files-prefix gs://cpg-bioheart-test/str/240_libraries_tenk10kp1_v2/cpg_cell_covs \
     --sample-covs-file gs://cpg-bioheart-test/str/associatr/bioheart_n990/input_files/bioheart_covariates_str_run_v1.csv \
@@ -221,6 +222,12 @@ def copy_h5ad_local_and_open(adata_path: str) -> sc.AnnData:
     default='standard',
     help='Memory for each pheno cov job',
 )
+@click.option(
+    '--cis-job-cpu',
+    type=float,
+    default=0.25,
+    help='CPU for each cis window job',
+)
 def main(
     celltypes: str,
     chromosomes: str,
@@ -232,6 +239,7 @@ def main(
     concurrent_job_cap: int,
     pc_job_cpu: float,
     pc_job_mem: str,
+    cis_job_cpu: float,
 ):
     """
     Run expression processing pipeline
@@ -332,7 +340,7 @@ def main(
                     gene_cis_job = get_batch().new_python_job(
                         name=f'gene cis file: {gene}'
                     )
-                    gene_cis_job.cpu(2)
+                    gene_cis_job.cpu(cis_job_cpu)
 
                     gene_cis_job.call(
                         get_gene_cis_info,
