@@ -1,10 +1,10 @@
 [saige]
 # principal arguments
-celltypes = ['B_naive']
-chromosomes = ['chr22']
+celltypes = ['CD4_TCM']
+chromosomes = ['chr1']
 
 # secondary arguments
-max_parallel_jobs = 100
+max_parallel_jobs = 300
 cis_window_size = 100000
 # these args are applied directly to step1_fitNULLGLMM_qtl.R
 # as "--{key}={value} "
@@ -30,15 +30,15 @@ skipModelFitting = 'FALSE'
 tol = 0.00001
 IsOverwriteVarianceRatioFile = 'TRUE'
 [saige.sv_test]
-vcfField = 'DS'
+vcfField = 'GT'
 # minimum variant minor allele frequency to include
 minMAF = 0
 # minimum variant minor allele count to include
-minMAC = 0.5
+minMAC = 5
 # leave one chromosome out
 LOCO = 'FALSE'
 markers_per_chunk = 10000
 SPAcutoff = 10000
 [saige.job_specs.fit_null]
-storage = "10Gi"
-memory = "10Gi"
+storage = "0G"
+memory = "4Gi"
