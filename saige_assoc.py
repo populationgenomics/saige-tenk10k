@@ -21,12 +21,13 @@ analysis-runner \
     --description "SAIGE-QTL association pipeline" \
     --dataset "bioheart" \
     --access-level "test" \
-    --output-dir "saige-qtl/bioheart_only/snp" \
+    --output-dir "saige-qtl/potato/str" \
      python3 saige_assoc.py \
-     --pheno-cov-files-path=gs://cpg-bioheart-test/saige-qtl/input_files/pheno_cov_files/remapped_ids \
+     --pheno-cov-files-path=gs://cpg-bioheart-test/saige-qtl/input_files/pheno_cov_files \
         --cis-window-files-path=gs://cpg-bioheart-test/saige-qtl/input_files/cis_window_files \
-        --genotype-files-prefix=gs://cpg-bioheart-test/saige-qtl/bioheart/input_files/genotypes/vds-bioheart1-0 \
-        --vre-files-prefix=gs://cpg-bioheart-test/saige-qtl/bioheart/input_files/genotypes/vds-bioheart1-0
+        --genotype-files-prefix=gs://cpg-bioheart-test/str/saige-qtl/input_files/vcf/v1-chr-specific \
+        --vre-files-prefix=gs://cpg-bioheart-test/saige-qtl/input_files/genotypes/vds1-0 \
+        --test-str
 
 
 """
@@ -384,7 +385,7 @@ def main(
                 step2_job, step2_output = build_run_single_variant_test_command(
                     output_path=output_path(f'output_files/{celltype}_{gene}_cis'),
                     vcf_file=vcf_file_path,
-                    chrom=chromosome,
+                    chrom=chromosome[3:],
                     cis_window_file=cis_window_path,
                     gmmat_model_path=null_output['rda'],
                     variance_ratio_path=null_output['varianceRatio.txt'],
