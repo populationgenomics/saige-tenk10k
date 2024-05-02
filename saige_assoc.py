@@ -90,7 +90,7 @@ def build_fit_null_command(
 def build_run_single_variant_test_command(
     output_path: str,
     vcf_file: str,
-    chrom: int,
+    chrom: str,
     cis_window_file: str,
     gmmat_model_path: str,
     variance_ratio_path: str,
@@ -385,7 +385,7 @@ def main(
                 step2_job, step2_output = build_run_single_variant_test_command(
                     output_path=output_path(f'output_files/{celltype}_{gene}_cis'),
                     vcf_file=vcf_file_path,
-                    chrom=int(chromosome[3:]),
+                    chrom=(chromosome[3:]),
                     cis_window_file=cis_window_path,
                     gmmat_model_path=null_output['rda'],
                     variance_ratio_path=null_output['varianceRatio.txt'],
