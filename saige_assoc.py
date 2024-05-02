@@ -172,6 +172,7 @@ def build_obtain_gene_level_pvals_command(
         --genePval_outputFile={saige_job.output}
     """
     saige_job.image(image_path('saige-qtl'))
+    saige_job.cpu(0.5)
     saige_job.command(saige_command_step3)
     get_batch().write_output(saige_job.output, saige_gene_pval_output_file)
     return saige_job
