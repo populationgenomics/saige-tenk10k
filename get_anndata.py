@@ -24,7 +24,7 @@ analysis-runner \
     --anndata-files-prefix gs://cpg-bioheart-test/str/240_libraries_tenk10kp1_v2/cpg_anndata \
     --celltype-covs-files-prefix gs://cpg-bioheart-test/str/240_libraries_tenk10kp1_v2/cpg_cell_covs \
     --sample-covs-file gs://cpg-bioheart-test/str/associatr/bioheart_n990/input_files/bioheart_covariates_str_run_v1.csv \
-    --concurrent-job-cap=350
+    --concurrent-job-cap=350 --pc-job-cpu=2
 
 
 """
@@ -332,7 +332,7 @@ def main(
                     gene_cis_job = get_batch().new_python_job(
                         name=f'gene cis file: {gene}'
                     )
-                    gene_cis_job.cpu(0.5)
+                    gene_cis_job.cpu(2)
 
                     gene_cis_job.call(
                         get_gene_cis_info,
