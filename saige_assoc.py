@@ -17,16 +17,16 @@ Hail Batch workflow to perform association tests using SAIGE-QTL
 To run:
 
 analysis-runner \
-    --config saige_assc.toml \
+    --config saige_assoc_test.toml \
     --description "SAIGE-QTL association pipeline" \
     --dataset "bioheart" \
-    --access-level "test" \
-    --output-dir "saige-qtl/bioheart_only/str" \
+    --access-level "full" \
+    --output-dir "saige-qtl/test_run/bioheart_n990/str" \
      python3 saige_assoc.py \
      --pheno-cov-files-path=gs://cpg-bioheart-test/saige-qtl/input_files/pheno_cov_files \
         --cis-window-files-path=gs://cpg-bioheart-test/saige-qtl/input_files/cis_window_files \
         --genotype-files-prefix=gs://cpg-bioheart-test/str/saige-qtl/input_files/vcf/v1-chr-specific \
-        --vre-files-prefix=gs://cpg-bioheart-test/saige-qtl/input_files/genotypes/vds1-0 \
+        --vre-files-prefix=gs://cpg-bioheart-main/saige-qtl/bioheart_n990/input_files/genotypes/vds-bioheart1-0 \
         --test-str
 
 
@@ -383,7 +383,7 @@ def main(
 
                 # step 2 (cis eQTL single variant test)
                 step2_job, step2_output = build_run_single_variant_test_command(
-                    output_path=output_path(f'output_files/{celltype}_{gene}_cis'),
+                    output_path=output_path(f'output_files/{celltype}_{gene}_cis', 'analysis'),
                     vcf_file=vcf_file_path,
                     chrom=(chromosome[3:]),
                     cis_window_file=cis_window_path,
@@ -408,9 +408,8 @@ def main(
     # summarise results (per cell type)
     for celltype in celltypes:
         logging.info(f'start summarising results for {celltype}')
-        summary_output_path = output_path(
-            f'output_files/summary_stats/{celltype}_all_cis_cv_results.tsv'
-        )
+        summary_output_path = f'output_files/summary_stats/{celltype}_all_cis_cv_results.tsv'
+
         summarise_job = get_batch().new_python_job(
             f'Summarise CV results for {celltype}'
         )
