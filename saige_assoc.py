@@ -383,7 +383,9 @@ def main(
 
                 # step 2 (cis eQTL single variant test)
                 step2_job, step2_output = build_run_single_variant_test_command(
-                    output_path=output_path(f'output_files/{celltype}_{gene}_cis', 'analysis'),
+                    output_path=output_path(
+                        f'output_files/{celltype}_{gene}_cis', 'analysis'
+                    ),
                     vcf_file=vcf_file_path,
                     chrom=(chromosome[3:]),
                     cis_window_file=cis_window_path,
@@ -408,7 +410,9 @@ def main(
     # summarise results (per cell type)
     for celltype in celltypes:
         logging.info(f'start summarising results for {celltype}')
-        summary_output_path = f'output_files/summary_stats/{celltype}_all_cis_cv_results.tsv'
+        summary_output_path = (
+            f'output_files/summary_stats/{celltype}_all_cis_cv_results.tsv'
+        )
 
         summarise_job = get_batch().new_python_job(
             f'Summarise CV results for {celltype}'
