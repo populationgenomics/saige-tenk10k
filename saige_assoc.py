@@ -19,12 +19,14 @@ To run:
 analysis-runner \
     --config saige_assoc_test.toml \
     --description "SAIGE-QTL association pipeline" \
+    --memory='32G' \
+    --storage='50G' \
     --dataset "bioheart" \
     --access-level "full" \
     --output-dir "saige-qtl/bioheart_n990/v1" \
      python3 saige_assoc.py \
-     --pheno-cov-files-path=gs://cpg-bioheart-test/saige-qtl/bioheart_n990/input_files/pheno_cov_files \
-        --cis-window-files-path=gs://cpg-bioheart-test/saige-qtl/bioheart_n990/input_files/cis_window_files \
+     --pheno-cov-files-path=gs://cpg-bioheart-main/saige-qtl/bioheart_n990/input_files/v1/pheno_cov_files \
+        --cis-window-files-path=gs://cpg-bioheart-main/saige-qtl/bioheart_n990/input_files/v1/cis_window_files \
         --genotype-files-prefix=gs://cpg-bioheart-main/saige-qtl/bioheart_n990/input_files/genotypes/vds-bioheart1-0 \
         --vre-files-prefix=gs://cpg-bioheart-main/saige-qtl/bioheart_n990/input_files/genotypes/vds-bioheart1-0
 
@@ -361,6 +363,10 @@ def main(
 
             genes = [f.replace(f'_{celltype}_pheno_cov.tsv', '') for f in files]
             logging.info(f'I found these genes: {", ".join(genes)}')
+
+            drop_genes: list[str] = get_config()['saige']['drop_genes']
+
+            genes = [x for x in genes if x not in drop_genes]
 
             # extract relevant gene-related files
             for gene in genes:
