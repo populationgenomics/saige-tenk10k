@@ -33,6 +33,15 @@ analysis-runner \
     --output-dir "saige-qtl/input_files/genotypes/" \
     python3 get_genotype_vcf.py --vds-path=gs:// --chromosomes chr1,chr2,chr22
 
+
+    analysis-runner \
+   --description "get common and rare variant VCFs" \
+   --dataset "tob-wgs" \
+   --access-level "full" \
+   --output-dir "saige-qtl/tob_n1055/input_files/genotypes/" \
+   python3 get_genotype_vcf.py --vds-path=gs://cpg-tob-wgs-main/vds/tob-wgs1-0.vds --chromosomes chr1,chr2,chr3,chr4,chr5,chr6,chr7,chr8,chr9,chr10,chr11,chr12,chr13,chr14,chr15,chr16,chr17,chr18,chr19,chr20,chr21,chr22
+
+
 """
 
 import logging
@@ -204,6 +213,10 @@ def remove_chr_from_bim(input_bim: str, output_bim: str, bim_renamed: str):
 @click.option('--exclude-multiallelic', is_flag=False)
 @click.option('--exclude-indels', is_flag=False)
 @click.option('--plink-job-storage', default='1G')
+@click.option(
+    '--relateds-to-drop-path',
+    default='gs://cpg-bioheart-test/large_cohort/v1-0/relateds_to_drop.ht',
+)
 @click.command()
 def main(
     vds_path: str,
@@ -215,6 +228,7 @@ def main(
     exclude_multiallelic: bool,
     exclude_indels: bool,
     plink_job_storage: str,
+    relateds_to_drop_path: str,
 ):
     """
     Write genotypes as VCF
@@ -249,9 +263,7 @@ def main(
 
             # filter out related samples
             # this will get dropped as the vds file will already be clean
-            related_ht = hl.read_table(
-                'gs://cpg-bioheart-test/large_cohort/v1-0/relateds_to_drop.ht'
-            )
+            related_ht = hl.read_table(relateds_to_drop_path)
             related_samples = related_ht.s.collect()
             related_samples = hl.literal(related_samples)
             mt = mt.filter_cols(~related_samples.contains(mt['s']))
