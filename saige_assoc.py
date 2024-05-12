@@ -147,7 +147,7 @@ def build_run_single_variant_test_command(
     # write the output
     get_batch().write_output(second_job.output, output_path)
 
-    return second_job, second_job.output
+    return fake_second_job, second_job.output
 
 
 # Combine single variant associations at gene level (step 3)
@@ -185,7 +185,7 @@ def build_obtain_gene_level_pvals_command(
     saige_job.image(image_path('saige-qtl'))
     saige_job.command(saige_command_step3)
     get_batch().write_output(saige_job.output, saige_gene_pval_output_file)
-    return saige_job
+    return fake_third_job
 
 
 def apply_job_settings(job: hb.batch.job.Job, job_name: str):
@@ -265,7 +265,7 @@ def run_fit_null_job(
     if null_output_path:
         get_batch().write_output(gene_job.output, null_output_path)
 
-    return gene_job, gene_job.output
+    return fake_gene_job, gene_job.output
 
 
 def summarise_cv_results(
