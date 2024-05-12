@@ -118,7 +118,11 @@ def build_run_single_variant_test_command(
 
     vcf_group = get_batch().read_input_group(vcf=vcf_file, index=f'{vcf_file}.csi')
     cis_window_file = get_batch().read_input(cis_window_file)
+    fake_second_job = get_batch().new_job(name="saige-qtl part 2 (fake)")
+    fake_second_job.always_run()
+    fake_second_job.command('echo "fake saige-qtl part 2"')
     second_job = get_batch().new_job(name="saige-qtl part 2")
+    second_job.depends_on(fake_second_job)
     apply_job_settings(second_job, 'sv_test')
     second_job.image(image_path('saige-qtl'))
 
@@ -166,7 +170,12 @@ def build_obtain_gene_level_pvals_command(
     if to_path(saige_gene_pval_output_file).exists():
         return None
 
+    fake_third_job = get_batch().new_job(name="saige-qtl part 3 (fake)")
+    fake_third_job.always_run()
+    fake_third_job.command('echo "fake saige-qtl part 3"')
+
     saige_job = get_batch().new_job(name="saige-qtl part 3")
+    saige_job.depends_on(fake_third_job)
     saige_command_step3 = f"""
         Rscript /usr/local/bin/step3_gene_pvalue_qtl.R \
         --assocFile={saige_sv_output_file} \
@@ -227,7 +236,11 @@ def run_fit_null_job(
                 'varianceRatio.txt': f'{null_output_path}.varianceRatio.txt',
             }
         )
-    gene_job = get_batch().new_job(name="saige-qtl")
+    fake_gene_job = get_batch().new_job(name="saige-qtl part 1 (fake)")
+    fake_gene_job.always_run()
+    fake_gene_job.command('echo "fake saige-qtl part 1"')
+    gene_job = get_batch().new_job(name="saige-qtl part 1")
+    gene_job.depends_on(fake_gene_job)
     gene_job.image(image_path('saige-qtl'))
     apply_job_settings(gene_job, 'fit_null')
 
@@ -419,11 +432,16 @@ def main(
         summary_output_path = (
             f'output_files/summary_stats/{celltype}_all_cis_cv_results.tsv'
         )
-
+        summarise_fake_job = get_batch().new_job(
+            f'Fake summarise CV results for {celltype}'
+        )
+        summarise_fake_job.depends_on(*jobs)
+        summarise_fake_job.always_run()
+        summarise_fake_job.command('echo "fake summarise CV results"')
         summarise_job = get_batch().new_python_job(
             f'Summarise CV results for {celltype}'
         )
-        summarise_job.depends_on(*jobs)
+        summarise_job.depends_on(summarise_fake_job)
         summarise_job.call(
             summarise_cv_results,
             celltype=celltype,
