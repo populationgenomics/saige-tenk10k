@@ -118,11 +118,8 @@ def build_run_single_variant_test_command(
 
     vcf_group = get_batch().read_input_group(vcf=vcf_file, index=f'{vcf_file}.csi')
     cis_window_file = get_batch().read_input(cis_window_file)
-    fake_second_job = get_batch().new_job(name="saige-qtl part 2 (fake)")
-    fake_second_job.always_run()
-    fake_second_job.command('echo "fake saige-qtl part 2"')
+
     second_job = get_batch().new_job(name="saige-qtl part 2")
-    second_job.depends_on(fake_second_job)
     apply_job_settings(second_job, 'sv_test')
     second_job.image(image_path('saige-qtl'))
 
@@ -147,7 +144,7 @@ def build_run_single_variant_test_command(
     # write the output
     get_batch().write_output(second_job.output, output_path)
 
-    return fake_second_job, second_job.output
+    return second_job, second_job.output
 
 
 # Combine single variant associations at gene level (step 3)
@@ -170,12 +167,7 @@ def build_obtain_gene_level_pvals_command(
     if to_path(saige_gene_pval_output_file).exists():
         return None
 
-    fake_third_job = get_batch().new_job(name="saige-qtl part 3 (fake)")
-    fake_third_job.always_run()
-    fake_third_job.command('echo "fake saige-qtl part 3"')
-
     saige_job = get_batch().new_job(name="saige-qtl part 3")
-    saige_job.depends_on(fake_third_job)
     saige_command_step3 = f"""
         Rscript /usr/local/bin/step3_gene_pvalue_qtl.R \
         --assocFile={saige_sv_output_file} \
@@ -185,7 +177,7 @@ def build_obtain_gene_level_pvals_command(
     saige_job.image(image_path('saige-qtl'))
     saige_job.command(saige_command_step3)
     get_batch().write_output(saige_job.output, saige_gene_pval_output_file)
-    return fake_third_job
+    return saige_job
 
 
 def apply_job_settings(job: hb.batch.job.Job, job_name: str):
@@ -236,12 +228,8 @@ def run_fit_null_job(
                 'varianceRatio.txt': f'{null_output_path}.varianceRatio.txt',
             }
         )
-    fake_gene_job = get_batch().new_job(name="saige-qtl part 1 (fake)")
-    fake_gene_job.always_run()
-    fake_gene_job.command('echo "fake saige-qtl part 1"')
+
     gene_job = get_batch().new_job(name="saige-qtl part 1")
-    gene_job.depends_on(fake_gene_job)
-    gene_job.image(image_path('saige-qtl'))
     apply_job_settings(gene_job, 'fit_null')
 
     # create output group for first command in gene job
@@ -265,7 +253,7 @@ def run_fit_null_job(
     if null_output_path:
         get_batch().write_output(gene_job.output, null_output_path)
 
-    return fake_gene_job, gene_job.output
+    return gene_job, gene_job.output
 
 
 def summarise_cv_results(
@@ -390,6 +378,10 @@ def main(
                     f'{cis_window_files_path_chrom}/{gene}_{cis_window_size}bp.tsv'
                 )
 
+                gene_dependency = get_batch().new_job(f' Always run job for {gene}')
+                gene_dependency.always_run()
+                manage_concurrency_for_job(gene_dependency)
+
                 # check if these outputs already exist, if so don't make a new job
                 null_job, null_output = run_fit_null_job(
                     output_path(f'output_files/{celltype}_{gene}'),
@@ -397,8 +389,9 @@ def main(
                     plink_path=vre_plink_path,
                     pheno_col=gene,
                 )
-                if null_job:
-                    manage_concurrency_for_job(null_job)
+                if null_job is not None:
+                    null_job.depends_on(gene_dependency)
+                    gene_dependency = null_job
 
                 # step 2 (cis eQTL single variant test)
                 step2_job, step2_output = build_run_single_variant_test_command(
@@ -411,8 +404,9 @@ def main(
                     gmmat_model_path=null_output['rda'],
                     variance_ratio_path=null_output['varianceRatio.txt'],
                 )
-                if step2_job:
-                    manage_concurrency_for_job(step2_job)
+                if step2_job is not None:
+                    step2_job.depends_on(gene_dependency)
+                    gene_dependency = step2_job
 
                 # step 3 (gene-level p-values)
                 job3 = build_obtain_gene_level_pvals_command(
@@ -423,8 +417,9 @@ def main(
                     ),
                 )
 
-                if job3:
-                    manage_concurrency_for_job(job3)
+                if job3 is not None:
+                    job3.depends_on(gene_dependency)
+                    gene_dependency = job3
 
     # summarise results (per cell type)
     for celltype in celltypes:
@@ -432,16 +427,10 @@ def main(
         summary_output_path = (
             f'output_files/summary_stats/{celltype}_all_cis_cv_results.tsv'
         )
-        summarise_fake_job = get_batch().new_job(
-            f'Fake summarise CV results for {celltype}'
-        )
-        summarise_fake_job.depends_on(*jobs)
-        summarise_fake_job.always_run()
-        summarise_fake_job.command('echo "fake summarise CV results"')
+
         summarise_job = get_batch().new_python_job(
             f'Summarise CV results for {celltype}'
         )
-        summarise_job.depends_on(summarise_fake_job)
         summarise_job.call(
             summarise_cv_results,
             celltype=celltype,
