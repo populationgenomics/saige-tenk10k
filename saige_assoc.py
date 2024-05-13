@@ -230,6 +230,7 @@ def run_fit_null_job(
         )
 
     gene_job = get_batch().new_job(name="saige-qtl part 1")
+    gene_job.image(image_path('saige-qtl'))
     apply_job_settings(gene_job, 'fit_null')
 
     # create output group for first command in gene job
