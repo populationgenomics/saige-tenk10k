@@ -328,6 +328,7 @@ def main(
     # pull principal args from config
     chromosomes: list[str] = get_config()['saige']['chromosomes']
     celltypes: list[str] = get_config()['saige']['celltypes']
+    celltype_jobs: dict[str, list] = dict()
 
     vre_plink_path = f'{vre_files_prefix}/vre_plink_2000_variants'
 
@@ -421,6 +422,10 @@ def main(
                     job3.depends_on(gene_dependency)
                     gene_dependency = job3
 
+                # add this job to the list of jobs for this cell type
+                if gene_dependency is not None:
+                    celltype_jobs.setdefault(celltype, []).append(gene_dependency)
+
     # summarise results (per cell type)
     for celltype in celltypes:
         logging.info(f'start summarising results for {celltype}')
@@ -431,6 +436,7 @@ def main(
         summarise_job = get_batch().new_python_job(
             f'Summarise CV results for {celltype}'
         )
+        summarise_job.depends_on(*celltype_jobs[celltype])
         summarise_job.call(
             summarise_cv_results,
             celltype=celltype,
