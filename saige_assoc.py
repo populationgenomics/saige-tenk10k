@@ -118,6 +118,7 @@ def build_run_single_variant_test_command(
 
     vcf_group = get_batch().read_input_group(vcf=vcf_file, index=f'{vcf_file}.csi')
     cis_window_file = get_batch().read_input(cis_window_file)
+
     second_job = get_batch().new_job(name="saige-qtl part 2")
     apply_job_settings(second_job, 'sv_test')
     second_job.image(image_path('saige-qtl'))
@@ -227,8 +228,8 @@ def run_fit_null_job(
                 'varianceRatio.txt': f'{null_output_path}.varianceRatio.txt',
             }
         )
-    gene_job = get_batch().new_job(name="saige-qtl")
-    gene_job.image(image_path('saige-qtl'))
+
+    gene_job = get_batch().new_job(name="saige-qtl part 1")
     apply_job_settings(gene_job, 'fit_null')
 
     # create output group for first command in gene job
@@ -327,6 +328,7 @@ def main(
     # pull principal args from config
     chromosomes: list[str] = get_config()['saige']['chromosomes']
     celltypes: list[str] = get_config()['saige']['celltypes']
+    celltype_jobs: dict[str, list] = dict()
 
     vre_plink_path = f'{vre_files_prefix}/vre_plink_2000_variants'
 
@@ -377,6 +379,10 @@ def main(
                     f'{cis_window_files_path_chrom}/{gene}_{cis_window_size}bp.tsv'
                 )
 
+                gene_dependency = get_batch().new_job(f' Always run job for {gene}')
+                gene_dependency.always_run()
+                manage_concurrency_for_job(gene_dependency)
+
                 # check if these outputs already exist, if so don't make a new job
                 null_job, null_output = run_fit_null_job(
                     output_path(f'output_files/{celltype}_{gene}'),
@@ -384,8 +390,9 @@ def main(
                     plink_path=vre_plink_path,
                     pheno_col=gene,
                 )
-                if null_job:
-                    manage_concurrency_for_job(null_job)
+                if null_job is not None:
+                    null_job.depends_on(gene_dependency)
+                    gene_dependency = null_job
 
                 # step 2 (cis eQTL single variant test)
                 step2_job, step2_output = build_run_single_variant_test_command(
@@ -398,8 +405,9 @@ def main(
                     gmmat_model_path=null_output['rda'],
                     variance_ratio_path=null_output['varianceRatio.txt'],
                 )
-                if step2_job:
-                    manage_concurrency_for_job(step2_job)
+                if step2_job is not None:
+                    step2_job.depends_on(gene_dependency)
+                    gene_dependency = step2_job
 
                 # step 3 (gene-level p-values)
                 job3 = build_obtain_gene_level_pvals_command(
@@ -410,8 +418,13 @@ def main(
                     ),
                 )
 
-                if job3:
-                    manage_concurrency_for_job(job3)
+                if job3 is not None:
+                    job3.depends_on(gene_dependency)
+                    gene_dependency = job3
+
+                # add this job to the list of jobs for this cell type
+                if gene_dependency is not None:
+                    celltype_jobs.setdefault(celltype, []).append(gene_dependency)
 
     # summarise results (per cell type)
     for celltype in celltypes:
@@ -423,7 +436,7 @@ def main(
         summarise_job = get_batch().new_python_job(
             f'Summarise CV results for {celltype}'
         )
-        summarise_job.depends_on(*jobs)
+        summarise_job.depends_on(*celltype_jobs[celltype])
         summarise_job.call(
             summarise_cv_results,
             celltype=celltype,
