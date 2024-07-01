@@ -25,7 +25,7 @@ analysis-runner \
 import click
 import logging
 
-# import hail as hl
+import hail as hl
 import pandas as pd
 
 # import hailtop.batch.job as hb_job
@@ -34,7 +34,7 @@ import pandas as pd
 from cpg_utils import to_path
 from cpg_utils.config import get_config
 
-# from cpg_utils.hail_batch import dataset_path, get_batch, init_batch
+from cpg_utils.hail_batch import dataset_path, get_batch, init_batch
 from cpg_utils.hail_batch import get_batch, init_batch
 
 
@@ -52,7 +52,7 @@ def distance_to_weight(distance: int, gamma: float = 1e-5):
     return weight
 
 
-def build_group_file(gene: str, out_path: str):
+def build_group_file_single_gene(gene: str, out_path: str):
     """
     Build group file for SAIGE-QTL
 
@@ -60,7 +60,7 @@ def build_group_file(gene: str, out_path: str):
     Second row: annotations (none here)
     Third row: weights (dTSS here)
     """
-    data = {'gene': gene, 'category': 'var'}
+    data = {'gene': [gene, gene, gene], 'category': ['var', 'anno', 'weight:dTSS']}
     group_df = pd.DataFrame(data)
     with to_path(out_path).open('w') as gdf:
         group_df.to_csv(gdf, index=False, header=False)
@@ -112,10 +112,10 @@ def main(
     for chrom in chromosomes.split(','):
 
         # load rare variant vcf file for specific chromosome
-        # vcf_path = dataset_path(
-        #     f'saige-qtl/input_files/genotypes/vds1-0/{chrom}_rare_variants.vcf.bgz'
-        # )
-        # ds = hl.import_vcf(vcf_path, reference_genome='GRCh37')
+        vcf_path = dataset_path(
+            f'saige-qtl/input_files/genotypes/vds1-0/{chrom}_rare_variants.vcf.bgz'
+        )
+        ds = hl.import_vcf(vcf_path, reference_genome='GRCh37')
 
         # do a glob, then pull out all file names as Strings
         files = [
@@ -129,11 +129,25 @@ def main(
         genes = [f.replace(f'_{cis_window}bp.tsv', '') for f in files]
         logging.info(f'I found these genes: {", ".join(genes)}')
 
-        # for gene in genes:
-        #     gene_interval = '21:17688974-17919386'
-        #     ds_result = hl.filter_intervals(
-        #         ds, [hl.parse_locus_interval(gene_interval)]
-        #     )
+        for gene in genes:
+            # get gene cis window info
+            gene_file = f'{cis_window_files_path}/{chrom}/{gene}_{cis_window}bp.csv'
+            gene_df = pd.read_csv(gene_file, sep='\t')
+            num_chrom = gene_df.columns.values[0]
+            window_start = gene_df.columns.values[1]
+            window_end = gene_df.columns.values[2]
+            gene_interval = f'{num_chrom}:{window_start}-{window_end}'
+            print(gene_interval)
+            # gene_interval = '21:17688974-17919386'
+            # extract variants within interval
+            ds_result = hl.filter_intervals(
+                ds, [hl.parse_locus_interval(gene_interval)]
+            )
+            vars = ds_result.rows().collect()
+            gene_tss = window_start + cis_window
+            distances = vars - gene_tss
+            weights = [distance_to_weight(d) for d in distances]
+            print(weights)
 
     get_batch().run(wait=False)
 
