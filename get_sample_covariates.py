@@ -176,7 +176,9 @@ def main(
         )
 
     # save to file
-    sex_age_pcs_out_file = output_path('sex_age_geno_pcs_tob_bioheart.csv', 'analysis')
+    sex_age_pcs_out_file = output_path(
+        'sex_age_geno_pcs_shuffled_ids_tob_bioheart.csv', 'analysis'
+    )
     combined_sex_age_pcs.to_csv(sex_age_pcs_out_file)
 
 
