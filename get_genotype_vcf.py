@@ -4,7 +4,8 @@
 This script will
 
 - extract common variants
-- export as VCF (one per chrom)
+- extract rare variants
+- export (both) as VCF files (one per chrom)
 - also create a plink file for a subset of variants
 for variance ratio estimation
 
@@ -20,34 +21,43 @@ analysis-runner \
     --description "get common variant VCF" \
     --dataset "bioheart" \
     --access-level "test" \
-    --output-dir "saige-qtl/input_files/genotypes/" \
-    python3 get_genotype_vcf.py --vds-version 1-0 --chromosomes chr1,chr2,chr22 --vre-mac-threshold 1
+    --output-dir "saige-qtl/bioheart/input_files/genotypes" \
+    python3 get_genotype_vcf.py --vds-path=gs://cpg-bioheart-test/vds/bioheart1-0.vds --chromosomes chr1,chr2,chr22 --vre-mac-threshold 1
 
 In main:
 
 analysis-runner \
-    --description "get common variant VCF" \
+    --description "get common and rare variant VCFs" \
     --dataset "bioheart" \
     --access-level "full" \
     --output-dir "saige-qtl/input_files/genotypes/" \
-    python3 get_genotype_vcf.py --vds-version v1-0 --chromosomes chr1,chr2,chr22
+    python3 get_genotype_vcf.py --vds-path=gs:// --chromosomes chr1,chr2,chr22
+
+
+    analysis-runner \
+   --description "get common and rare variant VCFs" \
+   --dataset "tob-wgs" \
+   --access-level "full" \
+   --output-dir "saige-qtl/tob_n1055/input_files/genotypes/" \
+   python3 get_genotype_vcf.py --vds-path=gs://cpg-tob-wgs-main/vds/tob-wgs1-0.vds --chromosomes chr1,chr2,chr3,chr4,chr5,chr6,chr7,chr8,chr9,chr10,chr11,chr12,chr13,chr14,chr15,chr16,chr17,chr18,chr19,chr20,chr21,chr22
+
 
 """
 
-from cpg_utils import to_path
-from cpg_utils.config import get_config
-from cpg_utils.hail_batch import dataset_path, get_batch, init_batch, output_path
-
-import click
 import logging
 import random
+
+import click
 import pandas as pd
 
 import hail as hl
 from hail.methods import export_plink, export_vcf
 
+from cpg_utils import to_path
+from cpg_utils.config import get_config, output_path
+from cpg_utils.hail_batch import get_batch, init_batch
 
-# this is a guess, let's see how it performs...
+
 VARS_PER_PARTITION = 20000
 
 
@@ -65,8 +75,16 @@ def checkpoint_mt(mt: hl.MatrixTable, checkpoint_path: str, force: bool = False)
       force: Whether to overwrite an existing checkpoint
     """
 
+    # if we generated the full checkpoint, read and return
+    if (
+        to_path(checkpoint_path).exists()
+        and (to_path(checkpoint_path) / '_SUCCESS').exists()
+    ):
+        logging.info(f'Reading non-temp checkpoint from {checkpoint_path}')
+        return hl.read_matrix_table(checkpoint_path)
+
     # create a temp checkpoint path
-    temp_checkpoint_path = checkpoint_path + '.temp'
+    temp_checkpoint_path = checkpoint_path.split('.')[0] + '_temp.mt'
     logging.info(f'Checkpoint temp: {temp_checkpoint_path}')
 
     # either force an overwrite, or write the first version
@@ -74,12 +92,10 @@ def checkpoint_mt(mt: hl.MatrixTable, checkpoint_path: str, force: bool = False)
         logging.info(f'Writing new temp checkpoint to {temp_checkpoint_path}')
         mt = mt.checkpoint(temp_checkpoint_path, overwrite=True)
 
-    elif (
-        to_path(checkpoint_path).exists()
-        and (to_path(checkpoint_path) / '_SUCCESS').exists()
-    ):
-        logging.info(f'Reading non-temp checkpoint from {checkpoint_path}')
-        return hl.read_matrix_table(checkpoint_path)
+        if to_path(temp_checkpoint_path).exists():
+            logging.info(
+                f'Completed writing to temp checkpoint: {temp_checkpoint_path}'
+            )
 
     # unless forced, if the data exists, read it
     elif (
@@ -97,12 +113,15 @@ def checkpoint_mt(mt: hl.MatrixTable, checkpoint_path: str, force: bool = False)
     )
 
     # repartition to a reasonable number of partitions, then re-write
-    hl.read_matrix_table(
-        temp_checkpoint_path, _n_partitions=mt.count_rows() // VARS_PER_PARTITION or 1
-    ).write(checkpoint_path)
+    num_rows = mt.count_rows()
+    mt = hl.read_matrix_table(
+        temp_checkpoint_path, _n_partitions=num_rows // VARS_PER_PARTITION or 1
+    )
+    mt.write(checkpoint_path)
 
-    # delete the temp checkpoint
-    hl.current_backend().fs.rmtree(temp_checkpoint_path)
+    # check the checkpoint_path exists
+    if to_path(checkpoint_path).exists():
+        logging.info(f'{checkpoint_path} exists')
 
     return mt
 
@@ -111,6 +130,46 @@ def can_reuse(path: str):
     if path and to_path(path).exists():
         return True
     return False
+
+
+def add_remove_chr_and_index_job(vcf_path):
+    """
+    Reads a VCF file, it creates an .csi index file and
+    and removes "chr" from the chromosome values
+
+    Args:
+    vcf_path: input path
+    """
+    # remove chr & add index file using bcftools
+    vcf_input = get_batch().read_input(vcf_path)
+
+    vcf_size = to_path(vcf_path).stat().st_size
+    storage_required = ((vcf_size // 1024**3) or 1) * 2.2
+    bcftools_job = get_batch().new_job(name='remove chr and index vcf')
+    bcftools_job.declare_resource_group(
+        output={
+            'vcf.bgz': '{root}.vcf.bgz',
+            'vcf.bgz.csi': '{root}.vcf.bgz.csi',
+        }
+    )
+    bcftools_job.image(get_config()['images']['bcftools'])
+    bcftools_job.cpu(4)
+    bcftools_job.storage(f'{storage_required}Gi')
+    # now remove "chr" from chromosome names using bcftools
+    bcftools_job.command(
+        'for num in {1..22} X Y; do echo "chr${num} ${num}" >> chr_update.txt; done'
+    )
+    bcftools_job.command(
+        f"""
+        bcftools annotate --rename-chrs chr_update.txt {vcf_input} | \\
+        bgzip -c > {bcftools_job.output['vcf.bgz']}
+        bcftools index -c {bcftools_job.output['vcf.bgz']}
+    """
+    )
+    logging.info('CV VCF rename/index jobs scheduled!')
+
+    # save both output files
+    get_batch().write_output(bcftools_job.output, vcf_path.removesuffix('.vcf.bgz'))
 
 
 def remove_chr_from_bim(input_bim: str, output_bim: str, bim_renamed: str):
@@ -145,24 +204,31 @@ def remove_chr_from_bim(input_bim: str, output_bim: str, bim_renamed: str):
 
 
 # inputs:
-@click.option('--vds-version', help=' e.g., 1-0 ')
+@click.option('--vds-path', help=' GCP gs:// path to the VDS')
 @click.option('--chromosomes', help=' e.g., chr22,chrX ')
 @click.option('--cv-maf-threshold', default=0.01)
+@click.option('--rv-maf-threshold', default=0.01)
 @click.option('--vre-mac-threshold', default=20)
 @click.option('--vre-n-markers', default=2000)
 @click.option('--exclude-multiallelic', is_flag=False)
 @click.option('--exclude-indels', is_flag=False)
 @click.option('--plink-job-storage', default='1G')
+@click.option(
+    '--relateds-to-drop-path',
+    default='gs://cpg-bioheart-test/large_cohort/v1-0/relateds_to_drop.ht',
+)
 @click.command()
 def main(
-    vds_version: str,
+    vds_path: str,
     chromosomes: str,
     cv_maf_threshold: float,
+    rv_maf_threshold: float,
     vre_mac_threshold: int,
     vre_n_markers: int,
     exclude_multiallelic: bool,
     exclude_indels: bool,
     plink_job_storage: str,
+    relateds_to_drop_path: str,
 ):
     """
     Write genotypes as VCF
@@ -170,19 +236,22 @@ def main(
 
     init_batch(worker_memory='highmem')
 
-    vds_path = dataset_path(f'vds/{vds_version}.vds')
     vds = hl.vds.read_vds(vds_path)
+    vds_name = vds_path.split('/')[-1].split('.')[0]
 
     for chromosome in chromosomes.split(','):
-
-        # create path and check if it exists already
+        # create paths and check if they exist already
         cv_vcf_path = output_path(
-            f'vds{vds_version}/{chromosome}_common_variants.vcf.bgz'
+            f'vds-{vds_name}/{chromosome}_common_variants.vcf.bgz'
         )
-        vcf_existence_outcome = can_reuse(cv_vcf_path)
-        logging.info(f'Does {cv_vcf_path} exist? {vcf_existence_outcome}')
-        if not vcf_existence_outcome:
+        cv_vcf_existence_outcome = can_reuse(cv_vcf_path)
+        logging.info(f'Does {cv_vcf_path} exist? {cv_vcf_existence_outcome}')
 
+        rv_vcf_path = output_path(f'vds-{vds_name}/{chromosome}_rare_variants.vcf.bgz')
+        rv_vcf_existence_outcome = can_reuse(rv_vcf_path)
+        logging.info(f'Does {cv_vcf_path} exist? {rv_vcf_existence_outcome}')
+
+        if not cv_vcf_existence_outcome or not rv_vcf_existence_outcome:
             # consider only relevant chromosome
             chrom_vds = hl.vds.filter_chromosomes(vds, keep=chromosome)
 
@@ -192,65 +261,56 @@ def main(
             # densify to matrix table object
             mt = hl.vds.to_dense_mt(chrom_vds)
 
+            # filter out related samples
+            # this will get dropped as the vds file will already be clean
+            related_ht = hl.read_table(relateds_to_drop_path)
+            related_samples = related_ht.s.collect()
+            related_samples = hl.literal(related_samples)
+            mt = mt.filter_cols(~related_samples.contains(mt['s']))
+
             # filter out loci & variant QC
             mt = mt.filter_rows(hl.len(mt.alleles) == 2)  # remove hom-ref
             if exclude_multiallelic:  # biallelic only (exclude multiallelic)
                 mt = mt.filter_rows(~(mt.was_split))
             if exclude_indels:  # SNPs only (exclude indels)
                 mt = mt.filter_rows(hl.is_snp(mt.alleles[0], mt.alleles[1]))
-            # logging.info(f'Number of variants left after filtering: {mt.count()}')
 
             mt = hl.variant_qc(mt)
 
-            # common variants only
-            cv_mt = mt.filter_rows(mt.variant_qc.AF[1] > cv_maf_threshold)
-            # logging.info(f'Number of common variants left: {cv_mt.count()}')
+            if not cv_vcf_existence_outcome:
+                # common variants only
+                cv_mt = mt.filter_rows(mt.variant_qc.AF[1] >= cv_maf_threshold)
 
-            # remove fields not in the VCF
-            cv_mt = cv_mt.drop('gvcf_info')
+                # remove fields not in the VCF
+                cv_mt = cv_mt.drop('gvcf_info')
 
-            # export to vcf common variants only
-            export_vcf(cv_mt, cv_vcf_path)
+                # export to vcf common variants only
+                export_vcf(cv_mt, cv_vcf_path)
 
-        # check existence of index file separately
-        index_file_existence_outcome = can_reuse(f'{cv_vcf_path}.csi')
-        logging.info(f'Does {cv_vcf_path}.csi exist? {index_file_existence_outcome}')
-        if not index_file_existence_outcome:
-            # remove chr & add index file using bcftools
-            vcf_input = get_batch().read_input(cv_vcf_path)
+            if not rv_vcf_existence_outcome:
+                # common variants only
+                rv_mt = mt.filter_rows(mt.variant_qc.AF[1] < rv_maf_threshold)
 
-            vcf_size = to_path(cv_vcf_path).stat().st_size
-            storage_required = ((vcf_size // 1024**3) or 1) * 2.2
-            bcftools_job = get_batch().new_job(name='remove chr and index vcf')
-            bcftools_job.declare_resource_group(
-                output={
-                    'vcf.bgz': '{root}.vcf.bgz',
-                    'vcf.bgz.csi': '{root}.vcf.bgz.csi',
-                }
-            )
-            bcftools_job.image(get_config()['images']['bcftools'])
-            bcftools_job.cpu(4)
-            bcftools_job.storage(f'{storage_required}Gi')
-            # now remove "chr" from chromosome names using bcftools
-            bcftools_job.command(
-                'for num in {1..22} X Y; do echo "chr${num} ${num}" >> chr_update.txt; done'
-            )
-            bcftools_job.command(
-                f"""
-                bcftools annotate --rename-chrs chr_update.txt {vcf_input} | \\
-                bgzip -c > {bcftools_job.output['vcf.bgz']}
-                bcftools index -c {bcftools_job.output['vcf.bgz']}
-            """
-            )
-            logging.info('VCF rename/index jobs scheduled!')
+                # remove fields not in the VCF
+                rv_mt = rv_mt.drop('gvcf_info')
 
-            # save both output files
-            get_batch().write_output(
-                bcftools_job.output, cv_vcf_path.removesuffix('.vcf.bgz')
-            )
+                # export to vcf rare variants only
+                export_vcf(rv_mt, rv_vcf_path)
+
+        # check existence of index file (CV) separately
+        cv_index_file_existence_outcome = can_reuse(f'{cv_vcf_path}.csi')
+        logging.info(f'Does {cv_vcf_path}.csi exist? {cv_index_file_existence_outcome}')
+        if not cv_index_file_existence_outcome:
+            add_remove_chr_and_index_job(cv_vcf_path)
+
+        # do the same for rare variants
+        rv_index_file_existence_outcome = can_reuse(f'{rv_vcf_path}.csi')
+        logging.info(f'Does {rv_vcf_path}.csi exist? {rv_index_file_existence_outcome}')
+        if not rv_index_file_existence_outcome:
+            add_remove_chr_and_index_job(rv_vcf_path)
 
     # subset variants for variance ratio estimation
-    vre_plink_path = output_path(f'vds{vds_version}/vre_plink_2000_variants')
+    vre_plink_path = output_path(f'vds-{vds_name}/vre_plink_2000_variants')
     vre_bim_path = f'{vre_plink_path}.bim'
     plink_existence_outcome = can_reuse(vre_bim_path)
     logging.info(f'Does {vre_bim_path} exist? {plink_existence_outcome}')
@@ -307,7 +367,7 @@ def main(
         logging.info('plink export completed')
 
     # success file for chr renaming in bim file
-    bim_renamed_path = output_path(f'vds{vds_version}/bim_renamed.txt')
+    bim_renamed_path = output_path(f'vds-{vds_name}/bim_renamed.txt')
     bim_renamed_existence_outcome = can_reuse(bim_renamed_path)
     logging.info(
         f'Have the chr been renamed in the bim file? {bim_renamed_existence_outcome}'

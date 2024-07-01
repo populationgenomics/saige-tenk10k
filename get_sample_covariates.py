@@ -46,6 +46,7 @@ import sys
 
 import hail as hl
 import pandas as pd
+from sklearn.utils import shuffle
 
 from metamist.graphql import gql, query
 
@@ -77,12 +78,14 @@ GET_PARTICIPANT_META_QUERY = gql(
 )
 @click.option('--vds-version', help=' e.g. 1-0 ')
 @click.option('--project-names', default='tob-wgs,bioheart')
+@click.option('--number-of-sample-perms', default=10)
 @click.command()
 def main(
     tob_sex_file_path,
     bioheart_sex_file_path,
     vds_version,
     project_names,
+    number_of_sample_perms,
 ):
     """
     Get sex, age and genotype PCs for TOB and BioHEART individuals
@@ -134,7 +137,6 @@ def main(
 
     # genotype PCs
     pcs_ht_path = dataset_path(f'large_cohort/{vds_version}/ancestry/scores.ht')
-    print(pcs_ht_path)
     pcs_ht = hl.read_table(pcs_ht_path)
     # convert to pandas
     pcs_df = pcs_ht.to_pandas()
@@ -162,11 +164,21 @@ def main(
     age_df.drop(['sample_id'], axis=1, inplace=True)
     pcs_df.index = pcs_df['sample_id']
     pcs_df.drop(['sample_id'], axis=1, inplace=True)
-    print(pcs_df)
 
     # combine sex, age and geno PC info
     combined_sex_age_pcs = pd.concat([sex_df, age_df, pcs_df], axis=1)
-    sex_age_pcs_out_file = output_path('sex_age_geno_pcs_tob_bioheart.csv', 'analysis')
+
+    # add permuted sample ids for calibration analysis
+    samples = combined_sex_age_pcs['sample_id']
+    for i in range(number_of_sample_perms):
+        combined_sex_age_pcs[f'sample_perm{i}'] = shuffle(
+            samples.values, random_state=i
+        )
+
+    # save to file
+    sex_age_pcs_out_file = output_path(
+        'sex_age_geno_pcs_shuffled_ids_tob_bioheart.csv', 'analysis'
+    )
     combined_sex_age_pcs.to_csv(sex_age_pcs_out_file)
 
 

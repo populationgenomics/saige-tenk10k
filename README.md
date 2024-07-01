@@ -15,24 +15,27 @@ Script: get_genotype_vcf.py
 
 Variant selection for VCF files:
 
-* variants that are: i) QC-passing, ii) non ref-ref variants, and iii) (for now) indels and multi-allelic SNPs.
-* variants that are common (MAF > 0.01) in our population
+* variants that are: i) QC-passing, ii) not ref-ref variants, and iii) not indels or multi-allelic SNPs (when run with --exclude-indels and --exclude-multiallelic).
+* variants that are common at a set threshold (MAF > T) in our population (by default, T=0.01)
 * one per chromosome
 
 Variant selection for PLINK files for variance ratio estimation (VRE):
 
-* variants that are: i) QC-passing, ii) non ref-ref variants, and iii) (for now) indels and multi-allelic SNPs.
-* variants that are non rare (MAC > 20) in our population
-* random subset of 20,000 variants across all chromosomes
+* variants that are: i) QC-passing, ii) not ref-ref variants, and iii) not indels or multi-allelic SNPs.
+* variants that are not rare (MAC > 20) in our population
+* random subset of 2,000 variants across all chromosomes
 
 Inputs:
 
-* joint call VDS object (TOB + BioHEART)
+* joint call VDS object (TOB + BioHEART) after variant and sample QC has been applied.
 
 Outputs:
 
 * VCF file containing all retained common variants (one per chromosome) + corresponding index file (.csi)
+* VCF file containing all retained rare variants (one per chromosome) + corresponding index file (.csi)
 * plink object for only 2,000 variants (minor allele count>20), after LD pruning - this is for the estimation of the variance ratio (VR plinks)
+
+Notes: SAIGE-QTL allows numeric chromosomes only, so both the bim and the vcf files are modified in this script to remove the 'chr' notation (so that e.g. 'chr1' becomes '1').
 
 ## Gene expresion preprocessing
 
@@ -41,11 +44,16 @@ Script: get_anndata.py
 Inputs:
 
 * scanpy AnnData object (one per chromosome and cell type, TOB + BioHEART)
+* cell covariate file (one per cell type, TOB + BioHEART)
+* sample covariate file generated in get_samples_covariates.py
 
 Outputs:
 
 * TSV phenotype covariate files (one per gene, cell type)
 * TSV gene cis window file (one per gene)
+
+Notes: as before, we remove 'chr' from the chromosome name in the gene cis window file.
+Additionally, we turn hyphens ('-') into underscores ('_') in the gene names.
 
 ## SAIGE-QTL association pipeline
 
@@ -62,9 +70,56 @@ Outputs:
 
 * association summary statistics
 
-### To run
+### SAIGE-QTL parameters explanation
 
-Instructions to run each component of the pipeline using analysis runner are provided at the top of each script
+Clarifying the reasoning behind the parameters / flags used to run SAIGE-QTL.
+Most of these are (or will be) included in the official [documentation](https://weizhou0.github.io/SAIGE-QTL-doc/).
+
+Fit null model ([step 1](https://weizhou0.github.io/SAIGE-QTL-doc/docs/step1.html)):
+
+* ```pheno_file```: path specifying the location of the phenotype covariate file described above (build during part 2 of the pipeline)
+* ```cov_col_list```: string specifying the columns of the pheno_file that should be used as covariates (separated by a comma, no spaces)
+* ```sample_cov_col_list```: same as above, but specifying only, out of the columns above, the ones that are well defined at individual level (e.g., sex, age, ancestry PCs). Both this and the above need to be specified, and this is always a subset of the above, which allows individual-level covariates to be processed more cheaply.
+* ```sample_id_pheno```: specify the column that represents individual IDs
+* ```output_prefix```: path to where the output files from step 1 (which will be read by step 2) should be written to
+* ```plink_path```: path to VRE plink files (specify just the prefix, but a .bim, .fam, and .bed files with the same prefix and in the same location should exist -- these are built in part 1)
+* ```pheno_col```: specify the column that should be used as phenotype, in our case the gene to test
+* ```trait_type```: specify the model to be used, ```count``` is the Poisson model which should be used here.
+* ```skip_vre```: boolean specifying whether the variance ratio estimation should be run or skipped, should always be false (Note that because the syntax is different between Python and R we encode this as the string ```FALSE``` instead of the boolean ```False```)
+* ```pheno_remove_zeros```: option to remove 0s from phenotype vector (default: ```FALSE``` as it does not make sense for the very sparse scRNA-seq data)
+* ```use_sparse_grm_null```: use sparse GRM to account for relatedness. This is implemented but would require a step0 in the pipeline to first construct this, which is not there at the moment (default: ```FALSE```)
+* ```use_grm_null```: same as above, but without the sparse option (default: ```FALSE```)
+* ```is_cov_offset```: if there are no covs, add an offset of ones (never really the case for us, default: ```FALSE```)
+* ```is_cov_transform```: transform (explain) covariates (default: ```TRUE```)
+* ```skip_model_fitting```: boolean (default: ```FALSE```)
+* ```tol```: convergence tolerance (default 0.00001, which works well in our hands)
+* ```is_overwrite_vre_file```: if the file already exists, skip or overwrite, default is the latter (default: ```TRUE```)
+
+Single-variant association testing ([common variants step 2](https://weizhou0.github.io/SAIGE-QTL-doc/docs/single_step2.html)):
+
+* ```vcf_file```: path to VCF file containing genetic variants to be tested
+* ```vcf_file_index```: corresponding .csi index file (not .tbi)
+* ```vcf_field```: DS for dosages, GT for genotypes (default = 'GT')
+* ```saige_output_file```: path to output file
+* ```chrom```: chromosome to be tested
+* ```cis_window_file```: path to file specifying cis window / region to test (generated in part 2 of the pipeline, get anndata script)
+* ```gmmat_model_path```: path to estimated null model (.rda) generated in step 2
+* ```variance_ratio_path```: path to variance ratio txt file generated in step 1
+* ```min_maf```: minimum minor allele frequency (MAF) (default: 0)
+* ```min_mac```: minimum minor allele count (MAC) (default: 5)
+* ```loco_bool```: boolean specifying whether leave-one-chromosome-out should be used (default: ```FALSE```)
+* ```n_markers```: internal parameter to batchify variants tested (default: 10000),
+* ```spa_cutoff```: internal parameter to do with the saddlepoint approximation, does not make much of a difference for us (default: 10000),
+
+Obtain gene-level p-values ([common variants only, step 3](https://weizhou0.github.io/SAIGE-QTL-doc/docs/gene_step3.html))
+
+* ```gene_name```: gene to aggregate values for
+* ```saige_sv_output_file```: path to output from step 2 (input here)
+* ```saige_gene_pval_output_file```: path to output (step 3)
+
+## To run
+
+Instructions to run each component of the pipeline using analysis runner are provided at the top of each script.
 
 ## Data
 
