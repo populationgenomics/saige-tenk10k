@@ -7,13 +7,22 @@ This script aims to count the total number of variants
 from a vds object provided (e.g. bioheart, tob-wgs or both)
 
 similar to tob-wgs/scripts/rv_expression_association/count_variants.py
+
+To run:
+
+analysis-runner \
+    --description "count common and rare variant VCFs" \
+    --dataset "bioheart" \
+    --access-level "full" \
+    --output-dir "saige-qtl/" \
+    python3 variant_counter.py --vds-path=gs://cpg-tob-wgs-main/vds/tob-wgs1-0.vds
 """
 
 import click
 
 import hail as hl
 
-from cpg_utils.hail_batch import dataset_path, init_batch
+from cpg_utils.hail_batch import init_batch
 
 
 @click.command()
@@ -37,7 +46,7 @@ def count_variants(
     """
     # read VDS object (WGS data)
     init_batch()
-    vds = hl.vds.read_vds(dataset_path(vds_path))
+    vds = hl.vds.read_vds(vds_path)
     vds = hl.vds.split_multi(vds, filter_changed_loci=True)
     # convert to hail matrix table
     mt = hl.vds.to_dense_mt(vds)
