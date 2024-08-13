@@ -46,12 +46,12 @@ def count_variants(
     """
     # read VDS object (WGS data)
     init_batch()
+    vds_name = vds_path.split('/')[-1].split('.')[0]
+    print(f'Counting variants for {vds_name}')
     vds = hl.vds.read_vds(vds_path)
     vds = hl.vds.split_multi(vds, filter_changed_loci=True)
     # convert to hail matrix table
     mt = hl.vds.to_dense_mt(vds)
-    vds_name = vds_path.split('/')[-1].split('.')[0]
-    print(f'Counting variants for {vds_name}')
 
     # filter out loci & variant QC
     mt = mt.filter_rows(hl.len(mt.alleles) == 2)  # remove hom-ref
