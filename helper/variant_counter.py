@@ -71,7 +71,12 @@ def count_variants(
     cv_mt = mt.filter_rows(mt.variant_qc.AF[1] >= cv_maf_threshold)
     rv_mt = mt.filter_rows(mt.variant_qc.AF[1] < rv_maf_threshold)
 
-    print(f'Common variant (MAF>={cv_maf_threshold}) count: {cv_mt.count()[0]}')
+    # count up both donors and variants
+    n_vars, n_donors = cv_mt.count()
+
+    print(f'Donor count: {n_donors}')
+
+    print(f'Common variant (MAF>={cv_maf_threshold}) count: {n_vars}')
     print(f'Rare variant (MAF<{rv_maf_threshold}) count: {rv_mt.count()[0]}')
 
 
