@@ -10,8 +10,12 @@ analysis-runner \
     --access-level "test" \
     --output-dir "saige-qtl/" \
     python3 allele_frequency_plotter.py \
-        --vds-path=gs://cpg-tob-wgs-main/vds/tob-wgs1-0.vds
-        --title='frequencies TOB'
+        --vds-path=gs://cpg-bioheart-test/vds/bioheart1-0.vds \
+        --title='frequencies BioHEART'
+
+vds path tob: gs://cpg-tob-wgs-test/vds/tob-wgs1-0.vds
+vds path bioheart: gs://cpg-bioheart-test/vds/bioheart1-0.vds
+vds path tob+bioheart: gs://cpg-bioheart-test/vds/tenk10k1-0.vds
 """
 
 import click
