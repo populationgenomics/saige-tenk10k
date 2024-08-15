@@ -11,7 +11,7 @@ analysis-runner \
     --output-dir "saige-qtl/" \
     python3 allele_frequency_plotter.py \
         --vds-path=gs://cpg-bioheart-test/vds/bioheart1-0.vds \
-        --title='frequencies BioHEART'
+        --title='Minor allele frequency (BioHEART)'
 
 vds path tob: gs://cpg-tob-wgs-test/vds/tob-wgs1-0.vds
 vds path bioheart: gs://cpg-bioheart-test/vds/bioheart1-0.vds
