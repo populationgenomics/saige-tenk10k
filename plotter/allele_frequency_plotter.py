@@ -11,7 +11,7 @@ analysis-runner \
     --output-dir "saige-qtl/" \
     python3 allele_frequency_plotter.py \
         --vds-path=gs://cpg-bioheart-test/vds/bioheart1-0.vds \
-        --title='Minor allele frequency (BioHEART)'
+        --title='Alternative allele frequency (BioHEART)'
 
 vds path tob: gs://cpg-tob-wgs-test/vds/tob-wgs1-0.vds
 vds path bioheart: gs://cpg-bioheart-test/vds/bioheart1-0.vds
@@ -28,7 +28,7 @@ from bokeh.plotting import output_file, save
 
 @click.command()
 @click.option('--vds-path', required=True)
-@click.option('--title', default='Minor allele frequency')
+@click.option('--title', default='Alternative allele frequency')
 @click.option('--exclude-multiallelic', default=False)
 @click.option('--exclude-indels', default=False)
 def plot_frequencies(
