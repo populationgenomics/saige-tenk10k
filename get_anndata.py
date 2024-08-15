@@ -23,7 +23,7 @@ analysis-runner \
     --anndata-files-prefix gs://cpg-bioheart-test/str/240_libraries_tenk10kp1_v2/cpg_anndata \
     --celltype-covs-files-prefix gs://cpg-bioheart-test/str/240_libraries_tenk10kp1_v2/cpg_cell_covs \
     --sample-covs-file gs://cpg-bioheart-test/str/associatr/bioheart_n990/input_files/bioheart_covariates_str_run_v1_permuted.csv \
-    --concurrent-job-cap=350 --pc-job-cpu=2
+    --concurrent-job-cap=350 --pc-job-cpu=2 --cis-job-cpu=2
 
 
 """
@@ -137,7 +137,7 @@ def make_pheno_cov(
     # determine average age to fill in later
     if fill_in_age:
         mean_age = sample_covs_df['age'].mean()
-    cell_ind_df = expression_adata.obs.loc[:, ['cell', 'individual', 'total_counts', 'sequencing_library']]
+    cell_ind_df = expression_adata.obs.loc[:, ['cell', 'individual', 'total_counts', 'sequencing_library', 'cohort']]
     # make sequencing_library from categorical to dummy numerical covs
     seq_lib_df = pd.get_dummies(cell_ind_df['sequencing_library'])
     # do the same for cohort
