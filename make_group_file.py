@@ -142,13 +142,14 @@ def main(
             ds_result = hl.filter_intervals(
                 ds, [hl.parse_locus_interval(gene_interval)]
             )
-            n_vars = ds_result.count()[0]
-            vars = [
-                f'{ds_result.locus.collect()[i].contig}:{ds_result.locus.collect()[i].position}'
-                for i in range(n_vars)
-            ]
+            # n_vars = ds_result.count()[0]
+            # vars = [
+            #     ds_result.locus.collect()[i].position
+            #     for i in range(n_vars)
+            # ]
+            vars = [loc.position for loc in ds_result.locus.collect()]
             gene_tss = window_start + cis_window
-            distances = vars - gene_tss
+            distances = [int(var) - gene_tss for var in vars]
             weights = [distance_to_weight(d) for d in distances]
             print(weights)
 
