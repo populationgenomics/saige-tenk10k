@@ -59,7 +59,7 @@ def celltype_chrom_parser(celltype, chrom, estrs_coord_chrom):
             continue
 
     celltype_df.to_csv(
-        f'gs://cpg-bioheart-test/str/associatr/tob_n1055_and_bioheart_n990/mashr/estrs_beta_se/{celltype}/{chrom}/beta_se.tsv',
+        f'gs://cpg-bioheart-test/saige-qtl/associatr/tob_n1055_and_bioheart_n990/mashr/estrs_beta_se/{celltype}/{chrom}/beta_se.tsv',
         sep='\t',
         index=False,
     )
@@ -68,7 +68,7 @@ def celltype_chrom_parser(celltype, chrom, estrs_coord_chrom):
 def celltype_chrom_parser_null(celltype, chrom):
     gene_files = list(
         to_path(
-            f'gs://cpg-bioheart-test/str/associatr/tob_n1055_and_bioheart_n990/DL_random_model/meta_results/{celltype}/chr{chrom}'
+            f'gs://cpg-bioheart-test/saige-qtl/associatr/tob_n1055_and_bioheart_n990/DL_random_model/meta_results/{celltype}/chr{chrom}'
         ).rglob('*.tsv')
     )
     master_df = pd.DataFrame()
@@ -92,7 +92,7 @@ def celltype_chrom_parser_null(celltype, chrom):
         master_df = pd.concat([master_df, df], axis=0)
 
     master_df.to_csv(
-        f'gs://cpg-bioheart-test/str/associatr/tob_n1055_and_bioheart_n990/mashr/chr22_null_beta_se/{celltype}/chr{chrom}/beta_se.tsv',
+        f'gs://cpg-bioheart-test/saige-qtl/associatr/tob_n1055_and_bioheart_n990/mashr/chr22_null_beta_se/{celltype}/chr{chrom}/beta_se.tsv',
         sep='\t',
         index=False,
     )
@@ -116,7 +116,7 @@ def main():
         #    sep='\t',
         # )
         df = pd.read_csv(
-            f'gs://cpg-bioheart-test/str/associatr/tob_n1055_and_bioheart_n990/mashr/chr22_null_beta_se/{celltype}/chr22/beta_se.tsv',
+            f'gs://cpg-bioheart-test/saige-qtl/associatr/tob_n1055_and_bioheart_n990/mashr/chr22_null_beta_se/{celltype}/chr22/beta_se.tsv',
             sep='\t',
         )
         if master_df.empty:
@@ -132,7 +132,7 @@ def main():
             # job.cpu(0.25)
             # job.call(cell_chrom_parser_null, cell, chrom)
     master_df.to_csv(
-        f'gs://cpg-bioheart-test/str/associatr/tob_n1055_and_bioheart_n990/mashr/chr22_nullbeta_se/chr22/all_cell_chr22_beta_se.tsv',
+        f'gs://cpg-bioheart-test/saige-qtl/associatr/tob_n1055_and_bioheart_n990/mashr/chr22_nullbeta_se/chr22/all_cell_chr22_beta_se.tsv',
         sep='\t',
         index=False,
     )
