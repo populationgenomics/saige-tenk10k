@@ -23,8 +23,8 @@ from cpg_utils.hail_batch import get_batch
 from cpg_utils import to_path
 
 
-def cell_chrom_parser(cell, chrom, estrs_coord_chrom):
-    cell_df = pd.DataFrame()
+def celltype_chrom_parser(celltype, chrom, estrs_coord_chrom):
+    celltype_df = pd.DataFrame()
     for index, row in estrs_coord_chrom.iterrows():
         chrom = row['chr']
         gene_name = row['gene_name']
@@ -33,7 +33,7 @@ def cell_chrom_parser(cell, chrom, estrs_coord_chrom):
         ref_len = row['ref_len']
         try:
             df = pd.read_csv(
-                f'gs://cpg-bioheart-test/str/associatr/tob_n1055_and_bioheart_n990/DL_random_model/meta_results/{cell}/{chrom}/{gene_name}_100000bp_meta_results.tsv',
+                f'gs://cpg-bioheart-main-analysis/str/associatr/common_variants_snps/tob_n1055_and_bioheart_n990/meta_results/meta_results/{celltype}/{chrom}/{gene_name}_100000bp_meta_results.tsv',
                 sep='\t',
             )
             df = df[
@@ -49,26 +49,26 @@ def cell_chrom_parser(cell, chrom, estrs_coord_chrom):
                     'motif': motif,
                     'ref_len': ref_len,
                     'gene': gene_name,
-                    f'{cell}_beta': beta,
-                    f'{cell}_se': se,
+                    f'{celltype}_beta': beta,
+                    f'{celltype}_se': se,
                 },
                 index=[0],
             )
-            cell_df = pd.concat([cell_df, beta_se], axis=0)
+            celltype_df = pd.concat([celltype_df, beta_se], axis=0)
         except:
             continue
 
-    cell_df.to_csv(
-        f'gs://cpg-bioheart-test/str/associatr/tob_n1055_and_bioheart_n990/mashr/estrs_beta_se/{cell}/{chrom}/beta_se.tsv',
+    celltype_df.to_csv(
+        f'gs://cpg-bioheart-test/str/associatr/tob_n1055_and_bioheart_n990/mashr/estrs_beta_se/{celltype}/{chrom}/beta_se.tsv',
         sep='\t',
         index=False,
     )
 
 
-def cell_chrom_parser_null(cell, chrom):
+def celltype_chrom_parser_null(celltype, chrom):
     gene_files = list(
         to_path(
-            f'gs://cpg-bioheart-test/str/associatr/tob_n1055_and_bioheart_n990/DL_random_model/meta_results/{cell}/chr{chrom}'
+            f'gs://cpg-bioheart-test/str/associatr/tob_n1055_and_bioheart_n990/DL_random_model/meta_results/{celltype}/chr{chrom}'
         ).rglob('*.tsv')
     )
     master_df = pd.DataFrame()
@@ -76,15 +76,23 @@ def cell_chrom_parser_null(cell, chrom):
         gene_name = str(gene_file).split('/')[-1].split('_')[0]
         df = pd.read_csv(gene_file, sep='\t')
         df['gene'] = gene_name
-        df[f'{cell}_beta'] = df['coeff_meta']
-        df[f'{cell}_se'] = df['se_meta']
+        df[f'{celltype}_beta'] = df['coeff_meta']
+        df[f'{celltype}_se'] = df['se_meta']
         df = df[
-            ['chr', 'pos', 'motif', 'ref_len', 'gene', f'{cell}_beta', f'{cell}_se']
+            [
+                'chr',
+                'pos',
+                'motif',
+                'ref_len',
+                'gene',
+                f'{celltype}_beta',
+                f'{celltype}_se',
+            ]
         ]
         master_df = pd.concat([master_df, df], axis=0)
 
     master_df.to_csv(
-        f'gs://cpg-bioheart-test/str/associatr/tob_n1055_and_bioheart_n990/mashr/chr22_null_beta_se/{cell}/chr{chrom}/beta_se.tsv',
+        f'gs://cpg-bioheart-test/str/associatr/tob_n1055_and_bioheart_n990/mashr/chr22_null_beta_se/{celltype}/chr{chrom}/beta_se.tsv',
         sep='\t',
         index=False,
     )
@@ -100,7 +108,7 @@ def main():
     #    'gs://cpg-bioheart-test/str/associatr/tob_n1055_and_bioheart_n990/mashr/estrs_coord_gene.csv',
     # )
     master_df = pd.DataFrame()
-    for cell in celltypes:
+    for celltype in celltypes:
 
         # for chrom in [22]:
         # df = pd.read_csv(
@@ -108,7 +116,7 @@ def main():
         #    sep='\t',
         # )
         df = pd.read_csv(
-            f'gs://cpg-bioheart-test/str/associatr/tob_n1055_and_bioheart_n990/mashr/chr22_null_beta_se/{cell}/chr22/beta_se.tsv',
+            f'gs://cpg-bioheart-test/str/associatr/tob_n1055_and_bioheart_n990/mashr/chr22_null_beta_se/{celltype}/chr22/beta_se.tsv',
             sep='\t',
         )
         if master_df.empty:
