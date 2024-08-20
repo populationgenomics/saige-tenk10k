@@ -158,14 +158,13 @@ def main(
             )
             print(f'gene file: {gene_file}')
             gene_df = pd.read_csv(gene_file, sep='\t')
-            print(gene_df.head())
             num_chrom = gene_df.columns.values[0]
             window_start = gene_df.columns.values[1]
             window_end = gene_df.columns.values[2]
             gene_interval = f'{num_chrom}:{window_start}-{window_end}'
             # extract variants within interval
             ds_result = hl.filter_intervals(
-                ds, [hl.parse_locus_interval(gene_interval)]
+                ds, [hl.parse_locus_interval(gene_interval, reference_genome='GRCh37')]
             )
             variants = [loc.position for loc in ds_result.locus.collect()]
             gene_tss = int(window_start) + cis_window
