@@ -28,8 +28,8 @@ import logging
 import hail as hl
 import pandas as pd
 
-# import hailtop.batch.job as hb_job
-# from typing import List
+import hailtop.batch.job as hb_job
+from typing import List
 
 from cpg_utils import to_path
 from cpg_utils.config import get_config
@@ -51,7 +51,7 @@ def distance_to_weight(distance: int, gamma: float = 1e-5):
     return weight
 
 
-def build_group_file_single_gene(gene: str, out_path: str):
+def build_group_file_single_gene(gene: str, out_path: str, variants: int, weights: int):
     """
     Build group file for SAIGE-QTL
 
@@ -75,22 +75,22 @@ def build_group_file_single_gene(gene: str, out_path: str):
 @click.option('--cis-window-files-path')
 @click.option('--group-file-path')
 @click.option('--cis-window', default=100000)
-# @click.option(
-#     '--concurrent-job-cap',
-#     type=int,
-#     default=100,
-#     help=(
-#         'To avoid resource starvation, set this concurrency to limit '
-#         'horizontal scale. Higher numbers have a better walltime, but '
-#         'risk jobs that are stuck (which are expensive)'
-#     ),
-# )
+@click.option(
+    '--concurrent-job-cap',
+    type=int,
+    default=100,
+    help=(
+        'To avoid resource starvation, set this concurrency to limit '
+        'horizontal scale. Higher numbers have a better walltime, but '
+        'risk jobs that are stuck (which are expensive)'
+    ),
+)
 def main(
     chromosomes: str,
     cis_window_files_path: str,
     group_file_path: str,
     cis_window: int,
-    # concurrent_job_cap: int,
+    concurrent_job_cap: int,
 ):
     """
     Run expression processing pipeline
@@ -100,17 +100,17 @@ def main(
         default_python_image=get_config()['images']['scanpy'],
         name='prepare all gene files',
     )
-    # all_jobs: List[hb_job.Job] = []
+    all_jobs: List[hb_job.Job] = []
 
-    # def manage_concurrency(new_job: hb_job.Job):
-    #     """
-    #     Manage concurrency, so that there is a cap on simultaneous jobs
-    #     Args:
-    #         new_job (hb_job.Job): a new job to add to the stack
-    #     """
-    #     if len(all_jobs) > concurrent_job_cap:
-    #         new_job.depends_on(all_jobs[-concurrent_job_cap])
-    #     all_jobs.append(new_job)
+    def manage_concurrency(new_job: hb_job.Job):
+        """
+        Manage concurrency, so that there is a cap on simultaneous jobs
+        Args:
+            new_job (hb_job.Job): a new job to add to the stack
+        """
+        if len(all_jobs) > concurrent_job_cap:
+            new_job.depends_on(all_jobs[-concurrent_job_cap])
+        all_jobs.append(new_job)
 
     init_batch()
 
@@ -151,7 +151,15 @@ def main(
             gene_tss = int(window_start) + cis_window
             distances = [int(var) - gene_tss for var in variants]
             weights = [distance_to_weight(d) for d in distances]
-            build_group_file_single_gene(gene, group_file_path, variants, weights)
+            group_file_job = get_batch().new_python_job(name=f'group file: {gene}')
+            group_file_job.call(
+                build_group_file_single_gene,
+                gene,
+                str(group_file_path),
+                variants,
+                weights,
+            )
+            manage_concurrency(group_file_job)
 
     get_batch().run(wait=False)
 
