@@ -61,10 +61,8 @@ def build_group_file_single_gene(gene: str, out_path: str, variants, weights):
     Second row: annotations (none here)
     Third row: weights (dTSS here)
     """
-    data = {'gene': [gene, gene, gene], 'category': ['var', 'anno', 'weight:dTSS']}
-    group_df = pd.DataFrame(data)
-    data = {'var': variants, 'anno': 'null', 'weight:dTSS': weights}
-    vals_df = pd.DataFrame(data).T
+    group_df = pd.DataFrame({'gene': [gene, gene, gene], 'category': ['var', 'anno', 'weight:dTSS']})
+    vals_df = pd.DataFrame({'var': variants, 'anno': 'null', 'weight:dTSS': weights}).T
     vals_df['category'] = vals_df.index
     # combine
     group_vals_df = pd.merge(group_df, vals_df, on='category')
