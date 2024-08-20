@@ -129,6 +129,8 @@ def main(
         )
         ds = hl.import_vcf(vcf_path, reference_genome='GRCh37')
 
+        print(cis_window_files_path)
+        print(to_path(cis_window_files_path))
         # do a glob, then pull out all file names as Strings
         files = [
             str(file)
