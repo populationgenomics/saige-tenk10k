@@ -118,18 +118,19 @@ def main(
 
     # loop over chromosomes
     for chrom in chromosomes.split(','):
+        print(f'chrom: {chrom}')
 
         # load rare variant vcf file for specific chromosome
-        # vcf_path = dataset_path(
-        #     f'saige-qtl/input_files/genotypes/vds-bioheart1-0/{chrom}_rare_variants.vcf.bgz'
-        # )
-        # use common for testing
         vcf_path = dataset_path(
-            f'saige-qtl/bioheart/input_files/genotypes/vds-bioheart1-0/{chrom}_common_variants.vcf.bgz'
+            f'saige-qtl/input_files/genotypes/vds-bioheart1-0/{chrom}_rare_variants.vcf.bgz'
         )
+        # # use common for testing
+        # vcf_path = dataset_path(
+        #     f'saige-qtl/bioheart/input_files/genotypes/vds-bioheart1-0/{chrom}_common_variants.vcf.bgz'
+        # )
         ds = hl.import_vcf(vcf_path, reference_genome='GRCh37')
 
-        print(cis_window_files_path)
+        # print(cis_window_files_path)
         # do a glob, then pull out all file names as Strings
         files = [
             str(file)
@@ -150,12 +151,14 @@ def main(
         logging.info(f'I found these genes: {", ".join(genes)}')
 
         for gene in genes:
+            print(f'gene: {gene}')
             # get gene cis window info
             gene_file = dataset_path(
                 f'{cis_window_files_path}cis_window_files/{chrom}/{gene}_{cis_window}bp.tsv'
             )
-            print(gene_file)
+            print(f'gene file: {gene_file}')
             gene_df = pd.read_csv(gene_file, sep='\t')
+            print(gene_df.head())
             num_chrom = gene_df.columns.values[0]
             window_start = gene_df.columns.values[1]
             window_end = gene_df.columns.values[2]
