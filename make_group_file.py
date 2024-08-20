@@ -151,7 +151,10 @@ def main(
 
         for gene in genes:
             # get gene cis window info
-            gene_file = f'{cis_window_files_path}/{chrom}/{gene}_{cis_window}bp.tsv'
+            gene_file = dataset_path(
+                f'{cis_window_files_path}/{chrom}/{gene}_{cis_window}bp.tsv'
+            )
+            print(gene_file)
             gene_df = pd.read_csv(gene_file, sep='\t')
             num_chrom = gene_df.columns.values[0]
             window_start = gene_df.columns.values[1]
