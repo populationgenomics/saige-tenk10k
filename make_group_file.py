@@ -17,7 +17,9 @@ analysis-runner \
     --dataset "bioheart" \
     --access-level "test" \
     --output-dir "saige-qtl/input_files/" \
-    python3 make_group_file.py --chromosomes chr1
+    python3 make_group_file.py --chromosomes chr22 \
+        --cis-window-files-path gs://cpg-bioheart-test/saige-qtl/input_files/cis_window_files/ \
+        --group-file-path gs://cpg-bioheart-test/saige-qtl/input_files/group_files/
 
 
 """
