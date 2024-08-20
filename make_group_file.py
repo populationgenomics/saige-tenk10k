@@ -19,7 +19,7 @@ analysis-runner \
     --output-dir "saige-qtl/input_files/" \
     python3 make_group_file.py --chromosomes chr22 \
         --cis-window-files-path saige-qtl/input_files/ \
-        --group-file-path gs://cpg-bioheart-test/saige-qtl/input_files/group_files/
+        --group-file-path saige-qtl/input_files/group_files/
 
 
 """
@@ -37,7 +37,7 @@ from typing import List
 from cpg_utils import to_path
 from cpg_utils.config import get_config
 
-from cpg_utils.hail_batch import dataset_path, get_batch, init_batch
+from cpg_utils.hail_batch import dataset_path, get_batch, init_batch, output_path
 
 
 # def distance_to_weight(distance: int, gamma: float = 1e-5):
@@ -69,7 +69,7 @@ def build_group_file_single_gene(gene: str, out_path: str, variants, weights):
     vals_df['category'] = vals_df.index
     # combine
     group_vals_df = pd.merge(group_df, vals_df, on='category')
-    with to_path(out_path).open('w') as gdf:
+    with to_path(output_path(out_path)).open('w') as gdf:
         group_vals_df.to_csv(gdf, index=False, header=False)
 
 
