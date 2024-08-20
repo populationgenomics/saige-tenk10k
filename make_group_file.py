@@ -125,7 +125,7 @@ def main(
         # )
         # use common for testing
         vcf_path = dataset_path(
-            f'saige-qtl/input_files/genotypes/vds-bioheart1-0/{chrom}_common_variants.vcf.bgz'
+            f'saige-qtl/bioheart/input_files/genotypes/vds-bioheart1-0/{chrom}_common_variants.vcf.bgz'
         )
         ds = hl.import_vcf(vcf_path, reference_genome='GRCh37')
 
