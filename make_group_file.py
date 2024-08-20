@@ -141,7 +141,12 @@ def main(
         files = files[0:10]
         logging.info(f'I found these files: {", ".join(files)}')
 
-        genes = [f.replace(f'_{cis_window}bp.tsv', '').replace(cis_window_files_path,'') for f in files]
+        genes = [
+            f.replace(f'_{cis_window}bp.tsv', '').replace(
+                f'{cis_window_files_path}cis_window_files/chr22/', ''
+            )
+            for f in files
+        ]
         logging.info(f'I found these genes: {", ".join(genes)}')
 
         for gene in genes:
