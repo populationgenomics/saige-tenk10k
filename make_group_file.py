@@ -174,7 +174,7 @@ def main(
             group_file_job.call(
                 build_group_file_single_gene,
                 gene,
-                str(group_file_path),
+                group_file_path,
                 variants,
                 weights,
             )
