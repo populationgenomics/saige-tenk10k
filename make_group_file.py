@@ -61,13 +61,19 @@ def build_group_file_single_gene(gene: str, out_path: str):
     """
     data = {'gene': [gene, gene, gene], 'category': ['var', 'anno', 'weight:dTSS']}
     group_df = pd.DataFrame(data)
+    data = {'var': variants, 'anno': 'null', 'weight:dTSS': weights}
+    vals_df = pd.DataFrame(data).T
+    vals_df['category'] = vals_df.index
+    # combine
+    group_vals_df = pd.merge(group_df, vals_df, on='category')
     with to_path(out_path).open('w') as gdf:
-        group_df.to_csv(gdf, index=False, header=False)
+        group_vals_df.to_csv(gdf, index=False, header=False)
 
 
 @click.command()
 @click.option('--chromosomes', help=' chr1,chr22 ')
 @click.option('--cis-window-files-path')
+@click.option('--group-file-path')
 @click.option('--cis-window', default=100000)
 # @click.option(
 #     '--concurrent-job-cap',
@@ -82,6 +88,7 @@ def build_group_file_single_gene(gene: str, out_path: str):
 def main(
     chromosomes: str,
     cis_window_files_path: str,
+    group_file_path: str,
     cis_window: int,
     # concurrent_job_cap: int,
 ):
@@ -136,22 +143,15 @@ def main(
             window_start = gene_df.columns.values[1]
             window_end = gene_df.columns.values[2]
             gene_interval = f'{num_chrom}:{window_start}-{window_end}'
-            print(gene_interval)
-            # gene_interval = '21:17688974-17919386'
             # extract variants within interval
             ds_result = hl.filter_intervals(
                 ds, [hl.parse_locus_interval(gene_interval)]
             )
-            # n_vars = ds_result.count()[0]
-            # vars = [
-            #     ds_result.locus.collect()[i].position
-            #     for i in range(n_vars)
-            # ]
-            vars = [loc.position for loc in ds_result.locus.collect()]
-            gene_tss = window_start + cis_window
-            distances = [int(var) - gene_tss for var in vars]
+            variants = [loc.position for loc in ds_result.locus.collect()]
+            gene_tss = int(window_start) + cis_window
+            distances = [int(var) - gene_tss for var in variants]
             weights = [distance_to_weight(d) for d in distances]
-            print(weights)
+            build_group_file_single_gene(gene, group_file_path, variants, weights)
 
     get_batch().run(wait=False)
 
