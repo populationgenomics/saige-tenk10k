@@ -131,15 +131,20 @@ def main(
 
         print(cis_window_files_path)
         # do a glob, then pull out all file names as Strings
+        # files = [
+        #     str(file)
+        #     for file in to_path(cis_window_files_path).glob(
+        #         f'cis_window_files/{chrom}/*bp.tsv'
+        #     )
+        # ]
         files = [
             str(file)
-            for file in to_path(cis_window_files_path).glob(
+            for file in cis_window_files_path.glob(
                 f'cis_window_files/{chrom}/*bp.tsv'
             )
         ]
         # test only
         files = files[0:10]
-        print(files)
         logging.info(f'I found these files: {", ".join(files)}')
 
         genes = [f.replace(f'_{cis_window}bp.tsv', '') for f in files]
