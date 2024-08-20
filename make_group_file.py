@@ -18,7 +18,7 @@ analysis-runner \
     --access-level "test" \
     --output-dir "saige-qtl/input_files/" \
     python3 make_group_file.py --chromosomes chr22 \
-        --cis-window-files-path gs://cpg-bioheart-test/saige-qtl/input_files/cis_window_files/ \
+        --cis-window-files-path gs://cpg-bioheart-test/saige-qtl/input_files/ \
         --group-file-path gs://cpg-bioheart-test/saige-qtl/input_files/group_files/
 
 
@@ -130,12 +130,11 @@ def main(
         ds = hl.import_vcf(vcf_path, reference_genome='GRCh37')
 
         print(cis_window_files_path)
-        print(to_path(cis_window_files_path))
         # do a glob, then pull out all file names as Strings
         files = [
             str(file)
             for file in to_path(cis_window_files_path).glob(
-                f'cis_window_files/{chrom}/*bp.csv'
+                f'cis_window_files/{chrom}/*bp.tsv'
             )
         ]
         # test only
@@ -148,7 +147,7 @@ def main(
 
         for gene in genes:
             # get gene cis window info
-            gene_file = f'{cis_window_files_path}/{chrom}/{gene}_{cis_window}bp.csv'
+            gene_file = f'{cis_window_files_path}/{chrom}/{gene}_{cis_window}bp.tsv'
             gene_df = pd.read_csv(gene_file, sep='\t')
             num_chrom = gene_df.columns.values[0]
             window_start = gene_df.columns.values[1]
