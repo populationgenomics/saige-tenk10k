@@ -122,7 +122,7 @@ def main(
 
         # load rare variant vcf file for specific chromosome
         vcf_path = dataset_path(
-            f'saige-qtl/input_files/genotypes/vds-bioheart1-0/{chrom}_rare_variants.vcf.bgz'
+            f'saige-qtl/bioheart/input_files/genotypes/vds-bioheart1-0/{chrom}_rare_variants.vcf.bgz'
         )
         # # use common for testing
         # vcf_path = dataset_path(
