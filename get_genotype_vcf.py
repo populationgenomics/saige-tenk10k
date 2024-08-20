@@ -251,7 +251,7 @@ def main(
 
         rv_vcf_path = output_path(f'vds-{vds_name}/{chromosome}_rare_variants.vcf.bgz')
         rv_vcf_existence_outcome = can_reuse(rv_vcf_path)
-        logging.info(f'Does {cv_vcf_path} exist? {rv_vcf_existence_outcome}')
+        logging.info(f'Does {rv_vcf_path} exist? {rv_vcf_existence_outcome}')
 
         if not cv_vcf_existence_outcome or not rv_vcf_existence_outcome:
             # consider only relevant chromosome
