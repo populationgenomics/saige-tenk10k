@@ -26,6 +26,7 @@ analysis-runner \
 
 import click
 import logging
+import math
 
 import hail as hl
 import pandas as pd
@@ -39,18 +40,18 @@ from cpg_utils.config import get_config
 from cpg_utils.hail_batch import dataset_path, get_batch, init_batch
 
 
-def distance_to_weight(distance: int, gamma: float = 1e-5):
-    """
-    Define weight for a genetic variant based on
-    the distance of that variant from the gene
+# def distance_to_weight(distance: int, gamma: float = 1e-5):
+#     """
+#     Define weight for a genetic variant based on
+#     the distance of that variant from the gene
 
-    Following the approach used by the APEX authors
-    doi: https://doi.org/10.1101/2020.12.18.423490
-    """
-    import math
+#     Following the approach used by the APEX authors
+#     doi: https://doi.org/10.1101/2020.12.18.423490
+#     """
+#     import math
 
-    weight = math.exp(-gamma * abs(distance))
-    return weight
+#     weight = math.exp(-gamma * abs(distance))
+#     return weight
 
 
 def build_group_file_single_gene(gene: str, out_path: str, variants, weights):
@@ -77,6 +78,7 @@ def build_group_file_single_gene(gene: str, out_path: str, variants, weights):
 @click.option('--cis-window-files-path')
 @click.option('--group-file-path')
 @click.option('--cis-window', default=100000)
+@click.option('--gamma', default=1e-5)
 @click.option(
     '--concurrent-job-cap',
     type=int,
@@ -92,6 +94,7 @@ def main(
     cis_window_files_path: str,
     group_file_path: str,
     cis_window: int,
+    gamma: float,
     concurrent_job_cap: int,
 ):
     """
@@ -124,10 +127,6 @@ def main(
         vcf_path = dataset_path(
             f'saige-qtl/bioheart/input_files/genotypes/vds-bioheart1-0/{chrom}_rare_variants.vcf.bgz'
         )
-        # # use common for testing
-        # vcf_path = dataset_path(
-        #     f'saige-qtl/bioheart/input_files/genotypes/vds-bioheart1-0/{chrom}_common_variants.vcf.bgz'
-        # )
         ds = hl.import_vcf(vcf_path, reference_genome='GRCh37')
 
         # print(cis_window_files_path)
@@ -169,7 +168,11 @@ def main(
             variants = [loc.position for loc in ds_result.locus.collect()]
             gene_tss = int(window_start) + cis_window
             distances = [int(var) - gene_tss for var in variants]
-            weights = [distance_to_weight(d) for d in distances]
+            # get weight for genetic variants based on
+            # the distance of that variant from the gene
+            # Following the approach used by the APEX authors
+            # doi: https://doi.org/10.1101/2020.12.18.423490
+            weights = [math.exp(-gamma * abs(d)) for d in distances]
             group_file_job = get_batch().new_python_job(name=f'group file: {gene}')
             group_file_job.call(
                 build_group_file_single_gene,
