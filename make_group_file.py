@@ -18,7 +18,7 @@ analysis-runner \
     --access-level "test" \
     --output-dir "saige-qtl/input_files/" \
     python3 make_group_file.py --chromosomes chr22 \
-        --cis-window-files-path gs://cpg-bioheart-test/saige-qtl/input_files/ \
+        --cis-window-files-path saige-qtl/input_files/ \
         --group-file-path gs://cpg-bioheart-test/saige-qtl/input_files/group_files/
 
 
@@ -131,15 +131,9 @@ def main(
 
         print(cis_window_files_path)
         # do a glob, then pull out all file names as Strings
-        # files = [
-        #     str(file)
-        #     for file in to_path(cis_window_files_path).glob(
-        #         f'cis_window_files/{chrom}/*bp.tsv'
-        #     )
-        # ]
         files = [
             str(file)
-            for file in cis_window_files_path.glob(
+            for file in to_path(cis_window_files_path).glob(
                 f'cis_window_files/{chrom}/*bp.tsv'
             )
         ]
