@@ -143,7 +143,7 @@ def main(
 
         genes = [
             f.replace(f'_{cis_window}bp.tsv', '').replace(
-                f'{cis_window_files_path}cis_window_files/chr22/', ''
+                f'{cis_window_files_path}cis_window_files/{chrom}/', ''
             )
             for f in files
         ]
@@ -152,7 +152,7 @@ def main(
         for gene in genes:
             # get gene cis window info
             gene_file = dataset_path(
-                f'{cis_window_files_path}/{chrom}/{gene}_{cis_window}bp.tsv'
+                f'{cis_window_files_path}cis_window_files/{chrom}/{gene}_{cis_window}bp.tsv'
             )
             print(gene_file)
             gene_df = pd.read_csv(gene_file, sep='\t')
