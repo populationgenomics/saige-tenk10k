@@ -61,7 +61,7 @@ def build_group_file_single_gene(gene: str, out_path: str, variants, weights):
     """
     data = {'gene': [gene, gene, gene], 'category': ['var', 'anno', 'weight:dTSS']}
     group_df = pd.DataFrame(data)
-    data = {'var': variants, 'anno': 'null', 'weight:dTSS': weights}
+    data = {'var': variants, 'anno': ['null'], 'weight:dTSS': weights}
     vals_df = pd.DataFrame(data).T
     vals_df['category'] = vals_df.index
     # combine
@@ -130,6 +130,9 @@ def main(
                 f'cis_window_files/{chrom}/*bp.csv'
             )
         ]
+        # test only
+        files = files[0:10]
+        print(files)
         logging.info(f'I found these files: {", ".join(files)}')
 
         genes = [f.replace(f'_{cis_window}bp.tsv', '') for f in files]
