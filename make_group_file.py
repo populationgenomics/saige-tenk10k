@@ -51,7 +51,7 @@ def distance_to_weight(distance: int, gamma: float = 1e-5):
     return weight
 
 
-def build_group_file_single_gene(gene: str, out_path: str, variants: int, weights: int):
+def build_group_file_single_gene(gene: str, out_path: str, variants, weights):
     """
     Build group file for SAIGE-QTL
 
