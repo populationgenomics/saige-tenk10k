@@ -153,7 +153,7 @@ def main(
         for gene in genes:
             print(f'gene: {gene}')
             # get gene cis window info
-            gene_file = dataset_path(
+            gene_file = to_path(
                 f'{cis_window_files_path}cis_window_files/{chrom}/{gene}_{cis_window}bp.tsv'
             )
             print(f'gene file: {gene_file}')
