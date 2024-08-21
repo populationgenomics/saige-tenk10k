@@ -37,7 +37,7 @@ from typing import List
 from cpg_utils import to_path
 from cpg_utils.config import get_config
 
-from cpg_utils.hail_batch import dataset_path, get_batch, init_batch, output_path
+from cpg_utils.hail_batch import dataset_path, get_batch, init_batch
 
 
 # def distance_to_weight(distance: int, gamma: float = 1e-5):
