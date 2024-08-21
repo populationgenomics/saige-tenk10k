@@ -98,7 +98,7 @@ from cpg_utils.hail_batch import dataset_path, init_batch
 def main(
     chromosomes: str,
     cis_window_files_path: str,
-    group_file_path: str,
+    group_files_path: str,
     cis_window: int,
     gamma: float,
     # concurrent_job_cap: int,
@@ -179,7 +179,6 @@ def main(
             # Following the approach used by the APEX authors
             # doi: https://doi.org/10.1101/2020.12.18.423490
             weights = [math.exp(-gamma * abs(d)) for d in distances]
-            print(f'group file: {group_file_path}')
             # group_file_job = get_batch().new_python_job(name=f'group file: {gene}')
             # group_file_job.call(
             #     build_group_file_single_gene,
@@ -198,10 +197,10 @@ def main(
             vals_df['category'] = vals_df.index
             # combine
             group_vals_df = pd.merge(group_df, vals_df, on='category')
-            print(group_vals_df.head())
-            # print(f'out path: {out_path}')
-            print(f'to_path(out_path): {to_path(group_file_path)}')
-            with to_path(group_file_path).open('w') as gdf:
+            group_file = f'{group_files_path}/{chrom}/{gene}_{cis_window}bp.tsv'
+            # print(f'group file: {group_file}')
+            print(f'to_path(out_path): {to_path(group_file)}')
+            with to_path(group_file).open('w') as gdf:
                 group_vals_df.to_csv(gdf, index=False, header=False)
 
     # get_batch().run(wait=False)
