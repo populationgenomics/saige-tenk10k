@@ -197,7 +197,7 @@ def main(
             vals_df['category'] = vals_df.index
             # combine
             group_vals_df = pd.merge(group_df, vals_df, on='category')
-            group_file = f'{group_files_path}/{chrom}/{gene}_{cis_window}bp.tsv'
+            group_file = f'{group_files_path}{chrom}/{gene}_{cis_window}bp.tsv'
             # print(f'group file: {group_file}')
             print(f'to_path(out_path): {to_path(group_file)}')
             with to_path(group_file).open('w') as gdf:
