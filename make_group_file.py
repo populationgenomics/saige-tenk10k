@@ -54,7 +54,7 @@ from cpg_utils.hail_batch import dataset_path, get_batch, init_batch, output_pat
 #     return weight
 
 
-def build_group_file_single_gene(gene: str, out_path: str, variants, weights):
+def build_group_file_single_gene(gene: str, out_path, variants, weights):
     """
     Build group file for SAIGE-QTL
 
@@ -70,9 +70,9 @@ def build_group_file_single_gene(gene: str, out_path: str, variants, weights):
     # combine
     group_vals_df = pd.merge(group_df, vals_df, on='category')
     print(group_vals_df.head())
-    print(f'out path: {out_path}')
-    print(f'output_path(out_path): {output_path(out_path)}')
-    with to_path(output_path(out_path)).open('w') as gdf:
+    # print(f'out path: {out_path}')
+    # print(f'output_path(out_path): {output_path(out_path)}')
+    with out_path.open('w') as gdf:
         group_vals_df.to_csv(gdf, index=False, header=False)
 
 
@@ -181,7 +181,7 @@ def main(
             group_file_job.call(
                 build_group_file_single_gene,
                 gene,
-                str(group_file_path),
+                output_path(group_file_path),
                 variants,
                 weights,
             )
