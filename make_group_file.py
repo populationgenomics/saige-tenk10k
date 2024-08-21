@@ -85,16 +85,16 @@ from cpg_utils.hail_batch import dataset_path
 @click.option('--group-file-path')
 @click.option('--cis-window', default=100000)
 @click.option('--gamma', default=1e-5)
-@click.option(
-    '--concurrent-job-cap',
-    type=int,
-    default=100,
-    help=(
-        'To avoid resource starvation, set this concurrency to limit '
-        'horizontal scale. Higher numbers have a better walltime, but '
-        'risk jobs that are stuck (which are expensive)'
-    ),
-)
+# @click.option(
+#     '--concurrent-job-cap',
+#     type=int,
+#     default=100,
+#     help=(
+#         'To avoid resource starvation, set this concurrency to limit '
+#         'horizontal scale. Higher numbers have a better walltime, but '
+#         'risk jobs that are stuck (which are expensive)'
+#     ),
+# )
 def main(
     chromosomes: str,
     cis_window_files_path: str,
