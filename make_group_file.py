@@ -38,7 +38,7 @@ from cpg_utils import to_path
 
 # from cpg_utils.config import get_config
 
-from cpg_utils.hail_batch import dataset_path
+from cpg_utils.hail_batch import dataset_path, init_batch
 
 # from cpg_utils.hail_batch import dataset_path, get_batch, init_batch
 
@@ -123,7 +123,7 @@ def main(
     #         new_job.depends_on(all_jobs[-concurrent_job_cap])
     #     all_jobs.append(new_job)
 
-    # init_batch()
+    init_batch()
 
     # loop over chromosomes
     for chrom in chromosomes.split(','):
