@@ -198,9 +198,9 @@ def main(
             vals_df['category'] = vals_df.index
             # combine
             group_vals_df = pd.merge(group_df, vals_df, on='category')
-            # print(group_vals_df.head())
+            print(group_vals_df.head())
             # print(f'out path: {out_path}')
-            # print(f'to_path(out_path): {to_path(out_path)}')
+            print(f'to_path(out_path): {to_path(group_file_path)}')
             with to_path(group_file_path).open('w') as gdf:
                 group_vals_df.to_csv(gdf, index=False, header=False)
 
