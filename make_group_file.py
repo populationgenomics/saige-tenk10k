@@ -19,7 +19,7 @@ analysis-runner \
     --output-dir "saige-qtl/input_files/" \
     python3 make_group_file.py --chromosomes chr22 \
         --cis-window-files-path saige-qtl/input_files/ \
-        --group-file-path saige-qtl/input_files/group_files/
+        --group-files-path saige-qtl/input_files/group_files/
 
 
 """
@@ -82,7 +82,7 @@ from cpg_utils.hail_batch import dataset_path, init_batch
 @click.command()
 @click.option('--chromosomes', help=' chr1,chr22 ')
 @click.option('--cis-window-files-path')
-@click.option('--group-file-path')
+@click.option('--group-files-path')
 @click.option('--cis-window', default=100000)
 @click.option('--gamma', default=1e-5)
 # @click.option(
