@@ -31,13 +31,16 @@ import math
 import hail as hl
 import pandas as pd
 
-import hailtop.batch.job as hb_job
-from typing import List
+# import hailtop.batch.job as hb_job
+# from typing import List
 
 from cpg_utils import to_path
-from cpg_utils.config import get_config
 
-from cpg_utils.hail_batch import dataset_path, get_batch, init_batch
+# from cpg_utils.config import get_config
+
+from cpg_utils.hail_batch import dataset_path
+
+# from cpg_utils.hail_batch import dataset_path, get_batch, init_batch
 
 
 # def distance_to_weight(distance: int, gamma: float = 1e-5):
@@ -54,26 +57,26 @@ from cpg_utils.hail_batch import dataset_path, get_batch, init_batch
 #     return weight
 
 
-def build_group_file_single_gene(gene: str, out_path, variants, weights):
-    """
-    Build group file for SAIGE-QTL
+# def build_group_file_single_gene(gene: str, out_path, variants, weights):
+#     """
+#     Build group file for SAIGE-QTL
 
-    First row: genetic variants to test
-    Second row: annotations (none here)
-    Third row: weights (dTSS here)
-    """
-    group_df = pd.DataFrame(
-        {'gene': [gene, gene, gene], 'category': ['var', 'anno', 'weight:dTSS']}
-    )
-    vals_df = pd.DataFrame({'var': variants, 'anno': 'null', 'weight:dTSS': weights}).T
-    vals_df['category'] = vals_df.index
-    # combine
-    group_vals_df = pd.merge(group_df, vals_df, on='category')
-    print(group_vals_df.head())
-    print(f'out path: {out_path}')
-    print(f'to_path(out_path): {to_path(out_path)}')
-    with to_path(out_path).open('w') as gdf:
-        group_vals_df.to_csv(gdf, index=False, header=False)
+#     First row: genetic variants to test
+#     Second row: annotations (none here)
+#     Third row: weights (dTSS here)
+#     """
+#     group_df = pd.DataFrame(
+#         {'gene': [gene, gene, gene], 'category': ['var', 'anno', 'weight:dTSS']}
+#     )
+#     vals_df = pd.DataFrame({'var': variants, 'anno': 'null', 'weight:dTSS': weights}).T
+#     vals_df['category'] = vals_df.index
+#     # combine
+#     group_vals_df = pd.merge(group_df, vals_df, on='category')
+#     print(group_vals_df.head())
+#     print(f'out path: {out_path}')
+#     print(f'to_path(out_path): {to_path(out_path)}')
+#     with to_path(out_path).open('w') as gdf:
+#         group_vals_df.to_csv(gdf, index=False, header=False)
 
 
 @click.command()
@@ -98,29 +101,29 @@ def main(
     group_file_path: str,
     cis_window: int,
     gamma: float,
-    concurrent_job_cap: int,
+    # concurrent_job_cap: int,
 ):
     """
     Run expression processing pipeline
     """
     # set this up with the default (scanpy) python image
-    get_batch(
-        default_python_image=get_config()['images']['scanpy'],
-        name='prepare all gene files',
-    )
-    all_jobs: List[hb_job.Job] = []
+    # get_batch(
+    #     default_python_image=get_config()['images']['scanpy'],
+    #     name='prepare all gene files',
+    # )
+    # all_jobs: List[hb_job.Job] = []
 
-    def manage_concurrency(new_job: hb_job.Job):
-        """
-        Manage concurrency, so that there is a cap on simultaneous jobs
-        Args:
-            new_job (hb_job.Job): a new job to add to the stack
-        """
-        if len(all_jobs) > concurrent_job_cap:
-            new_job.depends_on(all_jobs[-concurrent_job_cap])
-        all_jobs.append(new_job)
+    # def manage_concurrency(new_job: hb_job.Job):
+    #     """
+    #     Manage concurrency, so that there is a cap on simultaneous jobs
+    #     Args:
+    #         new_job (hb_job.Job): a new job to add to the stack
+    #     """
+    #     if len(all_jobs) > concurrent_job_cap:
+    #         new_job.depends_on(all_jobs[-concurrent_job_cap])
+    #     all_jobs.append(new_job)
 
-    init_batch()
+    # init_batch()
 
     # loop over chromosomes
     for chrom in chromosomes.split(','):
@@ -177,17 +180,31 @@ def main(
             # doi: https://doi.org/10.1101/2020.12.18.423490
             weights = [math.exp(-gamma * abs(d)) for d in distances]
             print(f'group file: {group_file_path}')
-            group_file_job = get_batch().new_python_job(name=f'group file: {gene}')
-            group_file_job.call(
-                build_group_file_single_gene,
-                gene,
-                group_file_path,
-                variants,
-                weights,
+            # group_file_job = get_batch().new_python_job(name=f'group file: {gene}')
+            # group_file_job.call(
+            #     build_group_file_single_gene,
+            #     gene,
+            #     group_file_path,
+            #     variants,
+            #     weights,
+            # )
+            # manage_concurrency(group_file_job)
+            group_df = pd.DataFrame(
+                {'gene': [gene, gene, gene], 'category': ['var', 'anno', 'weight:dTSS']}
             )
-            manage_concurrency(group_file_job)
+            vals_df = pd.DataFrame(
+                {'var': variants, 'anno': 'null', 'weight:dTSS': weights}
+            ).T
+            vals_df['category'] = vals_df.index
+            # combine
+            group_vals_df = pd.merge(group_df, vals_df, on='category')
+            # print(group_vals_df.head())
+            # print(f'out path: {out_path}')
+            # print(f'to_path(out_path): {to_path(out_path)}')
+            with to_path(group_file_path).open('w') as gdf:
+                group_vals_df.to_csv(gdf, index=False, header=False)
 
-    get_batch().run(wait=False)
+    # get_batch().run(wait=False)
 
 
 if __name__ == '__main__':
