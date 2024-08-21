@@ -70,9 +70,9 @@ def build_group_file_single_gene(gene: str, out_path, variants, weights):
     # combine
     group_vals_df = pd.merge(group_df, vals_df, on='category')
     print(group_vals_df.head())
-    # print(f'out path: {out_path}')
-    # print(f'output_path(out_path): {output_path(out_path)}')
-    with out_path.open('w') as gdf:
+    print(f'out path: {out_path}')
+    print(f'to_path(out_path): {output_path(out_path)}')
+    with to_path(out_path).open('w') as gdf:
         group_vals_df.to_csv(gdf, index=False, header=False)
 
 
