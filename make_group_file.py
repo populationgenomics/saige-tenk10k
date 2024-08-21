@@ -69,6 +69,9 @@ def build_group_file_single_gene(gene: str, out_path: str, variants, weights):
     vals_df['category'] = vals_df.index
     # combine
     group_vals_df = pd.merge(group_df, vals_df, on='category')
+    print(group_vals_df.head())
+    print(f'out path: {out_path}')
+    print(f'output_path(out_path): {output_path(out_path)}')
     with to_path(output_path(out_path)).open('w') as gdf:
         group_vals_df.to_csv(gdf, index=False, header=False)
 
@@ -173,6 +176,7 @@ def main(
             # Following the approach used by the APEX authors
             # doi: https://doi.org/10.1101/2020.12.18.423490
             weights = [math.exp(-gamma * abs(d)) for d in distances]
+            print(f'group file: {group_file_path}')
             group_file_job = get_batch().new_python_job(name=f'group file: {gene}')
             group_file_job.call(
                 build_group_file_single_gene,
