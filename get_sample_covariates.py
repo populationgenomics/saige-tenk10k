@@ -169,7 +169,7 @@ def main(
     combined_sex_age_pcs = pd.concat([sex_df, age_df, pcs_df], axis=1)
 
     # add permuted sample ids for calibration analysis
-    samples = combined_sex_age_pcs['sample_id']
+    samples = combined_sex_age_pcs.index
     for i in range(number_of_sample_perms):
         combined_sex_age_pcs[f'sample_perm{i}'] = shuffle(
             samples.values, random_state=i
