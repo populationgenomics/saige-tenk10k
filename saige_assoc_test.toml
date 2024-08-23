@@ -1,7 +1,7 @@
 [saige]
 # principal arguments
-celltypes = ['CD4_TCM']
-chromosomes = ['chr1','chr2','chr3','chr4','chr5','chr6','chr7','chr9','chr10','chr11','chr12','chr13','chr14','chr15','chr16','chr17','chr18','chr19','chr20','chr21','chr22']
+celltypes = ['B_naive']
+chromosomes = ['chr22']
 drop_genes =[]
 
 # secondary arguments
@@ -10,8 +10,8 @@ cis_window_size = 100000
 # these args are applied directly to step1_fitNULLGLMM_qtl.R
 # as "--{key}={value} "
 [saige.build_fit_null]
-covarColList = 'sex,age,score1,score2,score3,score4,score5,harmony_PC1,harmony_PC2,harmony_PC3,harmony_PC4,harmony_PC5,total_counts'
-sampleCovarColList = 'sex,age,score1,score2,score3,score4,score5'
+covarColList = 'sex,age,geno_PC1,geno_PC2,geno_PC3,geno_PC4,geno_PC5,harmony_PC1,harmony_PC2,harmony_PC3,harmony_PC4,harmony_PC5,total_counts'
+sampleCovarColList = 'sex,age,geno_PC1,geno_PC2,geno_PC3,geno_PC4,geno_PC5'
 sampleIDColinphenoFile = 'individual'
 # Poisson, count_nb = Negative Binomial, quantitative = Normal
 traitType = 'count'
@@ -46,3 +46,4 @@ storage = '12G'
 [saige.job_specs.fit_null]
 storage = "0G"
 memory = "4Gi"
+
