@@ -17,15 +17,13 @@ analysis-runner \
     --description "make expression input files" \
     --dataset "bioheart" \
     --access-level "test" \
-    --output-dir "saige-qtl/bioheart_n990/input_files" \
-    --memory='64G' \
-    --storage='100G'\
+    --output-dir "saige-qtl/bioheart_n990/input_files/v2" \
     --image australia-southeast1-docker.pkg.dev/cpg-common/images/scanpy:1.9.3 \
-    python3 get_anndata.py --celltypes CD4_TCM --chromosomes chr2,chr3,chr4,chr5,chr6,chr7,chr8,chr9,chr10,chr11,chr12,chr13,chr14,chr15,chr16,chr17,chr18,chr19,chr20,chr21,chr22 \
+    python3 get_anndata.py --celltypes CD4_TCM,B_naive --chromosomes chr22 \
     --anndata-files-prefix gs://cpg-bioheart-test/str/240_libraries_tenk10kp1_v2/cpg_anndata \
     --celltype-covs-files-prefix gs://cpg-bioheart-test/str/240_libraries_tenk10kp1_v2/cpg_cell_covs \
     --sample-covs-file gs://cpg-bioheart-test/str/associatr/bioheart_n990/input_files/bioheart_covariates_str_run_v1.csv \
-    --concurrent-job-cap=350 --pc-job-cpu=2
+    --concurrent-job-cap=10000 --pc-job-cpu=1 --cis-job-cpu=1
 
 
 """
@@ -139,7 +137,14 @@ def make_pheno_cov(
     # determine average age to fill in later
     if fill_in_age:
         mean_age = sample_covs_df['age'].mean()
-    cell_ind_df = expression_adata.obs.loc[:, ['cell', 'individual', 'total_counts']]
+    cell_ind_df = expression_adata.obs.loc[
+        :, ['cell', 'individual', 'total_counts', 'sequencing_library', 'cohort']
+    ]
+    # make sequencing_library from categorical to dummy numerical covs
+    seq_lib_df = pd.get_dummies(cell_ind_df['sequencing_library']).astype(int)
+    # do the same for cohort
+    cohort_df = pd.get_dummies(cell_ind_df['cohort']).astype(int)
+    cell_ind_df = pd.concat([cell_ind_df, cohort_df, seq_lib_df], axis=1)
     # merge cell and sample covs
     sample_covs_cells_df = cell_ind_df.merge(
         sample_covs_df, on='individual', how='inner'
