@@ -22,7 +22,8 @@ analysis-runner \
     --dataset "bioheart" \
     --access-level "test" \
     --output-dir "saige-qtl/bioheart/input_files/genotypes" \
-    python3 get_genotype_vcf.py --vds-path=gs://cpg-bioheart-test/vds/bioheart1-0.vds --chromosomes chr1,chr2,chr22 --vre-mac-threshold 1
+    python3 get_genotype_vcf.py --vds-path=gs://cpg-bioheart-test/vds/bioheart1-0.vds --chromosomes chr22 \
+        --cv-maf-threshold 0 --rv-maf-threshold 1 --vre-mac-threshold 1 --vre-n-markers 5
 
 In main:
 
@@ -249,7 +250,7 @@ def main(
 
         rv_vcf_path = output_path(f'vds-{vds_name}/{chromosome}_rare_variants.vcf.bgz')
         rv_vcf_existence_outcome = can_reuse(rv_vcf_path)
-        logging.info(f'Does {cv_vcf_path} exist? {rv_vcf_existence_outcome}')
+        logging.info(f'Does {rv_vcf_path} exist? {rv_vcf_existence_outcome}')
 
         if not cv_vcf_existence_outcome or not rv_vcf_existence_outcome:
             # consider only relevant chromosome
@@ -322,6 +323,19 @@ def main(
         post_dense_checkpoint = output_path('post_dense_checkpoint.mt', category='tmp')
         mt = checkpoint_mt(mt, post_dense_checkpoint)
 
+        # filter out related samples from vre too
+        # this will get dropped as the vds file will already be clean
+        related_ht = hl.read_table(relateds_to_drop_path)
+        related_samples = related_ht.s.collect()
+        related_samples = hl.literal(related_samples)
+        mt = mt.filter_cols(~related_samples.contains(mt['s']))
+
+        # set a checkpoint, and either re-use or write
+        post_unrelated_checkpoint = output_path(
+            'post_unrelated_checkpoint.mt', category='tmp'
+        )
+        mt = checkpoint_mt(mt, post_unrelated_checkpoint)
+
         # again filter for biallelic SNPs
         mt = mt.filter_rows(
             ~(mt.was_split)  # biallelic (exclude multiallelic)
@@ -329,6 +343,9 @@ def main(
             & (hl.is_snp(mt.alleles[0], mt.alleles[1]))  # SNPs (exclude indels)
         )
         mt = hl.variant_qc(mt)
+
+        print(vre_mac_threshold)
+        print(mt.count())
 
         # minor allele count (MAC) > {vre_mac_threshold}
         vre_mt = mt.filter_rows(mt.variant_qc.AC[1] > vre_mac_threshold)
