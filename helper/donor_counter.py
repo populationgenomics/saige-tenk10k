@@ -41,13 +41,12 @@ def count_variants(
     """
     init_batch()
     vcf_path = f'{genos_path}/{chrom}_{common_rare_flag}_variants.vcf.bgz'
-    mt_vcf = hl.import_vcf(vcf_path)
+    mt_vcf = hl.import_vcf(vcf_path, reference_genome='GRCh37')
 
     mt_plink = hl.import_plink(
         bed=f'{genos_path}/vre_plink_2000_variants.bed',
         bim=f'{genos_path}/vre_plink_2000_variants.bim',
         fam=f'{genos_path}/vre_plink_2000_variants.fam',
-        reference_genome='GRCh38',
     )
 
     # extract donors
