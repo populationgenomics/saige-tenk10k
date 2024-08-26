@@ -62,7 +62,7 @@ def main(
         # do a glob, then pull out all file names as Strings
         files = [
             str(file)
-            for file in cis_window_files_path.glob(
+            for file in to_path(cis_window_files_path).glob(
                 f'cis_window_files/{chrom}/*bp.tsv'
             )
         ]
