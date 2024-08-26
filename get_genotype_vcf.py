@@ -22,7 +22,8 @@ analysis-runner \
     --dataset "bioheart" \
     --access-level "test" \
     --output-dir "saige-qtl/bioheart/input_files/genotypes" \
-    python3 get_genotype_vcf.py --vds-path=gs://cpg-bioheart-test/vds/bioheart1-0.vds --chromosomes chr1,chr2,chr22 --vre-mac-threshold 1
+    python3 get_genotype_vcf.py --vds-path=gs://cpg-bioheart-test/vds/bioheart1-0.vds \
+        --chromosomes chr1,chr2,chr22 --vre-mac-threshold 1 --cv-maf-threshold 0 --rv-maf-threshold 1
 
 In main:
 
