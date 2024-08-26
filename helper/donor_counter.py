@@ -58,7 +58,7 @@ def count_variants(
     print(f'Donor count (VRE plink file): {len(mt_plink_donors)}')
 
     print(
-        f'Do {vcf_path} and {genos_path}/vre_plink_2000_variants.fam contain the same donors? {match}'
+        f'Do {vcf_path} and {genos_path}/vre_plink_2000_variants.fam contain the same donors? {mt_vcf_donors == mt_plink_donors}'
     )
 
 
