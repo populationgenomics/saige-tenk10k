@@ -22,27 +22,26 @@ import click
 
 import hail as hl
 
-# from cpg_utils.hail_batch import init_batch
+from cpg_utils.hail_batch import init_batch
 
 
 @click.command()
 @click.option('--chrom', required=True)
 @click.option('--genos-path', required=True)
+@click.option('--common-rare-flag', default='common')
 def count_variants(
     chrom: str,
     genos_path: str,
+    common_rare_flag: str,
 ):
     """
     reads the VCF files (common & rare) as MTs,
     reads the VRE .fam file,
     extracts list of donors from all files, compares
     """
-    # init_batch()
-    vcf_path_common = f'{genos_path}/{chrom}_common_variants.vcf.bgz'
-    mt_common = hl.import_vcf(vcf_path_common)
-
-    # vcf_path_rare = f'{genos_path}/{chrom}_rare_variants.vcf.bgz'
-    # mt_rare = hl.import_vcf(vcf_path_rare)
+    init_batch()
+    vcf_path = f'{genos_path}/{chrom}_{common_rare_flag}_variants.vcf.bgz'
+    mt_vcf = hl.import_vcf(vcf_path)
 
     mt_plink = hl.import_plink(
         bed=f'{genos_path}/vre_plink_2000_variants.bed',
@@ -52,25 +51,16 @@ def count_variants(
     )
 
     # extract donors
-    mt_common_donors = mt_common.s.collect()
-    # mt_rare_donors = mt_rare.s.collect()
+    mt_vcf_donors = mt_vcf.s.collect()
     mt_plink_donors = mt_plink.s.collect()
 
     # count donors
-    print(f'Donor count (common variant vcf): {len(mt_common_donors)}')
-    # print(f'Donor count (rare variant vcf): {len(mt_rare_donors)}')
+    print(f'Donor count ({common_rare_flag} variant vcf): {len(mt_vcf_donors)}')
     print(f'Donor count (VRE plink file): {len(mt_plink_donors)}')
 
-    # compare lists
-    # print(
-    #     f'Do {vcf_path_common} and {vcf_path_rare} contain the same donors? {mt_common_donors.sort() == mt_rare_donors.sort()}'
-    # )
     print(
-        f'Do {vcf_path_common} and {genos_path}/vre_plink_2000_variants.fam contain the same donors? {mt_common_donors.sort() == mt_plink_donors.sort()}'
+        f'Do {vcf_path} and {genos_path}/vre_plink_2000_variants.fam contain the same donors? {mt_vcf_donors.sort() == mt_plink_donors.sort()}'
     )
-    # print(
-    #     f'Do {vcf_path_rare} and {genos_path}/vre_plink_2000_variants.fam contain the same donors? {mt_rare_donors.sort() == mt_plink_donors.sort()}'
-    # )
 
 
 if __name__ == '__main__':
