@@ -18,7 +18,7 @@ analysis-runner \
     --access-level "test" \
     --output-dir "saige-qtl/input_files/" \
     python3 make_group_file.py --chromosomes chr22 \
-        --cis-window-files-path gs://cpg-bioheart-test/saige-qtl/input_files/\
+        --cis-window-files-path gs://cpg-bioheart-test/saige-qtl/input_files/ \
         --group-files-path gs://cpg-bioheart-test/saige-qtl/input_files/group_files/
 
 
@@ -61,7 +61,7 @@ def main(
 
         # load rare variant vcf file for specific chromosome
         vcf_path = dataset_path(
-            f'saige-qtl/bioheart/input_files/genotypes/vds-bioheart1-0/{chrom}_common_variants.vcf.bgz'
+            f'saige-qtl/bioheart/input_files/genotypes/vds-bioheart1-0/{chrom}_rare_variants.vcf.bgz'
         )
         ds = hl.import_vcf(vcf_path, reference_genome='GRCh37')
 
