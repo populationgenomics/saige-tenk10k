@@ -18,7 +18,7 @@ analysis-runner \
     --access-level "test" \
     --output-dir "saige-qtl/input_files/" \
     python3 make_group_file.py --chromosomes chr22 \
-        --cis-window-files-path gs://cpg-bioheart-test/saige-qtl/input_files/ \
+        --cis-window-files-path gs://cpg-bioheart-test/saige-qtl/input_files/cis_window_files/ \
         --group-files-path gs://cpg-bioheart-test/saige-qtl/input_files/group_files/
 
 
@@ -64,7 +64,7 @@ def main(
         files = [
             str(file)
             for file in to_path(cis_window_files_path).glob(
-                f'cis_window_files/{chrom}/*bp.tsv'
+                f'{chrom}/*bp.tsv'
             )
         ]
         # test only
