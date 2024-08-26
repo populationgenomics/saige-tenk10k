@@ -69,9 +69,10 @@ def main(
         files = files[0:10]
         logging.info(f'I found these files: {", ".join(files)}')
 
+        print(f'{cis_window_files_path}{chrom}/')
         genes = [
             f.replace(f'_{cis_window}bp.tsv', '').replace(
-                f'{cis_window_files_path}/{chrom}/', ''
+                f'{cis_window_files_path}{chrom}/', ''
             )
             for f in files
         ]
