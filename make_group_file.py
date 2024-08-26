@@ -86,7 +86,7 @@ def main(
             print(f'gene: {gene}')
             # get gene cis window info
             # before running in main swap TSV for CSV
-            gene_file = f'{cis_window_files_path}/{chrom}/{gene}_{cis_window}bp.tsv'
+            gene_file = f'{cis_window_files_path}{chrom}/{gene}_{cis_window}bp.tsv'
             print(f'gene file: {gene_file}')
             gene_df = pd.read_csv(gene_file, sep='\t')
             num_chrom = gene_df.columns.values[0]
