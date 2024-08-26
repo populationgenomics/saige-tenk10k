@@ -50,8 +50,8 @@ def count_variants(
     )
 
     # extract donors
-    mt_vcf_donors = mt_vcf.s.collect()
-    mt_plink_donors = mt_plink.s.collect()
+    mt_vcf_donors = set(mt_vcf.s.collect())
+    mt_plink_donors = set(mt_plink.s.collect())
 
     # count donors
     print(f'Donor count ({common_rare_flag} variant vcf): {len(mt_vcf_donors)}')
