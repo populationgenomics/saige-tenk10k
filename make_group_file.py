@@ -63,9 +63,7 @@ def main(
         print(cis_window_files_path)
         files = [
             str(file)
-            for file in to_path(cis_window_files_path).glob(
-                f'{chrom}/*bp.tsv'
-            )
+            for file in to_path(cis_window_files_path).glob(f'{chrom}/*bp.tsv')
         ]
         # test only
         files = files[0:10]
@@ -73,7 +71,7 @@ def main(
 
         genes = [
             f.replace(f'_{cis_window}bp.tsv', '').replace(
-                f'{cis_window_files_path}cis_window_files/{chrom}/', ''
+                f'{cis_window_files_path}/{chrom}/', ''
             )
             for f in files
         ]
