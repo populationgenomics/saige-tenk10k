@@ -344,6 +344,9 @@ def main(
         )
         mt = hl.variant_qc(mt)
 
+        print(vre_mac_threshold)
+        print(mt.count())
+
         # minor allele count (MAC) > {vre_mac_threshold}
         vre_mt = mt.filter_rows(mt.variant_qc.AC[1] > vre_mac_threshold)
 
