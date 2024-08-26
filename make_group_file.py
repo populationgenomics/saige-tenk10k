@@ -42,12 +42,14 @@ from cpg_utils.hail_batch import dataset_path, init_batch
 @click.option('--group-files-path')
 @click.option('--cis-window', default=100000)
 @click.option('--gamma', default=1e-5)
+@click.option('--ngenes-to-test', default='all')
 def main(
     chromosomes: str,
     cis_window_files_path: str,
     group_files_path: str,
     cis_window: int,
     gamma: float,
+    ngenes_to_test: str,
 ):
     """
     Run expression processing pipeline
@@ -64,8 +66,9 @@ def main(
             str(file)
             for file in to_path(cis_window_files_path).glob(f'{chrom}/*bp.tsv')
         ]
-        # test only
-        files = files[0:10]
+        # if specified, only test ngenes genes
+        if ngenes_to_test != 'all':
+            files = files[0 : int(ngenes_to_test)]
         logging.info(f'I found these files: {", ".join(files)}')
 
         genes = [
