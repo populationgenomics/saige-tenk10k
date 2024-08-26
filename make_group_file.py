@@ -60,6 +60,7 @@ def main(
         print(f'chrom: {chrom}')
 
         # do a glob, then pull out all file names as Strings
+        print(cis_window_files_path)
         files = [
             str(file)
             for file in to_path(cis_window_files_path).glob(
