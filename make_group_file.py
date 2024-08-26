@@ -18,8 +18,8 @@ analysis-runner \
     --access-level "test" \
     --output-dir "saige-qtl/input_files/" \
     python3 make_group_file.py --chromosomes chr22 \
-        --cis-window-files-path gs://cpg-bioheart-test/saige-qtl/input_files/ \
-        --group-files-path gs://cpg-bioheart-test/saige-qtl/input_files/group_files/
+        --cis-window-files-path gs://cpg-bioheart-test/saige-qtl/input_files \
+        --group-files-path gs://cpg-bioheart-test/saige-qtl/input_files/group_files
 
 
 """
@@ -118,7 +118,7 @@ def main(
             vals_df['category'] = vals_df.index
             # combine
             group_vals_df = pd.merge(group_df, vals_df, on='category')
-            group_file = f'{group_files_path}{chrom}/{gene}_{cis_window}bp.tsv'
+            group_file = f'{group_files_path}/{chrom}/{gene}_{cis_window}bp.tsv'
             with to_path(group_file).open('w') as gdf:
                 group_vals_df.to_csv(gdf, index=False, header=False)
 
