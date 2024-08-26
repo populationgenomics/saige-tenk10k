@@ -322,6 +322,19 @@ def main(
         post_dense_checkpoint = output_path('post_dense_checkpoint.mt', category='tmp')
         mt = checkpoint_mt(mt, post_dense_checkpoint)
 
+        # filter out related samples from vre too
+        # this will get dropped as the vds file will already be clean
+        related_ht = hl.read_table(relateds_to_drop_path)
+        related_samples = related_ht.s.collect()
+        related_samples = hl.literal(related_samples)
+        mt = mt.filter_cols(~related_samples.contains(mt['s']))
+
+        # set a checkpoint, and either re-use or write
+        post_unrelated_checkpoint = output_path(
+            'post_unrelated_checkpoint.mt', category='tmp'
+        )
+        mt = checkpoint_mt(mt, post_unrelated_checkpoint)
+
         # again filter for biallelic SNPs
         mt = mt.filter_rows(
             ~(mt.was_split)  # biallelic (exclude multiallelic)
