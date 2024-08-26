@@ -59,12 +59,6 @@ def main(
     for chrom in chromosomes.split(','):
         print(f'chrom: {chrom}')
 
-        # load rare variant vcf file for specific chromosome
-        vcf_path = dataset_path(
-            f'saige-qtl/bioheart/input_files/genotypes/vds-bioheart1-0/{chrom}_rare_variants.vcf.bgz'
-        )
-        ds = hl.import_vcf(vcf_path, reference_genome='GRCh37')
-
         # do a glob, then pull out all file names as Strings
         files = [
             str(file)
@@ -84,9 +78,16 @@ def main(
         ]
         logging.info(f'I found these genes: {", ".join(genes)}')
 
+        # load rare variant vcf file for specific chromosome
+        vcf_path = dataset_path(
+            f'saige-qtl/bioheart/input_files/genotypes/vds-bioheart1-0/{chrom}_rare_variants.vcf.bgz'
+        )
+        ds = hl.import_vcf(vcf_path, reference_genome='GRCh37')
+
         for gene in genes:
             print(f'gene: {gene}')
             # get gene cis window info
+            # before running in main swap TSV for CSV
             gene_file = to_path(
                 f'{cis_window_files_path}cis_window_files/{chrom}/{gene}_{cis_window}bp.tsv'
             )
