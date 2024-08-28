@@ -67,7 +67,7 @@ def main(
         # do a glob, then pull out all file names as Strings
         files = [
             str(file)
-            for file in to_path(cis_window_files_path).glob(f'{chrom}/*bp.*sv')
+            for file in to_path(cis_window_files_path).glob(f'{chrom}/*bp.tsv')
         ]
         # if specified, only test ngenes genes
         if ngenes_to_test != 'all':
@@ -91,11 +91,7 @@ def main(
         for gene in genes:
             print(f'gene: {gene}')
             # get gene cis window info
-            # before running in main swap TSV for CSV
-            # gene_file = f'{cis_window_files_path}{chrom}/{gene}_{cis_window}bp.tsv' # test
-            gene_file = (
-                f'{cis_window_files_path}{chrom}/{gene}_{cis_window}bp.csv'  # main
-            )
+            gene_file = f'{cis_window_files_path}{chrom}/{gene}_{cis_window}bp.tsv'
             print(f'gene file: {gene_file}')
             gene_df = pd.read_csv(gene_file, sep='\t')
             num_chrom = gene_df.columns.values[0]
