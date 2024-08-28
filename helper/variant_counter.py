@@ -28,7 +28,7 @@ from cpg_utils.hail_batch import init_batch
 @click.command()
 @click.option('--vds-path', required=True)
 @click.option('--cv-maf-threshold', default=0.05)
-@click.option('--rv-maf-threshold', default=0.05)
+@click.option('--rv-maf-threshold', default=0.01)
 @click.option('--exclude-multiallelic', default=False)
 @click.option('--exclude-indels', default=False)
 def count_variants(
@@ -42,7 +42,7 @@ def count_variants(
     reads the VDS, converts to MT,
     if set to true exclude indels and multiallelic snps
     and prints the number of remaining variants
-    split between common and rare at given thresholds
+    split between common, low-frequency and rare at given thresholds
     """
     # read VDS object (WGS data)
     init_batch()
@@ -67,8 +67,12 @@ def count_variants(
     # compute allele frequencies as part of variant qc
     mt = hl.variant_qc(mt)
 
-    # select common and rare variants
+    # select common, low-frequency and rare variants
     cv_mt = mt.filter_rows(mt.variant_qc.AF[1] >= cv_maf_threshold)
+    lf_mt = mt.filter_rows(
+        mt.variant_qc.AF[1] >= rv_maf_threshold
+        and mt.variant_qc.AF[1] < cv_maf_threshold
+    )
     rv_mt = mt.filter_rows(mt.variant_qc.AF[1] < rv_maf_threshold)
 
     # count up both donors and variants
@@ -77,6 +81,9 @@ def count_variants(
     print(f'Donor count: {n_donors}')
 
     print(f'Common variant (MAF>={cv_maf_threshold}) count: {n_vars}')
+    print(
+        f'low-frequency variant (MAF >={rv_maf_threshold} and <{cv_maf_threshold}) count: {lf_mt.count()[0]}'
+    )
     print(f'Rare variant (MAF<{rv_maf_threshold}) count: {rv_mt.count()[0]}')
 
 
