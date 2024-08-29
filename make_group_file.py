@@ -20,7 +20,7 @@ analysis-runner \
     python3 make_group_file.py --chromosomes chr22 \
         --cis-window-files-path gs://cpg-bioheart-test/saige-qtl/input_files/cis_window_files/ \
         --group-files-path gs://cpg-bioheart-test/saige-qtl/input_files/group_files/ \
-        --vds-name vds-bioheart1-0
+        --vcf-path gs://cpg-bioheart-test/saige-qtl/bioheart_n990_and_tob_n1055/input_files/genotypes/v3/vds-bioheart1-0
 
 
 """
@@ -34,14 +34,14 @@ import pandas as pd
 
 from cpg_utils import to_path
 
-from cpg_utils.hail_batch import dataset_path, init_batch
+from cpg_utils.hail_batch import init_batch
 
 
 @click.command()
 @click.option('--chromosomes', help=' chr1,chr22 ')
 @click.option('--cis-window-files-path')
 @click.option('--group-files-path')
-@click.option('--vds-name')
+@click.option('--vcf-path')
 @click.option('--cis-window', default=100000)
 @click.option('--gamma', default=1e-5)
 @click.option('--ngenes-to-test', default='all')
@@ -50,7 +50,7 @@ def main(
     chromosomes: str,
     cis_window_files_path: str,
     group_files_path: str,
-    vds_name: str,
+    vcf_path: str,
     cis_window: int,
     gamma: float,
     ngenes_to_test: str,
@@ -85,10 +85,8 @@ def main(
         logging.info(f'I found these genes: {", ".join(genes)}')
 
         # load rare variant vcf file for specific chromosome
-        vcf_path = dataset_path(
-            f'saige-qtl/bioheart/input_files/genotypes/{vds_name}/{chrom}_rare_variants.vcf.bgz'
-        )
-        ds = hl.import_vcf(vcf_path, reference_genome=genome_reference)
+        vcf_path_chrom = f'{vcf_path}/{chrom}_rare_variants.vcf.bgz'
+        ds = hl.import_vcf(vcf_path_chrom, reference_genome=genome_reference)
 
         for gene in genes:
             print(f'gene: {gene}')
