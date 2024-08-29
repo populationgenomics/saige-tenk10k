@@ -45,6 +45,7 @@ from cpg_utils.hail_batch import dataset_path, init_batch
 @click.option('--cis-window', default=100000)
 @click.option('--gamma', default=1e-5)
 @click.option('--ngenes-to-test', default='all')
+@click.option('--genome-reference', default='GRCh37')
 def main(
     chromosomes: str,
     cis_window_files_path: str,
@@ -53,6 +54,7 @@ def main(
     cis_window: int,
     gamma: float,
     ngenes_to_test: str,
+    genome_reference: str,
 ):
     """
     Run expression processing pipeline
@@ -86,7 +88,7 @@ def main(
         vcf_path = dataset_path(
             f'saige-qtl/bioheart/input_files/genotypes/{vds_name}/{chrom}_rare_variants.vcf.bgz'
         )
-        ds = hl.import_vcf(vcf_path, reference_genome='GRCh37')
+        ds = hl.import_vcf(vcf_path, reference_genome=genome_reference)
 
         for gene in genes:
             print(f'gene: {gene}')
