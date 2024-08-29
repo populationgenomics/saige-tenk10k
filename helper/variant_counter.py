@@ -90,15 +90,17 @@ def count_variants(
     print(f'Rare variant (MAF<{rv_maf_threshold}) count: {n_rare_vars}')
 
     variant_counter_df = pd.DataFrame(
-        {
-            'vds_name': vds_name,
-            'donor_count': n_donors,
-            'rare_variant_maf_threshold': rv_maf_threshold,
-            'common_variant_maf_threshold': cv_maf_threshold,
-            f'rare_variant_count (MAF<{rv_maf_threshold})': n_common_vars,
-            f'low_frequency_variant_count (MAF >={rv_maf_threshold} and <{cv_maf_threshold})': n_low_frequency_vars,
-            f'common_variant_count (MAF>={cv_maf_threshold})': n_common_vars,
-        }
+        [
+            {
+                'vds_name': vds_name,
+                'donor_count': n_donors,
+                'rare_variant_maf_threshold': rv_maf_threshold,
+                'common_variant_maf_threshold': cv_maf_threshold,
+                f'rare_variant_count (MAF<{rv_maf_threshold})': n_rare_vars,
+                f'low_frequency_variant_count (MAF >={rv_maf_threshold} and <{cv_maf_threshold})': n_low_frequency_vars,
+                f'common_variant_count (MAF>={cv_maf_threshold})': n_common_vars,
+            }
+        ]
     )
     # save variant counts to file
     variant = 'variant'
