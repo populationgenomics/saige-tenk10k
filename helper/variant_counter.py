@@ -71,8 +71,8 @@ def count_variants(
     # select common, low-frequency and rare variants
     cv_mt = mt.filter_rows(mt.variant_qc.AF[1] >= cv_maf_threshold)
     lf_mt = mt.filter_rows(
-        mt.variant_qc.AF[1] >= rv_maf_threshold
-        and mt.variant_qc.AF[1] < cv_maf_threshold
+        (mt.variant_qc.AF[1] >= rv_maf_threshold)
+        & (mt.variant_qc.AF[1] < cv_maf_threshold)
     )
     rv_mt = mt.filter_rows(mt.variant_qc.AF[1] < rv_maf_threshold)
 
