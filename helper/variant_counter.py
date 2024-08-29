@@ -78,7 +78,7 @@ def count_variants(
 
     # count up both donors and variants
     n_common_vars, n_donors = cv_mt.count()
-    n_low_frequency_vars, n_donors = lf_mt.count()[0]
+    n_low_frequency_vars = lf_mt.count()[0]
     n_rare_vars = rv_mt.count()[0]
 
     print(f'Donor count: {n_donors}')
