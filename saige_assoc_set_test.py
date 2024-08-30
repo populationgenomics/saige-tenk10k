@@ -304,7 +304,6 @@ def summarise_cv_results(
 @click.option(
     '--vre-files-prefix', default=dataset_path('saige-qtl/input_files/genotypes')
 )
-@click.option('--test-str', is_flag=True, help='Test with STR VCFs')
 @click.command()
 def main(
     # outputs from gene_expression processing
@@ -313,7 +312,6 @@ def main(
     # outputs from genotype processing
     genotype_files_prefix: str,
     vre_files_prefix: str,
-    test_str: bool = False,
 ):
     """
     Run SAIGE-QTL pipeline for all cell types
@@ -339,13 +337,8 @@ def main(
 
     for chromosome in chromosomes:
         # genotype vcf files are one per chromosome
-        if test_str:
-            vcf_file_path = (
-                f'{genotype_files_prefix}/hail_filtered_{chromosome}.vcf.bgz'
-            )
-        else:
-            vcf_file_path = (
-                f'{genotype_files_prefix}/{chromosome}_common_variants.vcf.bgz'
+        vcf_file_path = (
+                f'{genotype_files_prefix}/{chromosome}_rare_variants.vcf.bgz'
             )
         # cis window files are split by gene but organised by chromosome also
         cis_window_files_path_chrom = f'{cis_window_files_path}/{chromosome}'
