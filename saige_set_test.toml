@@ -1,0 +1,48 @@
+[saige]
+# principal arguments
+celltypes = ['B_naive']
+chromosomes = ['chr22']
+drop_genes =[]
+
+# secondary arguments
+max_parallel_jobs = 350
+cis_window_size = 100000
+# these args are applied directly to step1_fitNULLGLMM_qtl.R
+# as "--{key}={value} "
+[saige.build_fit_null]
+covarColList = 'sex,age,geno_PC1,geno_PC2,geno_PC3,geno_PC4,geno_PC5,harmony_PC1,harmony_PC2,harmony_PC3,harmony_PC4,harmony_PC5,total_counts'
+sampleCovarColList = 'sex,age,geno_PC1,geno_PC2,geno_PC3,geno_PC4,geno_PC5'
+sampleIDColinphenoFile = 'individual'
+# Poisson, count_nb = Negative Binomial, quantitative = Normal
+traitType = 'count'
+
+# option to skip Variance Ratio estimation (discouraged)
+skipVarianceRatioEstimation = 'FALSE'
+isRemoveZerosinPheno = 'FALSE'
+useSparseGRMtoFitNULL = 'FALSE'
+useGRMtoFitNULL = 'FALSE'
+# option to add an offset to the fixed covariates (???)
+isCovariateOffset = 'FALSE'
+# option to transform (scale?) covariates?
+isCovariateTransform = 'TRUE'
+# option to skip model fitting (discouraged)
+skipModelFitting = 'FALSE'
+# tolerance for convergence
+tol = 0.00001
+IsOverwriteVarianceRatioFile = 'TRUE'
+[saige.sv_test]
+vcfField = 'GT'
+# minimum variant minor allele frequency to include
+minMAF = 0
+# minimum variant minor allele count to include
+minMAC = 5
+# leave one chromosome out
+LOCO = 'FALSE'
+markers_per_chunk = 10000
+SPAcutoff = 10000
+[saige.job_specs.sv_test]
+cpu = 1
+storage = '12G'
+[saige.job_specs.fit_null]
+storage = "0G"
+memory = "4Gi"
