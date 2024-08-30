@@ -28,7 +28,7 @@ analysis-runner \
     --dataset "bioheart" \
     --access-level "full" \
     --output-dir "saige-qtl/bioheart_n990/v1" \
-     python3 saige_assoc.py \
+     python3 saige_assoc_set_test.py \
      --pheno-cov-files-path=gs://cpg-bioheart-main/saige-qtl/bioheart_n990/input_files/v1/pheno_cov_files \
         --group-files-path=gs:// \
         --genotype-files-prefix=gs://cpg-bioheart-main/saige-qtl/bioheart_n990/input_files/genotypes/vds-bioheart1-0 \
@@ -109,7 +109,8 @@ def build_run_set_based_test_command(
     - vcfFileIndex: path to VCF index file (csi)
     - saige output path: path to output saige file
     - chrom: chromosome to run this on
-    - cis window: file with chrom | start | end to specify window
+    - cis window: file with chrom | start | end to specify window -- not anymore
+    - group: file with variants to test, and weights
     - GMMAT model file: null model fit from previous step (.rda)
     - Variance Ratio file: as estimated from previous step (.txt)
 
@@ -123,12 +124,12 @@ def build_run_set_based_test_command(
     vcf_group = get_batch().read_input_group(vcf=vcf_file, index=f'{vcf_file}.csi')
     cis_window_file = get_batch().read_input(cis_window_file)
 
-    second_job = get_batch().new_job(name="saige-qtl part 2")
-    apply_job_settings(second_job, 'sv_test')
+    second_job = get_batch().new_job(name="saige-qtl part 2b")
+    apply_job_settings(second_job, 'set_test')
     second_job.image(image_path('saige-qtl'))
 
     args_from_config = ' '.join(
-        [f'--{key}={value}' for key, value in get_config()['saige']['sv_test'].items()]
+        [f'--{key}={value}' for key, value in get_config()['saige']['set_test'].items()]
     )
 
     second_job.command(
@@ -140,7 +141,7 @@ def build_run_set_based_test_command(
         --chrom={chrom} \
         --GMMATmodelFile={gmmat_model_path} \
         --varianceRatioFile={variance_ratio_path} \
-        --rangestoIncludeFile={cis_window_file} \
+        --groupFile=${group_file} \
         {args_from_config}
     """
     )
@@ -399,14 +400,14 @@ def main(
                     null_job.depends_on(gene_dependency)
                     gene_dependency = null_job
 
-                # step 2 (cis eQTL single variant test)
-                step2_job, step2_output = build_run_single_variant_test_command(
+                # step 2 (cis eQTL set-based test)
+                step2_job, step2_output = build_run_set_based_test_command(
                     output_path=output_path(
-                        f'output_files/{celltype}_{gene}_cis', 'analysis'
+                        f'output_files/{celltype}_{gene}_cis_set', 'analysis'
                     ),
                     vcf_file=vcf_file_path,
                     chrom=(chromosome[3:]),
-                    cis_window_file=cis_window_path,
+                    group_file=cis_window_path,
                     gmmat_model_path=null_output['rda'],
                     variance_ratio_path=null_output['varianceRatio.txt'],
                 )
@@ -435,7 +436,7 @@ def main(
     for celltype in celltypes:
         logging.info(f'start summarising results for {celltype}')
         summary_output_path = (
-            f'output_files/summary_stats/{celltype}_all_cis_cv_results.tsv'
+            f'output_files/summary_stats/{celltype}_all_cis_rv_results.tsv'
         )
 
         summarise_job = get_batch().new_python_job(
