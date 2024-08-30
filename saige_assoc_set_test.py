@@ -109,7 +109,6 @@ def build_run_set_based_test_command(
     - vcfFileIndex: path to VCF index file (csi)
     - saige output path: path to output saige file
     - chrom: chromosome to run this on
-    - cis window: file with chrom | start | end to specify window -- not anymore
     - group: file with variants to test, and weights
     - GMMAT model file: null model fit from previous step (.rda)
     - Variance Ratio file: as estimated from previous step (.txt)
@@ -122,7 +121,7 @@ def build_run_set_based_test_command(
         return None, get_batch().read_input(output_path)
 
     vcf_group = get_batch().read_input_group(vcf=vcf_file, index=f'{vcf_file}.csi')
-    cis_window_file = get_batch().read_input(cis_window_file)
+    group_file = get_batch().read_input(group_file)
 
     second_job = get_batch().new_job(name="saige-qtl part 2b")
     apply_job_settings(second_job, 'set_test')
