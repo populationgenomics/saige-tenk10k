@@ -337,9 +337,7 @@ def main(
 
     for chromosome in chromosomes:
         # genotype vcf files are one per chromosome
-        vcf_file_path = (
-                f'{genotype_files_prefix}/{chromosome}_rare_variants.vcf.bgz'
-            )
+        vcf_file_path = f'{genotype_files_prefix}/{chromosome}_rare_variants.vcf.bgz'
         # cis window files are split by gene but organised by chromosome also
         cis_window_files_path_chrom = f'{cis_window_files_path}/{chromosome}'
 
