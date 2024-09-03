@@ -358,6 +358,7 @@ def main(
         # genotype vcf files are one per chromosome
         vcf_file_path = f'{genotype_files_prefix}/{chromosome}_rare_variants.vcf.bgz'
         # cis window files are split by gene but organised by chromosome also
+        # TO DO: update with group file instead
         cis_window_files_path_chrom = f'{cis_window_files_path}/{chromosome}'
 
         cis_window_size = get_config()['saige']['cis_window_size']
@@ -424,18 +425,18 @@ def main(
                     step2_job.depends_on(gene_dependency)
                     gene_dependency = step2_job
 
-                # step 3 (gene-level p-values)
-                job3 = build_obtain_gene_level_pvals_command(
-                    gene_name=gene,
-                    saige_sv_output_file=step2_output,
-                    saige_gene_pval_output_file=output_path(
-                        f'output_files/{celltype}_{gene}_cis_gene_pval'
-                    ),
-                )
+                # # step 3 (gene-level p-values)
+                # job3 = build_obtain_gene_level_pvals_command(
+                #     gene_name=gene,
+                #     saige_sv_output_file=step2_output,
+                #     saige_gene_pval_output_file=output_path(
+                #         f'output_files/{celltype}_{gene}_cis_gene_pval'
+                #     ),
+                # )
 
-                if job3 is not None:
-                    job3.depends_on(gene_dependency)
-                    gene_dependency = job3
+                # if job3 is not None:
+                #     job3.depends_on(gene_dependency)
+                #     gene_dependency = job3
 
                 # add this job to the list of jobs for this cell type
                 if gene_dependency is not None:
