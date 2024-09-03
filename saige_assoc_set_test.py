@@ -293,14 +293,14 @@ def summarise_cv_results(
     from cpg_utils import to_path
     from cpg_utils.hail_batch import output_path
 
-    existing_cv_assoc_results = [
+    existing_rv_assoc_results = [
         str(file)
-        for file in to_path(gene_results_path).glob(f'{celltype}_*_cis_gene_pval')
+        for file in to_path(gene_results_path).glob(f'{celltype}_*_cis_set')
     ]
     results_all_df = pd.concat(
         [
             pd.read_csv(to_path(pv_df), index_col=0)
-            for pv_df in existing_cv_assoc_results
+            for pv_df in existing_rv_assoc_results
         ]
     )
     result_all_filename = to_path(output_path(out_path, category='analysis'))
@@ -449,7 +449,7 @@ def main(
         )
 
         summarise_job = get_batch().new_python_job(
-            f'Summarise CV results for {celltype}'
+            f'Summarise RV results for {celltype}'
         )
         summarise_job.depends_on(*celltype_jobs[celltype])
         summarise_job.call(
