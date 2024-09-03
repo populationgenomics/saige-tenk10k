@@ -16,6 +16,25 @@ Hail Batch workflow to perform association tests using SAIGE-QTL
 
 To run:
 
+In test:
+
+analysis-runner \
+    --config saige_assoc_test.toml \
+    --description "SAIGE-QTL association pipeline" \
+    --memory='32G' \
+    --storage='50G' \
+    --dataset "bioheart" \
+    --access-level "test" \
+    --output-dir "saige-qtl/bioheart_n990_and_tob_n1055/v1" \
+     python3 saige_assoc.py \
+     --pheno-cov-files-path=gs://cpg-bioheart-test/saige-qtl/bioheart_n990_and_tob_n1055/input_files/pheno_cov_files \
+        --cis-window-files-path=gs://cpg-bioheart-test/saige-qtl/bioheart_n990_and_tob_n1055/input_files/cis_window_files \
+        --genotype-files-prefix=gs://cpg-bioheart-test/saige-qtl/bioheart_n990_and_tob_n1055/input_files/genotypes/v3/vds-tenk10k1-0 \
+        --vre-files-prefix=gs://cpg-bioheart-test/saige-qtl/bioheart_n990_and_tob_n1055/input_files/genotypes/v3/vds-tenk10k1-0
+
+
+In main:
+
 analysis-runner \
     --config saige_assoc_test.toml \
     --description "SAIGE-QTL association pipeline" \
