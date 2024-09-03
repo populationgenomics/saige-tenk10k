@@ -45,8 +45,8 @@ maxMAF_in_groupTes = 0.1
 minMAF_in_groupTest_Exclude = 0
 annotation_in_groupTest = 'null'
 MACCutoff_to_CollapseUltraRare = 10
-is_single_in_groupTest = TRUE
-is_equal_weight_in_groupTest = TRUE
+is_single_in_groupTest = 'TRUE'
+is_equal_weight_in_groupTest = 'TRUE'
 [saige.job_specs.fit_null]
 storage = "0G"
 memory = "4Gi"
