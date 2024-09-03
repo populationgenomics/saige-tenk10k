@@ -22,7 +22,7 @@ To run:
 Test:
 
 analysis-runner \
-    --config saige_set_test.toml \
+    --config saige_assoc_test.toml \
     --description "SAIGE-QTL RV association pipeline" \
     --memory='32G' \
     --storage='50G' \
@@ -39,7 +39,7 @@ analysis-runner \
 Main:
 
 analysis-runner \
-    --config saige_set_test.toml \
+    --config saige_assoc_test.toml \
     --description "SAIGE-QTL RV association pipeline" \
     --memory='32G' \
     --storage='50G' \
