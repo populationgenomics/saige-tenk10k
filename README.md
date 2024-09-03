@@ -93,6 +93,7 @@ Fit null model ([step 1](https://weizhou0.github.io/SAIGE-QTL-doc/docs/step1.htm
 * ```is_cov_transform```: transform (explain) covariates (default: ```TRUE```)
 * ```skip_model_fitting```: boolean (default: ```FALSE```)
 * ```tol```: convergence tolerance (default 0.00001, which works well in our hands)
+* ```maxiterPCG``` convergence max number of iterations (default 500 but increase to 5,000 if job does not converge)
 * ```is_overwrite_vre_file```: if the file already exists, skip or overwrite, default is the latter (default: ```TRUE```)
 
 Single-variant association testing ([common variants step 2](https://weizhou0.github.io/SAIGE-QTL-doc/docs/single_step2.html)):
