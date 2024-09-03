@@ -9,7 +9,6 @@ typically used for rare variants
 
 - given all input files already generated
     - pheno + cov file (from get_anndata.py)
-    - cis window file (from get_anndata.py) -- not anymore?
     - genotype file (from get_genotype_vcf.py)
     - VRE genotypes (from get_genotype_vcf.py)
     - group file (from make_group_file.py)
@@ -313,8 +312,8 @@ def summarise_cv_results(
     default=dataset_path('saige-qtl/input_files/pheno_cov_files'),
 )
 @click.option(
-    '--cis-window-files-path',
-    default=dataset_path('saige-qtl/input_files/cis_window_files'),
+    '--group-files-path',
+    default=dataset_path('saige-qtl/input_files/group_files'),
 )
 @click.option(
     '--genotype-files-prefix', default=dataset_path('saige-qtl/input_files/genotypes')
@@ -324,10 +323,11 @@ def summarise_cv_results(
 )
 @click.command()
 def main(
-    # outputs from gene_expression processing
+    # output from get_anndata.py
     pheno_cov_files_path: str,
-    cis_window_files_path: str,
-    # outputs from genotype processing
+    # output from make_group_file.py
+    group_files_path: str,
+    # outputs from get_genotype_vcf.py
     genotype_files_prefix: str,
     vre_files_prefix: str,
 ):
@@ -356,9 +356,8 @@ def main(
     for chromosome in chromosomes:
         # genotype vcf files are one per chromosome
         vcf_file_path = f'{genotype_files_prefix}/{chromosome}_rare_variants.vcf.bgz'
-        # cis window files are split by gene but organised by chromosome also
-        # TO DO: update with group file instead
-        cis_window_files_path_chrom = f'{cis_window_files_path}/{chromosome}'
+        # group files are split by gene but organised by chromosome also
+        group_files_path_chrom = f'{group_files_path}/{chromosome}'
 
         cis_window_size = get_config()['saige']['cis_window_size']
 
@@ -390,9 +389,7 @@ def main(
                 pheno_cov_path = (
                     f'{pheno_cov_files_path_ct_chrom}/{gene}_{celltype}_pheno_cov.tsv'
                 )
-                cis_window_path = (
-                    f'{cis_window_files_path_chrom}/{gene}_{cis_window_size}bp.tsv'
-                )
+                group_path = f'{group_files_path_chrom}/{gene}_{cis_window_size}bp.tsv'
 
                 gene_dependency = get_batch().new_job(f' Always run job for {gene}')
                 gene_dependency.always_run()
@@ -416,7 +413,7 @@ def main(
                     ),
                     vcf_file=vcf_file_path,
                     chrom=(chromosome[3:]),
-                    group_file=cis_window_path,
+                    group_file=group_path,
                     gmmat_model_path=null_output['rda'],
                     variance_ratio_path=null_output['varianceRatio.txt'],
                 )
