@@ -23,7 +23,7 @@ analysis-runner \
     --access-level "test" \
     --output-dir "saige-qtl/bioheart_n990_and_tob_n1055/input_files" \
     --image australia-southeast1-docker.pkg.dev/cpg-common/images/scanpy:1.9.3 \
-    python3 get_anndata.py --celltypes B_naive --chromosomes chr22 \
+    python3 get_anndata.py --celltypes B_naive --chromosomes chr21 \
     --anndata-files-prefix gs://cpg-bioheart-test/saige-qtl/anndata_objects_from_HPC \
     --celltype-covs-files-prefix gs://cpg-bioheart-test/saige-qtl/celltype_covs_from_HPC \
     --sample-covs-file gs://cpg-bioheart-test-analysis/saige-qtl/input_files/covariates/sex_age_geno_pcs_shuffled_ids_tob_bioheart.csv \
