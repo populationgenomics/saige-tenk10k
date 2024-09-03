@@ -29,6 +29,8 @@ isCovariateTransform = 'TRUE'
 skipModelFitting = 'FALSE'
 # tolerance for convergence
 tol = 0.00001
+# max iterations (increase if it fails to converge)
+maxiterPCG = 500
 IsOverwriteVarianceRatioFile = 'TRUE'
 [saige.sv_test]
 vcfField = 'GT'
