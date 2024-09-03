@@ -21,7 +21,7 @@ analysis-runner \
     --description "make expression input files" \
     --dataset "bioheart" \
     --access-level "test" \
-    --output-dir "bioheart_n990_and_tob_n1055/input_files" \
+    --output-dir "saige-qtl/bioheart_n990_and_tob_n1055/input_files" \
     --image australia-southeast1-docker.pkg.dev/cpg-common/images/scanpy:1.9.3 \
     python3 get_anndata.py --celltypes B_naive --chromosomes chr22 \
     --anndata-files-prefix gs://cpg-bioheart-test/saige-qtl/anndata_objects_from_HPC \
