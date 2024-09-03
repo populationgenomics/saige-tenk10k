@@ -12,18 +12,22 @@ these files will be used as inputs for the
 SAIGE-QTL association pipeline.
 
 To run:
-chr2,chr3,chr4,chr5,chr6,chr7,chr8,chr9,chr10,chr11,chr12,chr13,chr14,chr15,chr16,chr17,chr18,chr19,chr20,chr21,chr22 \
+
+In main:
+
+In test:
+
 analysis-runner \
     --description "make expression input files" \
     --dataset "bioheart" \
     --access-level "test" \
-    --output-dir "saige-qtl/bioheart_n990/input_files/v2" \
+    --output-dir "bioheart_n990_and_tob_n1055/input_files" \
     --image australia-southeast1-docker.pkg.dev/cpg-common/images/scanpy:1.9.3 \
-    python3 get_anndata.py --celltypes CD4_TCM,B_naive --chromosomes chr22 \
-    --anndata-files-prefix gs://cpg-bioheart-test/str/240_libraries_tenk10kp1_v2/cpg_anndata \
-    --celltype-covs-files-prefix gs://cpg-bioheart-test/str/240_libraries_tenk10kp1_v2/cpg_cell_covs \
-    --sample-covs-file gs://cpg-bioheart-test/str/associatr/bioheart_n990/input_files/bioheart_covariates_str_run_v1.csv \
-    --concurrent-job-cap=10000 --pc-job-cpu=1 --cis-job-cpu=1
+    python3 get_anndata.py --celltypes B_naive --chromosomes chr22 \
+    --anndata-files-prefix gs://cpg-bioheart-test/saige-qtl/anndata_objects_from_HPC \
+    --celltype-covs-files-prefix gs://cpg-bioheart-test/saige-qtl/celltype_covs_from_HPC \
+    --sample-covs-file gs://cpg-bioheart-test-analysis/saige-qtl/input_files/covariates/sex_age_geno_pcs_shuffled_ids_tob_bioheart.csv \
+    --concurrent-job-cap=1000 --pc-job-cpu=1 --cis-job-cpu=1
 
 
 """
