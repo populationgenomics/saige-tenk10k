@@ -294,8 +294,7 @@ def summarise_cv_results(
     from cpg_utils.hail_batch import output_path
 
     existing_rv_assoc_results = [
-        str(file)
-        for file in to_path(gene_results_path).glob(f'{celltype}_*_cis_set')
+        str(file) for file in to_path(gene_results_path).glob(f'{celltype}_*_cis_set')
     ]
     results_all_df = pd.concat(
         [
