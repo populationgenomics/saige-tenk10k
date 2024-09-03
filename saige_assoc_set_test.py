@@ -20,19 +20,38 @@ typically used for rare variants
 
 To run:
 
+Test:
+
 analysis-runner \
     --config saige_set_test.toml \
-    --description "SAIGE-QTL association pipeline" \
+    --description "SAIGE-QTL RV association pipeline" \
+    --memory='32G' \
+    --storage='50G' \
+    --dataset "bioheart" \
+    --access-level "test" \
+    --output-dir "saige-qtl/bioheart_n990_and_tob_n1055/v1" \
+     python3 saige_assoc_set_test.py \
+     --pheno-cov-files-path=gs://cpg-bioheart-test/saige-qtl/input_files/pheno_cov_files \
+        --group-files-path=gs://cpg-bioheart-test/saige-qtl/input_files/group_files \
+        --genotype-files-prefix=gs://cpg-bioheart-test/saige-qtl/bioheart_n990_and_tob_n1055/input_files/genotypes/v3/vds-bioheart1-0 \
+        --vre-files-prefix=gs://cpg-bioheart-test/saige-qtl/bioheart_n990_and_tob_n1055/input_files/genotypes/v3/vds-bioheart1-0
+
+
+Main:
+
+analysis-runner \
+    --config saige_set_test.toml \
+    --description "SAIGE-QTL RV association pipeline" \
     --memory='32G' \
     --storage='50G' \
     --dataset "bioheart" \
     --access-level "full" \
-    --output-dir "saige-qtl/bioheart_n990/v1" \
+    --output-dir "saige-qtl/bioheart_n990_and_tob_n1055/v1" \
      python3 saige_assoc_set_test.py \
-     --pheno-cov-files-path=gs://cpg-bioheart-main/saige-qtl/bioheart_n990/input_files/v1/pheno_cov_files \
-        --group-files-path=gs:// \
-        --genotype-files-prefix=gs://cpg-bioheart-main/saige-qtl/bioheart_n990/input_files/genotypes/vds-bioheart1-0 \
-        --vre-files-prefix=gs://cpg-bioheart-main/saige-qtl/bioheart_n990/input_files/genotypes/vds-bioheart1-0
+     --pheno-cov-files-path=gs://cpg-bioheart-main/saige-qtl/bioheart_n990_and_tob_n1055/input_files/pheno_cov_files \
+        --group-files-path=gs://cpg-bioheart-main/saige-qtl/bioheart_n990_and_tob_n1055/input_files/group_files \
+        --genotype-files-prefix=gs://cpg-bioheart-main/saige-qtl/bioheart_n990/input_files/genotypes/v3/vds-tenk10k1-0 \
+        --vre-files-prefix=gs://cpg-bioheart-main/saige-qtl/bioheart_n990/input_files/genotypes/v3/vds-tenk10k1-0
 
 
 """
