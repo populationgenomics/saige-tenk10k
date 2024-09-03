@@ -332,10 +332,10 @@ def main(
     vre_files_prefix: str,
 ):
     """
-    Run SAIGE-QTL pipeline for all cell types
+    Run SAIGE-QTL RV pipeline for all cell types
     """
 
-    batch = get_batch('SAIGE-QTL pipeline')
+    batch = get_batch('SAIGE-QTL RV pipeline')
     jobs: list[hb.batch.job.Job] = []
 
     def manage_concurrency_for_job(job: hb.batch.job.Job):
