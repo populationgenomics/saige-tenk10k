@@ -41,12 +41,16 @@ LOCO = 'FALSE'
 markers_per_chunk = 10000
 SPAcutoff = 10000
 [saige.set_test]
-maxMAF_in_groupTes = 0.1
+maxMAF_in_groupTest = 0.1
 minMAF_in_groupTest_Exclude = 0
 annotation_in_groupTest = 'null'
 MACCutoff_to_CollapseUltraRare = 10
 is_single_in_groupTest = 'TRUE'
 is_equal_weight_in_groupTest = 'TRUE'
+# leave one chromosome out
+LOCO = 'FALSE'
+markers_per_chunk = 10000
+SPAcutoff = 10000
 [saige.job_specs.fit_null]
 storage = "0G"
 memory = "4Gi"
