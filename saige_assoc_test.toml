@@ -12,7 +12,7 @@ cis_window_size = 100000
 [saige.build_fit_null]
 covarColList = 'sex,age,geno_PC1,geno_PC2,geno_PC3,geno_PC4,geno_PC5,harmony_PC1,harmony_PC2,harmony_PC3,harmony_PC4,harmony_PC5,total_counts'
 sampleCovarColList = 'sex,age,geno_PC1,geno_PC2,geno_PC3,geno_PC4,geno_PC5'
-sampleIDColinphenoFile = 'sample_perm0'
+sampleIDColinphenoFile = 'individual'
 # Poisson, count_nb = Negative Binomial, quantitative = Normal
 traitType = 'count'
 

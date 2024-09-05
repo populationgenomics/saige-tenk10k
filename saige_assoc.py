@@ -272,7 +272,7 @@ def summarise_cv_results(
 
     existing_cv_assoc_results = [
         str(file)
-        for file in to_path(gene_results_path).glob(f'{celltype}_*_cis_gene_pval')
+        for file in to_path(gene_results_path).glob(f'*/{celltype}_*_cis_gene_pval')
     ]
     results_all_df = pd.concat(
         [
@@ -441,7 +441,7 @@ def main(
         summarise_job.call(
             summarise_cv_results,
             celltype=celltype,
-            gene_results_path=output_path('output_files/'),
+            gene_results_path=output_path(celltype),
             out_path=summary_output_path,
         )
     # set jobs running
