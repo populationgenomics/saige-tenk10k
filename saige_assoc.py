@@ -386,7 +386,7 @@ def main(
 
                 # check if these outputs already exist, if so don't make a new job
                 null_job, null_output = run_fit_null_job(
-                    output_path(f'output_files/{celltype}_{gene}'),
+                    output_path(f'{celltype}/{chromosome}/{celltype}_{gene}'),
                     pheno_file=pheno_cov_path,
                     plink_path=vre_plink_path,
                     pheno_col=gene,
@@ -398,7 +398,7 @@ def main(
                 # step 2 (cis eQTL single variant test)
                 step2_job, step2_output = build_run_single_variant_test_command(
                     output_path=output_path(
-                        f'output_files/{celltype}_{gene}_cis', 'analysis'
+                        f'{celltype}/{chromosome}/{celltype}_{gene}_cis', 'analysis'
                     ),
                     vcf_file=vcf_file_path,
                     chrom=(chromosome[3:]),
@@ -415,7 +415,7 @@ def main(
                     gene_name=gene,
                     saige_sv_output_file=step2_output,
                     saige_gene_pval_output_file=output_path(
-                        f'output_files/{celltype}_{gene}_cis_gene_pval'
+                        f'{celltype}/{chromosome}/{celltype}_{gene}_cis_gene_pval'
                     ),
                 )
 
@@ -431,7 +431,7 @@ def main(
     for celltype in celltypes:
         logging.info(f'start summarising results for {celltype}')
         summary_output_path = (
-            f'output_files/summary_stats/{celltype}_all_cis_cv_results.tsv'
+            f'summary_stats/{celltype}_all_cis_cv_gene_level_results.tsv'
         )
 
         summarise_job = get_batch().new_python_job(
