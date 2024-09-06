@@ -169,37 +169,37 @@ def build_run_set_based_test_command(
     return second_job, second_job.output
 
 
-# Combine single variant associations at gene level (step 3)
-def build_obtain_gene_level_pvals_command(
-    gene_name: str,
-    saige_sv_output_file: str,
-    saige_gene_pval_output_file: str,
-):
-    """
-    Build SAIGE command to obtain gene-level pvals
-    Only for single-variant tests (Step3)
-    combines single-variant p-values to obtain one gene
-    level p-value
+# # Combine single variant associations at gene level (step 3)
+# def build_obtain_gene_level_pvals_command(
+#     gene_name: str,
+#     saige_sv_output_file: str,
+#     saige_gene_pval_output_file: str,
+# ):
+#     """
+#     Build SAIGE command to obtain gene-level pvals
+#     Only for single-variant tests (Step3)
+#     combines single-variant p-values to obtain one gene
+#     level p-value
 
-    Input:
-    - output of previous step, association file (txt)
-    - gene we need to aggregate results for (across SNPs)
-    - path for output file
-    """
-    if to_path(saige_gene_pval_output_file).exists():
-        return None
+#     Input:
+#     - output of previous step, association file (txt)
+#     - gene we need to aggregate results for (across SNPs)
+#     - path for output file
+#     """
+#     if to_path(saige_gene_pval_output_file).exists():
+#         return None
 
-    saige_job = get_batch().new_job(name="saige-qtl part 3")
-    saige_command_step3 = f"""
-        Rscript /usr/local/bin/step3_gene_pvalue_qtl.R \
-        --assocFile={saige_sv_output_file} \
-        --geneName={gene_name} \
-        --genePval_outputFile={saige_job.output}
-    """
-    saige_job.image(image_path('saige-qtl'))
-    saige_job.command(saige_command_step3)
-    get_batch().write_output(saige_job.output, saige_gene_pval_output_file)
-    return saige_job
+#     saige_job = get_batch().new_job(name="saige-qtl part 3")
+#     saige_command_step3 = f"""
+#         Rscript /usr/local/bin/step3_gene_pvalue_qtl.R \
+#         --assocFile={saige_sv_output_file} \
+#         --geneName={gene_name} \
+#         --genePval_outputFile={saige_job.output}
+#     """
+#     saige_job.image(image_path('saige-qtl'))
+#     saige_job.command(saige_command_step3)
+#     get_batch().write_output(saige_job.output, saige_gene_pval_output_file)
+#     return saige_job
 
 
 def apply_job_settings(job: hb.batch.job.Job, job_name: str):
