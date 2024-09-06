@@ -158,7 +158,7 @@ def build_run_set_based_test_command(
         --chrom={chrom} \
         --GMMATmodelFile={gmmat_model_path} \
         --varianceRatioFile={variance_ratio_path} \
-        --groupFile=${group_file} \
+        --groupFile={group_file} \
         {args_from_config}
     """
     )
