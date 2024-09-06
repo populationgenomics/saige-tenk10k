@@ -64,11 +64,11 @@ def plot_pvalues(
             len(df['Allele1'].values[i]) == 1 and len(df['Allele2'].values[i]) == 1
             for i in range(df.shape[0])
         ]
-        results_all_df.append(df)
+        results_all_df_list.append(df)
         # select top SNP
         df_snp = df[df['is_snp']]
         df_top_snp = df_snp[df_snp['p.value'] == df_snp['p.value'].min()]
-        results_top_snp_df.append(df_top_snp)
+        results_top_snp_df_list.append(df_top_snp)
     results_all_df = pd.concat(results_all_df_list)
     results_top_snp_df = pd.concat(results_top_snp_df_list)
 
