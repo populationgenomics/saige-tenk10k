@@ -18,11 +18,11 @@ analysis-runner \
 
 import click
 import matplotlib.pyplot as plt
+import hail as hl
 import numpy as np
 import pandas as pd
 from cpg_utils import to_path
-
-# import hail as hl
+from cpg_utils.hail_batch import output_path
 
 # from cpg_utils.hail_batch import init_batch, output_path
 # from bokeh.plotting import output_file, save
@@ -85,19 +85,20 @@ def plot_pvalues(
 
     # plot histograms
     p_hist_all = plt.hist(results_all_df['p.value'])
-    p_hist_top = plt.hist(results_top_snp_df['p.value'])
+    # p_hist_top = plt.hist(results_top_snp_df['p.value'])
 
-    # QQ plots
-    expected_pvals_all = np.random.uniform(low=0, high=1, size=results_all_df.shape[0])
-    expected_pvals_top = np.random.uniform(
-        low=0, high=1, size=results_top_snp_df.shape[0]
+    # # QQ plots
+    # expected_pvals_all = np.random.uniform(low=0, high=1, size=results_all_df.shape[0])
+    # expected_pvals_top = np.random.uniform(
+    #     low=0, high=1, size=results_top_snp_df.shape[0]
+    # )
+
+    fig = plt.subplots(figsize=(10, 8))
+    fig.save(p_hist_all)
+    gcs_path_p = output_path(
+        f'plots/pvalues_histo/{celltype}_shuffled.html', 'analysis'
     )
-
-    # p = hl.plot.histogram(mt.variant_qc.AF[1], legend=title)
-    # output_file('local_histo.html')
-    # save(p)
-    # gcs_path_p = output_path(f'plots/frequency_histo/{vds_name}.html', 'analysis')
-    # hl.hadoop_copy('local_histo.html', gcs_path_p)
+    hl.hadoop_copy('local_histo.html', gcs_path_p)
 
 
 if __name__ == '__main__':
