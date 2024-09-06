@@ -83,17 +83,28 @@ def plot_pvalues(
     )
     results_top_snp_df.to_csv(results_top_snp_file, sep='\t')
 
-    # # plot histograms
-    # p_hist_all = plt.hist(results_all_df['p.value'])
-    # p_hist_top = plt.hist(results_top_snp_df['p.value'])
+    # plot histograms
+    # all results
+    plt.figure(figsize=(8, 8))
+    fig, ax = plt.subplots(figsize=(8, 8))
+    ax.hist(results_all_df['p.value'])
+    # fig.tight_layout()
+    fig.savefig('histo.png')
+    gcs_path_p = output_path(
+        f'plots/pvalues_histo/{celltype}_shuffled_all.html', 'analysis'
+    )
+    hl.hadoop_copy('histo.png', gcs_path_p)
 
-    # # save histograms
-    # fig, _ = plt.subplots(figsize=(10, 8))
-    # fig.save(p_hist_all)
-    # gcs_path_p = output_path(
-    #     f'plots/pvalues_histo/{celltype}_shuffled.html', 'analysis'
-    # )
-    # hl.hadoop_copy('local_histo.html', gcs_path_p)
+    # top SNP
+    plt.figure(figsize=(8, 8))
+    fig, ax = plt.subplots(figsize=(8, 8))
+    ax.hist(results_top_snp_df['p.value'])
+    # fig.tight_layout()
+    fig.savefig('histo.png')
+    gcs_path_p = output_path(
+        f'plots/pvalues_histo/{celltype}_shuffled_top_snp.html', 'analysis'
+    )
+    hl.hadoop_copy('histo.png', gcs_path_p)
 
     # QQ plots
     expected_pvals_all = np.random.uniform(low=0, high=1, size=results_all_df.shape[0])
