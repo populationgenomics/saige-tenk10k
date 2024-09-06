@@ -10,7 +10,7 @@ analysis-runner \
     --dataset "bioheart" \
     --access-level "test" \
     --output-dir "saige-qtl/" \
-    python3 summarise_and_qq_plotter.py \
+    python3 plotter/summarise_and_qq_plotter.py \
         --celltype='B_naive' \
         --results-path=gs://cpg-bioheart-main-analysis/saige-qtl/bioheart_n990_and_tob_n1055/output_files/sample_perm0/output_files \
         --title='Shuffled p-values (SAIGE-QTL pipeline)'
