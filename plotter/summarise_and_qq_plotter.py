@@ -94,7 +94,7 @@ def plot_pvalues(
     #     low=0, high=1, size=results_top_snp_df.shape[0]
     # )
 
-    fig = plt.subplots(figsize=(10, 8))
+    fig, _ = plt.subplots(figsize=(10, 8))
     fig.save(p_hist_all)
     gcs_path_p = output_path(
         f'plots/pvalues_histo/{celltype}_shuffled.html', 'analysis'
