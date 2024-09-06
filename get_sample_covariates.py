@@ -24,7 +24,7 @@ analysis-runner \
     --output-dir "saige-qtl/input_files/covariates/" \
     python3 get_sample_covariates.py --tob-sex-file-path 'gs://cpg-bioheart-test/saige-qtl/input_files/mapping_for_anna.csv' \
                 --bioheart-sex-file-path 'gs://cpg-bioheart-test-analysis/hoptan-str/somalier/somalier.samples.tsv' \
-                --project-names 'tob-wgs,bioheart' --vds-version 1-0
+                --project-names 'tob-wgs,bioheart' --vds-version tenk10k1-0
 
 in main:
 

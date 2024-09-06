@@ -21,8 +21,8 @@ analysis-runner \
     --description "get common variant VCF" \
     --dataset "bioheart" \
     --access-level "test" \
-    --output-dir "saige-qtl/bioheart/input_files/genotypes" \
-    python3 get_genotype_vcf.py --vds-path=gs://cpg-bioheart-test/vds/bioheart1-0.vds --chromosomes chr22 \
+    --output-dir "saige-qtl/bioheart_n990_and_tob_n1055/input_files/genotypes/v3" \
+    python3 get_genotype_vcf.py --vds-path=gs://cpg-bioheart-test/vds/tenk10k1-0.vds --chromosomes chr21 \
         --cv-maf-threshold 0 --rv-maf-threshold 1 --vre-mac-threshold 1 --vre-n-markers 5
 
 In main:
