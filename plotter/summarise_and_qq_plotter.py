@@ -20,7 +20,7 @@ import click
 import matplotlib.pyplot as plt
 import hail as hl
 
-# import numpy as np
+import numpy as np
 import pandas as pd
 from cpg_utils import to_path
 from cpg_utils.hail_batch import output_path
@@ -86,14 +86,31 @@ def plot_pvalues(
 
     # plot histograms
     p_hist_all = plt.hist(results_all_df['p.value'])
-    # p_hist_top = plt.hist(results_top_snp_df['p.value'])
+    p_hist_top = plt.hist(results_top_snp_df['p.value'])
 
-    # # QQ plots
-    # expected_pvals_all = np.random.uniform(low=0, high=1, size=results_all_df.shape[0])
-    # expected_pvals_top = np.random.uniform(
-    #     low=0, high=1, size=results_top_snp_df.shape[0]
-    # )
+    # save histograms
+    fig, _ = plt.subplots(figsize=(10, 8))
+    fig.save(p_hist_all)
+    gcs_path_p = output_path(
+        f'plots/pvalues_histo/{celltype}_shuffled.html', 'analysis'
+    )
+    hl.hadoop_copy('local_histo.html', gcs_path_p)
 
+    # QQ plots
+    expected_pvals_all = np.random.uniform(low=0, high=1, size=results_all_df.shape[0])
+    expected_pvals_top = np.random.uniform(
+        low=0, high=1, size=results_top_snp_df.shape[0]
+    )
+    # all results
+    x_all = -np.log10(np.sort(expected_pvals_all))
+    y_all = -np.log10(np.sort(results_all_df['p.value']))
+    p_qq_all = plt.scatter(x_all, y_all)
+    # top SNP
+    x_top = -np.log10(np.sort(expected_pvals_top))
+    y_top = -np.log10(np.sort(results_top_snp_df['p.value']))
+    p_qq_top_snp = plt.scatter(x_top, y_top)
+
+    # save qq plots
     fig, _ = plt.subplots(figsize=(10, 8))
     fig.save(p_hist_all)
     gcs_path_p = output_path(
