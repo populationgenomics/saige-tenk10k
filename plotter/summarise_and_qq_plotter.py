@@ -17,6 +17,8 @@ analysis-runner \
 """
 
 import click
+import matplotlib.pyplot as plt
+import numpy as np
 import pandas as pd
 from cpg_utils import to_path
 
@@ -47,8 +49,8 @@ def plot_pvalues(
         str(file) for file in to_path(results_path).glob(f'{celltype}_*_cis')
     ]
     # concatenates the dataframes using pandas
-    results_all_df = []
-    results_top_snp_df = []
+    results_all_df_list = []
+    results_top_snp_df_list = []
     for pv_df in existing_cv_assoc_results:
         df = pd.read_csv(to_path(pv_df), sep='\t')
         # add gene as column before merging
@@ -67,8 +69,8 @@ def plot_pvalues(
         df_snp = df[df['is_snp']]
         df_top_snp = df_snp[df_snp['p.value'] == df_snp['p.value'].min()]
         results_top_snp_df.append(df_top_snp)
-    results_all_df = pd.concat(results_all_df)
-    results_top_snp_df = pd.concat(results_top_snp_df)
+    results_all_df = pd.concat(results_all_df_list)
+    results_top_snp_df = pd.concat(results_top_snp_df_list)
 
     # save
     results_all_file = (
@@ -80,6 +82,16 @@ def plot_pvalues(
         f'{results_path}/summary_stats/{celltype}_top_snp_cis_raw_pvalues.tsv'
     )
     results_top_snp_df.to_csv(results_top_snp_file, sep='\t')
+
+    # plot histograms
+    p_hist_all = plt.hist(results_all_df['p.value'])
+    p_hist_top = plt.hist(results_top_snp_df['p.value'])
+
+    # QQ plots
+    expected_pvals_all = np.random.uniform(low=0, high=1, size=results_all_df.shape[0])
+    expected_pvals_top = np.random.uniform(
+        low=0, high=1, size=results_top_snp_df.shape[0]
+    )
 
     # p = hl.plot.histogram(mt.variant_qc.AF[1], legend=title)
     # output_file('local_histo.html')
