@@ -93,7 +93,7 @@ def plot_pvalues(
     plt.hist(results_all_df['p.value'])
     plt.savefig('histo.png')
     gcs_path_p = output_path(
-        f'plots/pvalues_histo/{celltype}_shuffled_all.html', 'analysis'
+        f'plots/pvalues_histo/{celltype}_shuffled_all.png', 'analysis'
     )
     hl.hadoop_copy('histo.png', gcs_path_p)
 
@@ -104,7 +104,7 @@ def plot_pvalues(
     # fig.tight_layout()
     fig.savefig('histo.png')
     gcs_path_p = output_path(
-        f'plots/pvalues_histo/{celltype}_shuffled_top_snp.html', 'analysis'
+        f'plots/pvalues_histo/{celltype}_shuffled_top_snp.png', 'analysis'
     )
     hl.hadoop_copy('histo.png', gcs_path_p)
 
@@ -120,7 +120,7 @@ def plot_pvalues(
     # fig.tight_layout()
     fig.savefig('qqplot.png')
     gcs_path_p = output_path(
-        f'plots/pvalues_qqplot/{celltype}_shuffled_all.html', 'analysis'
+        f'plots/pvalues_qqplot/{celltype}_shuffled_all.png', 'analysis'
     )
     hl.hadoop_copy('qqplot.png', gcs_path_p)
 
@@ -137,7 +137,7 @@ def plot_pvalues(
     # fig.tight_layout()
     fig.savefig('qqplot.png')
     gcs_path_p = output_path(
-        f'plots/pvalues_qqplot/{celltype}_shuffled_top_snp.html', 'analysis'
+        f'plots/pvalues_qqplot/{celltype}_shuffled_top_snp.png', 'analysis'
     )
     hl.hadoop_copy('qqplot.png', gcs_path_p)
 
