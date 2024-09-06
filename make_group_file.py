@@ -121,7 +121,7 @@ def main(
             group_vals_df = pd.merge(group_df, vals_df, on='category')
             group_file = f'{group_files_path}{chrom}/{gene}_{cis_window}bp.tsv'
             with to_path(group_file).open('w') as gdf:
-                group_vals_df.to_csv(gdf, index=False, header=False)
+                group_vals_df.to_csv(gdf, index=False, header=False, sep='\t')
 
 
 if __name__ == '__main__':
