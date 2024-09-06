@@ -23,9 +23,8 @@ import hail as hl
 import numpy as np
 import pandas as pd
 from cpg_utils import to_path
-from cpg_utils.hail_batch import output_path
+from cpg_utils.hail_batch import init_batch, output_path
 
-# from cpg_utils.hail_batch import init_batch, output_path
 # from bokeh.plotting import output_file, save
 
 
@@ -43,7 +42,7 @@ def plot_pvalues(
     saving both all results and top SNP per gene results
     plots both a histogram and a QQ plot of the association p-values
     """
-    # init_batch()
+    init_batch()
 
     # collect all raw p-value files
     existing_cv_assoc_results = [
