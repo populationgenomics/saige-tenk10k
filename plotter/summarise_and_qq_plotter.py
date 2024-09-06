@@ -85,11 +85,13 @@ def plot_pvalues(
 
     # plot histograms
     # all results
-    plt.figure(figsize=(8, 8))
-    fig, ax = plt.subplots(figsize=(8, 8))
-    ax.hist(results_all_df['p.value'])
-    # fig.tight_layout()
-    fig.savefig('histo.png')
+    # plt.figure(figsize=(8, 8))
+    # fig, ax = plt.subplots(figsize=(8, 8))
+    # ax.hist(results_all_df['p.value'])
+    # # fig.tight_layout()
+    # fig.savefig('histo.png')
+    plt.hist(results_all_df['p.value'])
+    plt.savefig('histo.png')
     gcs_path_p = output_path(
         f'plots/pvalues_histo/{celltype}_shuffled_all.html', 'analysis'
     )
