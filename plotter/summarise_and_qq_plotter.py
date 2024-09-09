@@ -12,8 +12,7 @@ analysis-runner \
     --output-dir "saige-qtl/" \
     python3 plotter/summarise_and_qq_plotter.py \
         --celltype='B_naive' \
-        --results-path=gs://cpg-bioheart-main-analysis/saige-qtl/bioheart_n990_and_tob_n1055/output_files/sample_perm0/output_files \
-        --title='Shuffled p-values (SAIGE-QTL pipeline)'
+        --results-path=gs://cpg-bioheart-main-analysis/saige-qtl/bioheart_n990_and_tob_n1055/output_files/sample_perm0/output_files
 """
 
 import click
@@ -25,17 +24,13 @@ import pandas as pd
 from cpg_utils import to_path
 from cpg_utils.hail_batch import init_batch, output_path
 
-# from bokeh.plotting import output_file, save
-
 
 @click.command()
 @click.option('--celltype', required=True)
 @click.option('--results-path', required=True)
-# @click.option('--title', default='SAIGE-QTL pipeline p-values')
 def plot_pvalues(
     celltype: str,
     results_path: str,
-    # title: str,
 ):
     """
     combines the results for a given cell type,
@@ -85,11 +80,6 @@ def plot_pvalues(
 
     # plot histograms
     # all results
-    # plt.figure(figsize=(8, 8))
-    # fig, ax = plt.subplots(figsize=(8, 8))
-    # ax.hist(results_all_df['p.value'])
-    # # fig.tight_layout()
-    # fig.savefig('histo.png')
     plt.hist(results_all_df['p.value'])
     plt.savefig('histo.png')
     gcs_path_p = output_path(
@@ -101,7 +91,6 @@ def plot_pvalues(
     plt.figure(figsize=(8, 8))
     fig, ax = plt.subplots(figsize=(8, 8))
     ax.hist(results_top_snp_df['p.value'])
-    # fig.tight_layout()
     fig.savefig('histo.png')
     gcs_path_p = output_path(
         f'plots/pvalues_histo/{celltype}_shuffled_top_snp.png', 'analysis'
@@ -117,7 +106,6 @@ def plot_pvalues(
     plt.figure(figsize=(8, 8))
     fig, ax = plt.subplots(figsize=(8, 8))
     ax.scatter(x_all, y_all)
-    # fig.tight_layout()
     fig.savefig('qqplot.png')
     gcs_path_p = output_path(
         f'plots/pvalues_qqplot/{celltype}_shuffled_all.png', 'analysis'
@@ -134,7 +122,6 @@ def plot_pvalues(
     plt.figure(figsize=(8, 8))
     fig, ax = plt.subplots(figsize=(8, 8))
     ax.scatter(x_top, y_top)
-    # fig.tight_layout()
     fig.savefig('qqplot.png')
     gcs_path_p = output_path(
         f'plots/pvalues_qqplot/{celltype}_shuffled_top_snp.png', 'analysis'
