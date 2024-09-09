@@ -383,6 +383,7 @@ def main(
             drop_genes: list[str] = get_config()['saige']['drop_genes']
 
             genes = [x for x in genes if x not in drop_genes]
+            genes = genes[0:2]
 
             # extract relevant gene-related files
             for gene in genes:
