@@ -12,7 +12,8 @@ analysis-runner \
     --output-dir "saige-qtl/" \
     python3 plotter/summarise_and_qq_plotter.py \
         --celltype='B_naive' \
-        --results-path=gs://cpg-bioheart-main-analysis/saige-qtl/bioheart_n990_and_tob_n1055/output_files/sample_perm0/output_files
+        --results-path=gs://cpg-bioheart-main-analysis/saige-qtl/bioheart_n990_and_tob_n1055/output_files/sample_perm0/output_files \
+        --title='shuffled'
 """
 
 import click
@@ -28,9 +29,11 @@ from cpg_utils.hail_batch import init_batch, output_path
 @click.command()
 @click.option('--celltype', required=True)
 @click.option('--results-path', required=True)
+@click.option('--title', default='shuffled')
 def plot_pvalues(
     celltype: str,
     results_path: str,
+    title: str,
 ):
     """
     combines the results for a given cell type,
@@ -83,7 +86,7 @@ def plot_pvalues(
     plt.hist(results_all_df['p.value'])
     plt.savefig('histo.png')
     gcs_path_p = output_path(
-        f'plots/pvalues_histo/{celltype}_shuffled_all.png', 'analysis'
+        f'plots/pvalues_histo/{celltype}_{title}_all.png', 'analysis'
     )
     hl.hadoop_copy('histo.png', gcs_path_p)
 
@@ -93,7 +96,7 @@ def plot_pvalues(
     ax.hist(results_top_snp_df['p.value'])
     fig.savefig('histo.png')
     gcs_path_p = output_path(
-        f'plots/pvalues_histo/{celltype}_shuffled_top_snp.png', 'analysis'
+        f'plots/pvalues_histo/{celltype}_{title}_top_snp.png', 'analysis'
     )
     hl.hadoop_copy('histo.png', gcs_path_p)
 
@@ -108,7 +111,7 @@ def plot_pvalues(
     ax.scatter(x_all, y_all)
     fig.savefig('qqplot.png')
     gcs_path_p = output_path(
-        f'plots/pvalues_qqplot/{celltype}_shuffled_all.png', 'analysis'
+        f'plots/pvalues_qqplot/{celltype}_{title}_all.png', 'analysis'
     )
     hl.hadoop_copy('qqplot.png', gcs_path_p)
 
@@ -124,7 +127,7 @@ def plot_pvalues(
     ax.scatter(x_top, y_top)
     fig.savefig('qqplot.png')
     gcs_path_p = output_path(
-        f'plots/pvalues_qqplot/{celltype}_shuffled_top_snp.png', 'analysis'
+        f'plots/pvalues_qqplot/{celltype}_{title}_top_snp.png', 'analysis'
     )
     hl.hadoop_copy('qqplot.png', gcs_path_p)
 
