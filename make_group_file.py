@@ -44,7 +44,7 @@ from cpg_utils.hail_batch import init_batch
 @click.option('--group-files-path')
 @click.option('--vcf-path')
 @click.option('--cis-window', default=100000)
-@click.option('--gamma', default=1e-5)
+@click.option('--gamma', default='1e-5')
 @click.option('--ngenes-to-test', default='all')
 @click.option('--genome-reference', default='GRCh37')
 def main(
@@ -53,7 +53,7 @@ def main(
     group_files_path: str,
     vcf_path: str,
     cis_window: int,
-    gamma: float,
+    gamma: str,
     ngenes_to_test: str,
     genome_reference: str,
 ):
@@ -112,7 +112,7 @@ def main(
                 # the distance of that variant from the gene
                 # Following the approach used by the APEX authors
                 # doi: https://doi.org/10.1101/2020.12.18.423490
-                weights = [math.exp(-gamma * abs(d)) for d in distances]
+                weights = [math.exp(-float(gamma) * abs(d)) for d in distances]
                 group_df = pd.DataFrame(
                     {
                         'gene': [gene, gene, gene],
