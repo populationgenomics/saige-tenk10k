@@ -322,6 +322,7 @@ def summarise_cv_results(
     '--vre-files-prefix', default=dataset_path('saige-qtl/input_files/genotypes')
 )
 @click.option('--ngenes-to-test', default='all')
+@click.option('--group-file-specs', default='')
 @click.command()
 def main(
     # output from get_anndata.py
@@ -332,6 +333,7 @@ def main(
     genotype_files_prefix: str,
     vre_files_prefix: str,
     ngenes_to_test: str,
+    group_file_specs: str,
 ):
     """
     Run SAIGE-QTL RV pipeline for all cell types
@@ -394,7 +396,7 @@ def main(
                 pheno_cov_path = (
                     f'{pheno_cov_files_path_ct_chrom}/{gene}_{celltype}_pheno_cov.tsv'
                 )
-                group_path = f'{group_files_path_chrom}/{gene}_{cis_window_size}bp.tsv'
+                group_path = f'{group_files_path_chrom}/{gene}_{cis_window_size}bp{group_file_specs}.tsv'
 
                 gene_dependency = get_batch().new_job(f' Always run job for {gene}')
                 gene_dependency.always_run()
