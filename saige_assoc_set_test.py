@@ -321,6 +321,7 @@ def summarise_cv_results(
 @click.option(
     '--vre-files-prefix', default=dataset_path('saige-qtl/input_files/genotypes')
 )
+@click.option('--ngenes-to-test', default='all')
 @click.command()
 def main(
     # output from get_anndata.py
@@ -330,6 +331,7 @@ def main(
     # outputs from get_genotype_vcf.py
     genotype_files_prefix: str,
     vre_files_prefix: str,
+    ngenes_to_test: str,
 ):
     """
     Run SAIGE-QTL RV pipeline for all cell types
@@ -375,6 +377,9 @@ def main(
                     f'*_{celltype}_pheno_cov.tsv'
                 )
             ]
+            # if specified, only test ngenes genes
+            if ngenes_to_test != 'all':
+                files = files[0 : int(ngenes_to_test)]
             logging.info(f'I found these files: {", ".join(files)}')
 
             genes = [f.replace(f'_{celltype}_pheno_cov.tsv', '') for f in files]
@@ -383,7 +388,6 @@ def main(
             drop_genes: list[str] = get_config()['saige']['drop_genes']
 
             genes = [x for x in genes if x not in drop_genes]
-            genes = genes[0:2]
 
             # extract relevant gene-related files
             for gene in genes:
