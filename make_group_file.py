@@ -105,7 +105,7 @@ def main(
             )
             variants = [loc.position for loc in ds_result.locus.collect()]
 
-            if gamma is not None:
+            if gamma != 'none':
                 gene_tss = int(window_start) + cis_window
                 distances = [int(var) - gene_tss for var in variants]
                 # get weight for genetic variants based on
