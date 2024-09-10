@@ -104,7 +104,7 @@ def main(
                 ds, [hl.parse_locus_interval(gene_interval, reference_genome='GRCh37')]
             )
             variants = [loc.position for loc in ds_result.locus.collect()]
-            
+
             if gamma is not None:
                 gene_tss = int(window_start) + cis_window
                 distances = [int(var) - gene_tss for var in variants]
