@@ -27,7 +27,8 @@ analysis-runner \
 
 import click
 import logging
-import math
+
+# import math
 
 import hail as hl
 import pandas as pd
@@ -43,7 +44,7 @@ from cpg_utils.hail_batch import init_batch
 @click.option('--group-files-path')
 @click.option('--vcf-path')
 @click.option('--cis-window', default=100000)
-@click.option('--gamma', default=1e-5)
+# @click.option('--gamma', default=1e-5)
 @click.option('--ngenes-to-test', default='all')
 @click.option('--genome-reference', default='GRCh37')
 def main(
@@ -52,7 +53,7 @@ def main(
     group_files_path: str,
     vcf_path: str,
     cis_window: int,
-    gamma: float,
+    # gamma: float,
     ngenes_to_test: str,
     genome_reference: str,
 ):
@@ -103,23 +104,28 @@ def main(
                 ds, [hl.parse_locus_interval(gene_interval, reference_genome='GRCh37')]
             )
             variants = [loc.position for loc in ds_result.locus.collect()]
-            gene_tss = int(window_start) + cis_window
-            distances = [int(var) - gene_tss for var in variants]
+            # gene_tss = int(window_start) + cis_window
+            # distances = [int(var) - gene_tss for var in variants]
             # get weight for genetic variants based on
             # the distance of that variant from the gene
             # Following the approach used by the APEX authors
             # doi: https://doi.org/10.1101/2020.12.18.423490
-            weights = [math.exp(-gamma * abs(d)) for d in distances]
-            group_df = pd.DataFrame(
-                {'gene': [gene, gene, gene], 'category': ['var', 'anno', 'weight:dTSS']}
-            )
-            vals_df = pd.DataFrame(
-                {'var': variants, 'anno': 'null', 'weight:dTSS': weights}
-            ).T
+            # weights = [math.exp(-gamma * abs(d)) for d in distances]
+            # group_df = pd.DataFrame(
+            #     {'gene': [gene, gene, gene], 'category': ['var', 'anno', 'weight:dTSS']}
+            # )
+            # vals_df = pd.DataFrame(
+            #     {'var': variants, 'anno': 'null', 'weight:dTSS': weights}
+            # ).T
+            group_df = pd.DataFrame({'gene': [gene, gene], 'category': ['var', 'anno']})
+            vals_df = pd.DataFrame({'var': variants, 'anno': 'null'}).T
             vals_df['category'] = vals_df.index
             # combine
             group_vals_df = pd.merge(group_df, vals_df, on='category')
-            group_file = f'{group_files_path}{chrom}/{gene}_{cis_window}bp.tsv'
+            # group_file = f'{group_files_path}{chrom}/{gene}_{cis_window}bp.tsv'
+            group_file = (
+                f'{group_files_path}{chrom}/{gene}_{cis_window}bp_no_weights.tsv'
+            )
             with to_path(group_file).open('w') as gdf:
                 group_vals_df.to_csv(gdf, index=False, header=False, sep='\t')
 
