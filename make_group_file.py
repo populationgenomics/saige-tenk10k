@@ -138,7 +138,7 @@ def main(
             group_vals_df = pd.merge(group_df, vals_df, on='category')
 
             with to_path(group_file).open('w') as gdf:
-                group_vals_df.to_csv(gdf, index=False, header=False, sep='\t')
+                group_vals_df.to_csv(gdf, index=False, sep='\t')
 
 
 if __name__ == '__main__':
