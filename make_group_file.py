@@ -103,7 +103,16 @@ def main(
             ds_result = hl.filter_intervals(
                 ds, [hl.parse_locus_interval(gene_interval, reference_genome='GRCh37')]
             )
-            variants = [loc.position for loc in ds_result.locus.collect()]
+            variants_chrom_pos = [
+                f'{loc.contig}_{loc.position}' for loc in ds_result.locus.collect()
+            ]
+            variants_alleles = [
+                f'{allele[0]}_{allele[1]}' for allele in ds_result.alleles.collect()
+            ]
+            variants = [
+                f'{variants_chrom_pos[i]}_{variants_alleles[i]}'
+                for i in range(len(variants_chrom_pos))
+            ]
 
             if gamma != 'none':
                 gene_tss = int(window_start) + cis_window
