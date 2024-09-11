@@ -107,10 +107,10 @@ def main(
                 f'{loc.contig}:{loc.position}' for loc in ds_result.locus.collect()
             ]
             variants_alleles = [
-                f'{allele[0]}:{allele[1]}' for allele in ds_result.alleles.collect()
+                f'{allele[0]}/{allele[1]}' for allele in ds_result.alleles.collect()
             ]
             variants = [
-                f'{variants_chrom_pos[i]}:{variants_alleles[i]}'
+                f'{variants_chrom_pos[i]}_{variants_alleles[i]}'
                 for i in range(len(variants_chrom_pos))
             ]
 
@@ -147,7 +147,7 @@ def main(
             group_vals_df = pd.merge(group_df, vals_df, on='category')
 
             with to_path(group_file).open('w') as gdf:
-                group_vals_df.to_csv(gdf, index=False, header=False, sep=' ')
+                group_vals_df.to_csv(gdf, index=False, header=False, sep='\t')
 
 
 if __name__ == '__main__':
