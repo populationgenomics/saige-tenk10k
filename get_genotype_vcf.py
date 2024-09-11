@@ -162,7 +162,7 @@ def add_remove_chr_and_index_job(vcf_path):
     )
     bcftools_job.command(
         f"""
-        bcftools annotate --rename-chrs chr_update.txt --set-id +'%CHROM\_%POS\_%REF\_%FIRST_ALT' {vcf_input} | \\
+        bcftools annotate --rename-chrs chr_update.txt --set-id +'%CHROM\:%POS\:%REF\:%FIRST_ALT' {vcf_input} | \\
         bgzip -c > {bcftools_job.output['vcf.bgz']}
         bcftools index -c {bcftools_job.output['vcf.bgz']}
     """
