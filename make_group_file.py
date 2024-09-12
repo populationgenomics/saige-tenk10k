@@ -113,6 +113,7 @@ def main(
                 f'{variants_chrom_pos[i]}:{variants_alleles[i]}'
                 for i in range(len(variants_chrom_pos))
             ]
+            variants = ['22:41348018:C:G']
 
             if gamma != 'none':
                 gene_tss = int(window_start) + cis_window
@@ -138,9 +139,13 @@ def main(
                 group_df = pd.DataFrame(
                     {'gene': [gene, gene], 'category': ['var', 'anno']}
                 )
-                vals_df = pd.DataFrame({'var': variants, 'anno': 'null'}).T
+                # vals_df = pd.DataFrame({'var': variants, 'anno': 'null'}).T
+                # group_file = (
+                #     f'{group_files_path}{chrom}/{gene}_{cis_window}bp_no_weights.tsv'
+                # )
+                vals_df = pd.DataFrame({'var': variants, 'anno': 'test'}).T
                 group_file = (
-                    f'{group_files_path}{chrom}/{gene}_{cis_window}bp_no_weights.tsv'
+                    f'{group_files_path}{chrom}/{gene}_{cis_window}bp_test.tsv'
                 )
             vals_df['category'] = vals_df.index
             # combine
