@@ -144,9 +144,7 @@ def main(
                 #     f'{group_files_path}{chrom}/{gene}_{cis_window}bp_no_weights.tsv'
                 # )
                 vals_df = pd.DataFrame({'var': variants, 'anno': 'test'}).T
-                group_file = (
-                    f'{group_files_path}{chrom}/{gene}_{cis_window}bp_test.tsv'
-                )
+                group_file = f'{group_files_path}{chrom}/{gene}_{cis_window}bp_test.tsv'
             vals_df['category'] = vals_df.index
             # combine
             group_vals_df = pd.merge(group_df, vals_df, on='category')
