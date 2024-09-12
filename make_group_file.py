@@ -113,7 +113,7 @@ def main(
                 f'{variants_chrom_pos[i]}:{variants_alleles[i]}'
                 for i in range(len(variants_chrom_pos))
             ]
-            variants = variants[0]
+            variants = ['22:17634208:C:T']
 
             if gamma != 'none':
                 gene_tss = int(window_start) + cis_window
