@@ -101,7 +101,12 @@ def main(
             gene_interval = f'{num_chrom}:{window_start}-{window_end}'
             # extract variants within interval
             ds_result = hl.filter_intervals(
-                ds, [hl.parse_locus_interval(gene_interval, reference_genome='GRCh37')]
+                ds,
+                [
+                    hl.parse_locus_interval(
+                        gene_interval, reference_genome=genome_reference
+                    )
+                ],
             )
             variants_chrom_pos = [
                 f'{loc.contig}:{loc.position}' for loc in ds_result.locus.collect()
@@ -118,7 +123,7 @@ def main(
 
             if gamma != 'none':
                 gene_tss = int(window_start) + cis_window
-                distances = [int(var) - gene_tss for var in variants]
+                distances = [int(var.split(":")[1]) - gene_tss for var in variants]
                 # get weight for genetic variants based on
                 # the distance of that variant from the gene
                 # Following the approach used by the APEX authors
