@@ -139,15 +139,13 @@ def main(
                 group_df = pd.DataFrame(
                     {
                         'gene': [gene, gene, gene],
-                        'category': ['var', 'anno', 'weight:test'],
+                        'category': ['var', 'anno', 'weight'],
                     }
                 )
                 vals_df = pd.DataFrame(
-                    {'var': variants, 'anno': 'test', 'weight:test': weights}
+                    {'var': variants, 'anno': 'test', 'weight': weights}
                 ).T
-                group_file = (
-                    f'{group_files_path}{chrom}/{gene}_{cis_window}bp_test_weights.tsv'
-                )
+                group_file = f'{group_files_path}{chrom}/{gene}_{cis_window}bp_test_weights_again.tsv'
             else:
                 group_df = pd.DataFrame(
                     {'gene': [gene, gene], 'category': ['var', 'anno']}
