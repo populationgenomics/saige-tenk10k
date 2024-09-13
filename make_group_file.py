@@ -28,7 +28,7 @@ analysis-runner \
 import click
 import logging
 
-import math
+# import math
 
 import hail as hl
 import pandas as pd
