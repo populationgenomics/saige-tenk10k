@@ -28,7 +28,7 @@ analysis-runner \
 import click
 import logging
 
-import math
+# import math
 
 import hail as hl
 import pandas as pd
@@ -114,26 +114,39 @@ def main(
                 for i in range(len(variants_chrom_pos))
             ]
             variants = ['22:17634208:C:T']
+            weights = [0.5]
 
             if gamma != 'none':
-                gene_tss = int(window_start) + cis_window
-                distances = [int(var) - gene_tss for var in variants]
+                # gene_tss = int(window_start) + cis_window
+                # distances = [int(var) - gene_tss for var in variants]
                 # get weight for genetic variants based on
                 # the distance of that variant from the gene
                 # Following the approach used by the APEX authors
                 # doi: https://doi.org/10.1101/2020.12.18.423490
-                weights = [math.exp(-float(gamma) * abs(d)) for d in distances]
+                # weights = [math.exp(-float(gamma) * abs(d)) for d in distances]
+                # group_df = pd.DataFrame(
+                #     {
+                #         'gene': [gene, gene, gene],
+                #         'category': ['var', 'anno', 'weight:dTSS'],
+                #     }
+                # )
+                # vals_df = pd.DataFrame(
+                #     {'var': variants, 'anno': 'null', 'weight:dTSS': weights}
+                # ).T
+                # group_file = (
+                #     f'{group_files_path}{chrom}/{gene}_{cis_window}bp_dTSS_weights.tsv'
+                # )
                 group_df = pd.DataFrame(
                     {
                         'gene': [gene, gene, gene],
-                        'category': ['var', 'anno', 'weight:dTSS'],
+                        'category': ['var', 'anno', 'weight:test'],
                     }
                 )
                 vals_df = pd.DataFrame(
-                    {'var': variants, 'anno': 'null', 'weight:dTSS': weights}
+                    {'var': variants, 'anno': 'test', 'weight:test': weights}
                 ).T
                 group_file = (
-                    f'{group_files_path}{chrom}/{gene}_{cis_window}bp_dTSS_weights.tsv'
+                    f'{group_files_path}{chrom}/{gene}_{cis_window}bp_test_weights.tsv'
                 )
             else:
                 group_df = pd.DataFrame(
