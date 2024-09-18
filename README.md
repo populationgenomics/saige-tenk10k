@@ -6,7 +6,7 @@ First, this will be run on the TOB (AKA OneK1K) and then BioHEART datasets as pa
 The pipeline is split into three main parts, to make for more flexible usage:
 
 1. Genotype processing (SNVs and indels): this involves sample and variant QC of the WGS data, and genotype file preparation specifically for common and rare single-nucleotide variants and indels (VCF files), as well as plink files for only a subset of 2,000 variants that is used for some approximations within SAIGE-QTL
-2. Expression (phenotype) processing: this involves processing of the scRNA-seq data, inclusion of covariates, and preparation of the phenotype + covariate files (one per gene, cell type) and _cis_ window files (one per gene)
+2. Expression (phenotype) processing: this involves processing of the scRNA-seq data, inclusion of covariates, and preparation of the phenotype + covariate files (one per gene, cell type) and cis window files (one per gene)
 3. Association testing: prepare and run SAIGE-QTL commands for association mapping using inputs generated in the first two parts.
 
 Additionally, two helper scripts are also part of this pipeline:
