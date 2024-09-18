@@ -27,7 +27,7 @@ analysis-runner \
     --memory='32G' \
     --storage='50G' \
     --dataset "bioheart" \
-    --access-level "standard" \
+    --access-level "full" \
     --output-dir "saige-qtl/bioheart_n990_and_tob_n1055/v1" \
      python3 saige_assoc_set_test.py \
      --pheno-cov-files-path=gs://cpg-bioheart-main/saige-qtl/bioheart_n990_and_tob_n1055/input_files/pheno_cov_files \
