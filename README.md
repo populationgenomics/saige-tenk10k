@@ -57,6 +57,8 @@ Outputs:
 
 * TSV sample covariate file (one per cohort)
 
+Notes: option to fill in missing values for sex (0, where 1 is male, 2 is female) and age (average age across the cohort).
+
 ## Gene expression preprocessing
 
 Script: `get_anndata.py`
