@@ -91,6 +91,9 @@ Outputs
 
 * group files (one per gene)
 
+Notes: option to include no weights or to compute weights that reflect the distance of each variant from the gene's transcription start site (`dTSS`).
+Using one of the flags below it is possible to additionally test using equal weights.
+
 
 ## SAIGE-QTL association pipeline
 
