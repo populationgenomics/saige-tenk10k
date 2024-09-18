@@ -19,23 +19,6 @@ typically used for rare variants
 
 To run:
 
-Test:
-
-analysis-runner \
-    --config saige_assoc_test.toml \
-    --description "SAIGE-QTL RV association pipeline" \
-    --memory='32G' \
-    --storage='50G' \
-    --dataset "bioheart" \
-    --access-level "test" \
-    --output-dir "saige-qtl/bioheart_n990_and_tob_n1055/v1" \
-     python3 saige_assoc_set_test.py \
-     --pheno-cov-files-path=gs://cpg-bioheart-test/saige-qtl/input_files/pheno_cov_files \
-        --group-files-path=gs://cpg-bioheart-test/saige-qtl/input_files/group_files \
-        --genotype-files-prefix=gs://cpg-bioheart-test/saige-qtl/bioheart_n990_and_tob_n1055/input_files/genotypes/v3/vds-bioheart1-0 \
-        --vre-files-prefix=gs://cpg-bioheart-test/saige-qtl/bioheart_n990_and_tob_n1055/input_files/genotypes/v3/vds-bioheart1-0
-
-
 Main:
 
 analysis-runner \
@@ -49,8 +32,9 @@ analysis-runner \
      python3 saige_assoc_set_test.py \
      --pheno-cov-files-path=gs://cpg-bioheart-main/saige-qtl/bioheart_n990_and_tob_n1055/input_files/pheno_cov_files \
         --group-files-path=gs://cpg-bioheart-main/saige-qtl/bioheart_n990_and_tob_n1055/input_files/group_files \
-        --genotype-files-prefix=gs://cpg-bioheart-main/saige-qtl/bioheart_n990/input_files/genotypes/v3/vds-tenk10k1-0 \
-        --vre-files-prefix=gs://cpg-bioheart-main/saige-qtl/bioheart_n990/input_files/genotypes/v3/vds-tenk10k1-0
+        --genotype-files-prefix=gs://cpg-bioheart-main/saige-qtl/bioheart_n990/input_files/genotypes/v4/vds-tenk10k1-0 \
+        --vre-files-prefix=gs://cpg-bioheart-main/saige-qtl/bioheart_n990/input_files/genotypes/v4/vds-tenk10k1-0 \
+        --group-file-specs _dTSS_weights
 
 
 """
@@ -167,39 +151,6 @@ def build_run_set_based_test_command(
     get_batch().write_output(second_job.output, output_path)
 
     return second_job, second_job.output
-
-
-# # Combine single variant associations at gene level (step 3)
-# def build_obtain_gene_level_pvals_command(
-#     gene_name: str,
-#     saige_sv_output_file: str,
-#     saige_gene_pval_output_file: str,
-# ):
-#     """
-#     Build SAIGE command to obtain gene-level pvals
-#     Only for single-variant tests (Step3)
-#     combines single-variant p-values to obtain one gene
-#     level p-value
-
-#     Input:
-#     - output of previous step, association file (txt)
-#     - gene we need to aggregate results for (across SNPs)
-#     - path for output file
-#     """
-#     if to_path(saige_gene_pval_output_file).exists():
-#         return None
-
-#     saige_job = get_batch().new_job(name="saige-qtl part 3")
-#     saige_command_step3 = f"""
-#         Rscript /usr/local/bin/step3_gene_pvalue_qtl.R \
-#         --assocFile={saige_sv_output_file} \
-#         --geneName={gene_name} \
-#         --genePval_outputFile={saige_job.output}
-#     """
-#     saige_job.image(image_path('saige-qtl'))
-#     saige_job.command(saige_command_step3)
-#     get_batch().write_output(saige_job.output, saige_gene_pval_output_file)
-#     return saige_job
 
 
 def apply_job_settings(job: hb.batch.job.Job, job_name: str):
@@ -427,19 +378,6 @@ def main(
                 if step2_job is not None:
                     step2_job.depends_on(gene_dependency)
                     gene_dependency = step2_job
-
-                # # step 3 (gene-level p-values)
-                # job3 = build_obtain_gene_level_pvals_command(
-                #     gene_name=gene,
-                #     saige_sv_output_file=step2_output,
-                #     saige_gene_pval_output_file=output_path(
-                #         f'output_files/{celltype}_{gene}_cis_gene_pval'
-                #     ),
-                # )
-
-                # if job3 is not None:
-                #     job3.depends_on(gene_dependency)
-                #     gene_dependency = job3
 
                 # add this job to the list of jobs for this cell type
                 if gene_dependency is not None:
