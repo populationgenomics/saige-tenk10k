@@ -20,7 +20,8 @@ analysis-runner \
     python3 make_group_file.py --chromosomes chr22 \
         --cis-window-files-path gs://cpg-bioheart-test/saige-qtl/input_files/cis_window_files/ \
         --group-files-path gs://cpg-bioheart-test/saige-qtl/input_files/group_files/ \
-        --vcf-path gs://cpg-bioheart-test/saige-qtl/bioheart_n990_and_tob_n1055/input_files/genotypes/v3/vds-bioheart1-0
+        --vcf-path gs://cpg-bioheart-test/saige-qtl/bioheart_n990_and_tob_n1055/input_files/genotypes/v3/vds-bioheart1-0 \
+        --ngenes-to-test 5
 
 
 """
