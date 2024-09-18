@@ -11,7 +11,7 @@ The pipeline is split into three parts, to make for more flexible usage:
 
 Additionally, two helper scripts are also part of this pipeline:
 
-* one to extract sample covariates which feeds into the exoression processing script where they are combined with expression-based covariates
+* one to extract sample covariates which feeds into the expression processing script where they are combined with expression-based covariates
 * one to make group files that are necessary for rare variant association testing
 
 ## Genotypes preprocessing
@@ -33,6 +33,7 @@ Variant selection for PLINK files for variance ratio estimation (VRE):
 Inputs:
 
 * joint call VDS object (TOB + BioHEART) after variant and sample QC has been applied.
+* (for now, also gets tables of related individuals to exclude)
 
 Outputs:
 
@@ -63,6 +64,7 @@ Outputs:
 
 Notes: as before, we remove 'chr' from the chromosome name in the gene cis window file.
 Additionally, we turn hyphens ('-') into underscores ('_') in the gene names.
+Both the AnnData objects and cell covariate files are generated on Garvan's HPC and copied over to GCP.
 
 ## Make group file
 
@@ -71,6 +73,7 @@ Script: make_group_file.py
 Inputs:
 
 * rare variant VCF file
+* cis window file
 
 Outputs
 
@@ -113,6 +116,8 @@ Outputs:
 
 Clarifying the reasoning behind the parameters / flags used to run SAIGE-QTL.
 Most of these are (or will be) included in the official [documentation](https://weizhou0.github.io/SAIGE-QTL-doc/).
+
+Note: some of these are provided as arguments in the scripts (`saige_assoc.py`, `saige_assoc_set_test.py`), but most are provided as a separate config file (`saige_assoc_test.toml`).
 
 Fit null model ([step 1](https://weizhou0.github.io/SAIGE-QTL-doc/docs/step1.html)):
 
