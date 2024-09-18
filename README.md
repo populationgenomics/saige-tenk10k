@@ -62,13 +62,30 @@ Script: saige_assoc.py
 Inputs:
 
 * PLINK genotype files for VRE estimation (one only)
-* VCF genotype files for SNP testing (one per chromosome)
+* VCF genotype files for SNP testing (one per chromosome, common variants)
 * TSV phenotype covariate files for expression + covariate info (one per gene + cell type combination)
-* TSV gene cis window file to specify what variants to test (one per gene)
+* TSV gene cis window file to specify what genomic region to test (one per gene)
 
 Outputs:
 
-* association summary statistics
+* single-variant raw p-values (one per gene, cell type)
+* association summary statistics (gene-corrected p-values summarised, one per cell type)
+
+## SAIGE-QTL RV association pipeline
+
+Script: saige_assoc_set_test.py
+
+Inputs:
+
+* PLINK genotype files for VRE estimation (one only)
+* VCF genotype files for SNP testing (one per chromosome, rare variants)
+* TSV phenotype covariate files for expression + covariate info (one per gene + cell type combination)
+* TSV marker group file to specify what variants to test, and what weights and annotations to use (one per gene)
+
+Outputs:
+
+* set-based raw p-values (one per gene, cell type)
+* association summary statistics (gene-corrected p-values summarised, one per cell type)
 
 ### SAIGE-QTL parameters explanation
 
