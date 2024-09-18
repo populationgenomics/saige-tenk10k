@@ -11,8 +11,8 @@ The pipeline is split into three parts, to make for more flexible usage:
 
 Additionally, two helper scripts are also part of this pipeline:
 
-- one to extract sample covariates which feeds into the exoression processing script where they are combined with expression-based covariates
-- one to make group files that are necessary for rare variant association testing
+* one to extract sample covariates which feeds into the exoression processing script where they are combined with expression-based covariates
+* one to make group files that are necessary for rare variant association testing
 
 ## Genotypes preprocessing
 
