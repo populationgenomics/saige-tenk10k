@@ -3,26 +3,26 @@
 This is a Hail batch pipeline to run [SAIGE-QTL](https://github.com/weizhou0/qtl) on CPG's GCP, to map associations between both common and rare genetic variants and single-cell gene expression from peripheral mononuclear blood cells (PBMCs).
 First, this will be run on the TOB (AKA OneK1K) and then BioHEART datasets as part of phase 1 of the TenK10K project (see *Data* below), but in the future all datasets within OurDNA (with scRNA-seq + WGS data) will go through this pipeline as well.
 
-The pipeline is split into three parts, to make for more flexible usage:
+The pipeline is split into three main parts, to make for more flexible usage:
 
-1. Genotype processing (SNV): this involves variant QC and selection of the WGS data, and genotype file preparation specifically for common and rare single-nucleotide variants and indels (VCF files), as well as plink files for only a subset of 2,000 variants that is used for some approximations within SAIGE-QTL
-2. Expression (phenotype) processing: this involves processing of the scRNA-seq data, inclusion of covariates, and preparation of the pheno_cov files (one per gene, cell type) and cis window files (one per gene)
+1. Genotype processing (SNVs and indels): this involves sample and variant QC of the WGS data, and genotype file preparation specifically for common and rare single-nucleotide variants and indels (VCF files), as well as plink files for only a subset of 2,000 variants that is used for some approximations within SAIGE-QTL
+2. Expression (phenotype) processing: this involves processing of the scRNA-seq data, inclusion of covariates, and preparation of the phenotype + covariate files (one per gene, cell type) and _cis_ window files (one per gene)
 3. Association testing: prepare and run SAIGE-QTL commands for association mapping using inputs generated in the first two parts.
 
 Additionally, two helper scripts are also part of this pipeline:
 
-* one to extract sample covariates which feeds into the expression processing script where they are combined with expression-based covariates
+* one to extract sample covariates which feed into the expression processing script where they are combined with expression-based covariates
 * one to make group files that are necessary for rare variant association testing
 
 ## Genotypes preprocessing
 
-Script: get_genotype_vcf.py
+Script: `get_genotype_vcf.py`
 
 Variant selection for VCF files:
 
-* variants that are: i) QC-passing, ii) not ref-ref variants, and iii) not indels or multi-allelic SNPs (when run with --exclude-indels and --exclude-multiallelic).
-* variants that are common at a set threshold (MAF > T) in our population (by default, T=0.01)
-* one per chromosome
+* variants that are: i) QC-passing, ii) not ref-ref variants, and iii) not indels or multi-allelic SNPs (when run with `--exclude-indels` and `--exclude-multiallelic`).
+* separately, variants that are common or rare at a set threshold (MAF > T, MAF <= T, respectively) in our population (by default, T=0.01)
+* two per chromosome (one for common, one for rare variants)
 
 Variant selection for PLINK files for variance ratio estimation (VRE):
 
@@ -32,20 +32,30 @@ Variant selection for PLINK files for variance ratio estimation (VRE):
 
 Inputs:
 
-* joint call VDS object (TOB + BioHEART) after variant and sample QC has been applied.
+* joint call VDS object (TOB + BioHEART) after variant and sample QC has been applied (ideally, not yet).
 * (for now, also gets tables of related individuals to exclude)
 
 Outputs:
 
 * VCF files containing all retained common variants (one per chromosome) + corresponding index files (`.csi`)
 * VCF files containing all retained rare variants (one per chromosome) + corresponding index files (`.csi`)
-* plink object for only 2,000 variants (minor allele count>20), after LD pruning - this is for the estimation of the variance ratio (VR plinks)
+* plink object for only 2,000 variants (minor allele count > 20), after LD pruning - this is for the estimation of the variance ratio (VRE plink files)
 
-Notes: SAIGE-QTL allows numeric chromosomes only, so both the bim and the VCF files are modified in this script to remove the 'chr' notation (so that e.g. 'chr1' becomes '1').
+Notes: SAIGE-QTL allows numeric chromosomes only, so both the .bim and the VCF files are modified in this script to remove the 'chr' notation (so that e.g., 'chr1' becomes '1').
 
 ## Get sample covariates
 
 Script: `get_sample_covariates.py`
+
+Inputs:
+
+* sex info for the cohort(s) of interest
+* genotype principal components for the cohort(s) of interest
+* (information from metamist, mainly age atm)
+
+Outputs:
+
+* TSV sample covariate file (one per cohort)
 
 ## Gene expression preprocessing
 
