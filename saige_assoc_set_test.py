@@ -279,7 +279,7 @@ def run_fit_null_job(
     return gene_job, gene_job.output
 
 
-def summarise_cv_results(
+def summarise_rv_results(
     celltype: str,
     gene_results_path: str,
     out_path: str,
@@ -457,9 +457,9 @@ def main(
         )
         summarise_job.depends_on(*celltype_jobs[celltype])
         summarise_job.call(
-            summarise_cv_results,
+            summarise_rv_results,
             celltype=celltype,
-            gene_results_path=output_path('output_files/'),
+            gene_results_path=output_path('output_files/', category='analysis'),
             out_path=summary_output_path,
         )
     # set jobs running
