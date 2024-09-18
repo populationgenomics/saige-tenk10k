@@ -20,7 +20,8 @@ analysis-runner \
     python3 make_group_file.py --chromosomes chr22 \
         --cis-window-files-path gs://cpg-bioheart-test/saige-qtl/input_files/cis_window_files/ \
         --group-files-path gs://cpg-bioheart-test/saige-qtl/input_files/group_files/ \
-        --vcf-path gs://cpg-bioheart-test/saige-qtl/bioheart_n990_and_tob_n1055/input_files/genotypes/v3/vds-bioheart1-0
+        --vcf-path gs://cpg-bioheart-test/saige-qtl/bioheart_n990_and_tob_n1055/input_files/genotypes/v3/vds-bioheart1-0 \
+        --ngenes-to-test 5
 
 
 """
@@ -58,7 +59,7 @@ def main(
     genome_reference: str,
 ):
     """
-    Run expression processing pipeline
+    Make group file for rare variant pipeline
     """
 
     init_batch()
@@ -118,8 +119,6 @@ def main(
                 f'{variants_chrom_pos[i]}:{variants_alleles[i]}'
                 for i in range(len(variants_chrom_pos))
             ]
-            # variants = ['22:17634208:C:T']
-            # weights = [0.5]
 
             if gamma != 'none':
                 gene_tss = int(window_start) + cis_window
@@ -141,16 +140,6 @@ def main(
                 group_file = (
                     f'{group_files_path}{chrom}/{gene}_{cis_window}bp_dTSS_weights.tsv'
                 )
-                # group_df = pd.DataFrame(
-                #     {
-                #         'gene': [gene, gene, gene],
-                #         'category': ['var', 'anno', 'weight'],
-                #     }
-                # )
-                # vals_df = pd.DataFrame(
-                #     {'var': variants, 'anno': 'test', 'weight': weights}
-                # ).T
-                # group_file = f'{group_files_path}{chrom}/{gene}_{cis_window}bp_test_weights_again.tsv'
             else:
                 group_df = pd.DataFrame(
                     {'gene': [gene, gene], 'category': ['var', 'anno']}
@@ -159,8 +148,6 @@ def main(
                 group_file = (
                     f'{group_files_path}{chrom}/{gene}_{cis_window}bp_no_weights.tsv'
                 )
-                # vals_df = pd.DataFrame({'var': variants, 'anno': 'test'}).T
-                # group_file = f'{group_files_path}{chrom}/{gene}_{cis_window}bp_test.tsv'
             vals_df['category'] = vals_df.index
             # combine
             group_vals_df = pd.merge(group_df, vals_df, on='category')
