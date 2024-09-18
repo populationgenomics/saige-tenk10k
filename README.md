@@ -93,6 +93,7 @@ Outputs
 
 Notes: option to include no weights or to compute weights that reflect the distance of each variant from the gene's transcription start site (`dTSS`).
 Using one of the flags below it is possible to additionally test using equal weights.
+We use no annotations for now (set to `null`).
 
 
 ## SAIGE-QTL association pipeline
@@ -102,14 +103,14 @@ Script: `saige_assoc.py`
 Inputs:
 
 * PLINK genotype files for VRE estimation (one only)
-* VCF genotype files for SNP testing (one per chromosome, common variants)
+* VCF genotype file (+ index file) for SNP testing (one per chromosome, common variants)
 * TSV phenotype covariate files for expression + covariate info (one per gene + cell type combination)
 * TSV gene cis window file to specify what genomic region to test (one per gene)
 
 Outputs:
 
 * single-variant raw p-values (one per gene, cell type)
-* association summary statistics (gene-corrected p-values summarised, one per cell type)
+* association summary statistics (ACAT gene-corrected p-values summarised, one per cell type)
 
 ## SAIGE-QTL RV association pipeline
 
