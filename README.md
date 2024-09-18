@@ -129,8 +129,9 @@ Inputs:
 
 Outputs:
 
-* set-based raw p-values (one per gene, cell type)
-* association summary statistics (gene-corrected p-values summarised, one per cell type)
+* set-based test raw p-values (one per gene, cell type)
+* if set to true, single-variant test raw p-values for all variants in the group also (one per gene, cell type)
+* set-based association summary statistics (gene-level p-values summarised, one per cell type)
 
 ### SAIGE-QTL parameters explanation
 
