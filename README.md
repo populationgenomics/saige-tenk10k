@@ -37,7 +37,7 @@ Outputs:
 
 Notes: SAIGE-QTL allows numeric chromosomes only, so both the bim and the vcf files are modified in this script to remove the 'chr' notation (so that e.g. 'chr1' becomes '1').
 
-## Gene expresion preprocessing
+## Gene expression preprocessing
 
 Script: get_anndata.py
 
@@ -54,6 +54,19 @@ Outputs:
 
 Notes: as before, we remove 'chr' from the chromosome name in the gene cis window file.
 Additionally, we turn hyphens ('-') into underscores ('_') in the gene names.
+
+## Make group file
+
+Script: make_group_file.py
+
+Inputs:
+
+* rare variant VCF file
+
+Outputs
+
+* group files (one per gene)
+
 
 ## SAIGE-QTL association pipeline
 
@@ -127,13 +140,29 @@ Single-variant association testing ([common variants step 2](https://weizhou0.gi
 * ```min_mac```: minimum minor allele count (MAC) (default: 5)
 * ```loco_bool```: boolean specifying whether leave-one-chromosome-out should be used (default: ```FALSE```)
 * ```n_markers```: internal parameter to batchify variants tested (default: 10000),
-* ```spa_cutoff```: internal parameter to do with the saddlepoint approximation, does not make much of a difference for us (default: 10000),
+* ```spa_cutoff```: internal parameter to do with the saddlepoint approximation, does not make much of a difference for us (default: 10000).
 
 Obtain gene-level p-values ([common variants only, step 3](https://weizhou0.github.io/SAIGE-QTL-doc/docs/gene_step3.html))
 
-* ```gene_name```: gene to aggregate values for
-* ```saige_sv_output_file```: path to output from step 2 (input here)
-* ```saige_gene_pval_output_file```: path to output (step 3)
+* ```gene_name```: gene to aggregate values for,
+* ```saige_sv_output_file```: path to output from step 2 (input here),
+* ```saige_gene_pval_output_file```: path to output (step 3).
+
+Set-based association testing ([rare variants step 2](https://weizhou0.github.io/SAIGE-QTL-doc/docs/set_step2.html)):
+
+* ```vcf_file```: path to VCF file containing genetic variants to be tested
+* ```vcf_file_index```: corresponding .csi index file (not .tbi)
+* ```vcf_field```: DS for dosages, GT for genotypes (default = 'GT')
+* ```saige_output_file```: path to output file (if kept the same as single-variant test, step 1 only needs to be run once)
+* ```chrom```: chromosome to be tested
+* ```group_file```: path to file specifying variants to test (generated in the make_group_file.py script)
+* ```gmmat_model_path```: path to estimated null model (.rda) generated in step 2
+* ```variance_ratio_path```: path to variance ratio txt file generated in step 1
+* ```min_maf```: minimum minor allele frequency (MAF) (default: 0)
+* ```min_mac```: minimum minor allele count (MAC) (default: 5)
+* ```loco_bool```: boolean specifying whether leave-one-chromosome-out should be used (default: ```FALSE```)
+* ```n_markers```: internal parameter to batchify variants tested (default: 10000),
+* ```spa_cutoff```: internal parameter to do with the saddlepoint approximation, does not make much of a difference for us (default: 10000),
 
 ## To run
 
