@@ -132,11 +132,11 @@ def main(
                 group_df = pd.DataFrame(
                     {
                         'gene': [gene, gene, gene],
-                        'category': ['var', 'anno', 'weight'],
+                        'category': ['var', 'anno', 'weight:dTSS'],
                     }
                 )
                 vals_df = pd.DataFrame(
-                    {'var': variants, 'anno': 'null', 'weight': weights}
+                    {'var': variants, 'anno': 'null', 'weight:dTSS': weights}
                 ).T
                 group_file = (
                     f'{group_files_path}{chrom}/{gene}_{cis_window}bp_dTSS_weights.tsv'
