@@ -59,7 +59,7 @@ def main(
     genome_reference: str,
 ):
     """
-    Run expression processing pipeline
+    Make group file for rare variant pipeline
     """
 
     init_batch()
