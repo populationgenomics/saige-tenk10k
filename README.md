@@ -1,13 +1,18 @@
 # Hail batch workflow to run SAIGE-QTL on TenK10K data
 
-This is a hail batch pipeline to run [SAIGE-QTL](https://github.com/weizhou0/qtl) on CPG's GCP, to map associations between both common and rare genetic variants and single-cell gene expression from peripheral mononuclear blood cells (PBMCs).
+This is a Hail batch pipeline to run [SAIGE-QTL](https://github.com/weizhou0/qtl) on CPG's GCP, to map associations between both common and rare genetic variants and single-cell gene expression from peripheral mononuclear blood cells (PBMCs).
 First, this will be run on the TOB (AKA OneK1K) and then BioHEART datasets as part of phase 1 of the TenK10K project (see *Data* below), but in the future all datasets within OurDNA (with scRNA-seq + WGS data) will go through this pipeline as well.
 
 The pipeline is split into three parts, to make for more flexible usage:
 
-1. Genotype processing (SNV): this involves variant QC and selection of the WGS data, and genotype file preparation specifically for common and rare single-nucleotide variants (VCF files), as well as plink files for only a subset of 2,000 variants that is used for some approximations within SAIGE-QTL
+1. Genotype processing (SNV): this involves variant QC and selection of the WGS data, and genotype file preparation specifically for common and rare single-nucleotide variants and indels (VCF files), as well as plink files for only a subset of 2,000 variants that is used for some approximations within SAIGE-QTL
 2. Expression (phenotype) processing: this involves processing of the scRNA-seq data, inclusion of covariates, and preparation of the pheno_cov files (one per gene, cell type) and cis window files (one per gene)
 3. Association testing: prepare and run SAIGE-QTL commands for association mapping using inputs generated in the first two parts.
+
+Additionally, two helper scripts are also part of this pipeline:
+
+- one to extract sample covariates which feeds into the exoression processing script where they are combined with expression-based covariates
+- one to make group files that are necessary for rare variant association testing
 
 ## Genotypes preprocessing
 
@@ -36,6 +41,10 @@ Outputs:
 * plink object for only 2,000 variants (minor allele count>20), after LD pruning - this is for the estimation of the variance ratio (VR plinks)
 
 Notes: SAIGE-QTL allows numeric chromosomes only, so both the bim and the vcf files are modified in this script to remove the 'chr' notation (so that e.g. 'chr1' becomes '1').
+
+## Get sample covariates
+
+Script: get_sample_covariates.py
 
 ## Gene expression preprocessing
 
