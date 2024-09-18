@@ -100,6 +100,8 @@ We use no annotations for now (set to `null`).
 
 Script: `saige_assoc.py`
 
+Run this for single-variant tests (typically for common variants).
+
 Inputs:
 
 * PLINK genotype files for VRE estimation (one only)
@@ -115,6 +117,8 @@ Outputs:
 ## SAIGE-QTL RV association pipeline
 
 Script: `saige_assoc_set_test.py`
+
+Run this for set-based tests (typically for rare variants).
 
 Inputs:
 
