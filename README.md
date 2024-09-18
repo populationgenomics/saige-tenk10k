@@ -1,6 +1,6 @@
 # Hail batch workflow to run SAIGE-QTL on TenK10K data
 
-This is a hail batch pipeline to run the new [QTL version of SAIGE](https://github.com/weizhou0/qtl) on CPG's GCP, to map associations between both common and rare genetic variants and single-cell gene expression from peripheral mononuclear blood cells (PBMCs).
+This is a hail batch pipeline to run [SAIGE-QTL](https://github.com/weizhou0/qtl) on CPG's GCP, to map associations between both common and rare genetic variants and single-cell gene expression from peripheral mononuclear blood cells (PBMCs).
 First, this will be run on the TOB (AKA OneK1K) and then BioHEART datasets as part of phase 1 of the TenK10K project (see *Data* below), but in the future all datasets within OurDNA (with scRNA-seq + WGS data) will go through this pipeline as well.
 
 The pipeline is split into three parts, to make for more flexible usage:
@@ -132,5 +132,7 @@ TenK10K is matched single-cell RNA-seq (scRNA-seq) and whole-genome sequencing (
 
 ## Additional resources
 
+* [SAIGE-QTL preprint](https://www.medrxiv.org/content/10.1101/2024.05.15.24307317v1)
+* [OneK1K paper](https://www.science.org/doi/10.1126/science.abf3041)
 * [SAIGE-QTL pipeline flowchart GSlides](https://docs.google.com/presentation/d/1OhNiA6DaP9ZGlAbh8uZuZWzvrrr_QwvJwJ_lVPBZoic/edit#slide=id.g25daf727307_0_102)
 * [SAIGE-QTL pipeline notes GDoc](https://docs.google.com/document/d/1t11VafeU1THA4X58keHd5oPVglTYiY3DKC7P05GHCzw/edit)
