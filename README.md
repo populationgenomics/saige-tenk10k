@@ -37,19 +37,19 @@ Inputs:
 
 Outputs:
 
-* VCF file containing all retained common variants (one per chromosome) + corresponding index file (.csi)
-* VCF file containing all retained rare variants (one per chromosome) + corresponding index file (.csi)
+* VCF files containing all retained common variants (one per chromosome) + corresponding index files (`.csi`)
+* VCF files containing all retained rare variants (one per chromosome) + corresponding index files (`.csi`)
 * plink object for only 2,000 variants (minor allele count>20), after LD pruning - this is for the estimation of the variance ratio (VR plinks)
 
-Notes: SAIGE-QTL allows numeric chromosomes only, so both the bim and the vcf files are modified in this script to remove the 'chr' notation (so that e.g. 'chr1' becomes '1').
+Notes: SAIGE-QTL allows numeric chromosomes only, so both the bim and the VCF files are modified in this script to remove the 'chr' notation (so that e.g. 'chr1' becomes '1').
 
 ## Get sample covariates
 
-Script: get_sample_covariates.py
+Script: `get_sample_covariates.py`
 
 ## Gene expression preprocessing
 
-Script: get_anndata.py
+Script: `get_anndata.py`
 
 Inputs:
 
@@ -68,7 +68,7 @@ Both the AnnData objects and cell covariate files are generated on Garvan's HPC 
 
 ## Make group file
 
-Script: make_group_file.py
+Script: `make_group_file.py`
 
 Inputs:
 
@@ -82,7 +82,7 @@ Outputs
 
 ## SAIGE-QTL association pipeline
 
-Script: saige_assoc.py
+Script: `saige_assoc.py`
 
 Inputs:
 
@@ -98,7 +98,7 @@ Outputs:
 
 ## SAIGE-QTL RV association pipeline
 
-Script: saige_assoc_set_test.py
+Script: `saige_assoc_set_test.py`
 
 Inputs:
 
