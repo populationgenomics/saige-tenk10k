@@ -204,6 +204,15 @@ Set-based association testing ([rare variants step 2](https://weizhou0.github.io
 
 Instructions to run each component of the pipeline using analysis runner are provided at the top of each script.
 
+Briefly, if one wanted to run both common and rare variant pipelines, the order of running would be:
+
+1. get_genotype_vcf.py
+2. get_sample_covariates.py (does not require any other part of the pipeline and can be run in parallel with 1)
+3. get_anndata.py (requires 2)
+4. saige_assoc.py (requires 1,3)
+5. make_group_file.py (requires 1,3)
+6. saige_assoc_set_test.py (requires 1,3,4 (so that step1 is only run once) and 5)
+
 ## Data
 
 TenK10K is matched single-cell RNA-seq (scRNA-seq) and whole-genome sequencing (WGS) data from up to 10,000 individuals:
