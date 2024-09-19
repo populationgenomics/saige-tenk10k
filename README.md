@@ -58,7 +58,7 @@ Outputs:
 * TSV sample covariate file (one per cohort)
 
 Notes: option to fill in missing values for sex (0, where 1 is male, 2 is female) and age (average age across the cohort).
-Additionally, add a user-specified (default=10) number of permuted IDs, where the individual ID is permuted at random, to assess calibration (by shuffling the individual IDs we disrupt any real association between genotype and phenotype, so we expect no significant associations left when testing).
+Additionally, add a user-specified (default: 10) number of permuted IDs, where the individual ID is permuted at random, to assess calibration (by shuffling the individual IDs we disrupt any real association between genotype and phenotype, so we expect no significant associations left when testing).
 
 ## Gene expression preprocessing
 
@@ -163,25 +163,30 @@ In config (under `[saige.build_fit_null]` in `saige_assoc_test.toml`, using the 
 * `isCovariateOffset`: use covariates as offset allows to only estimate coefficients once and reduce cost (check that the model retains calibration, in which case set to `TRUE` for cost optimisation).
 * `isCovariateTransform`: transform (explain) covariates (default: `TRUE`).
 * `skipModelFitting`: boolean (default: `FALSE`).
-* `tol`: convergence tolerance (default 0.00001, which works well in our hands, we could test with a larger number to decrease cost).
-* `maxiterPCG`: convergence max number of iterations (default 500 but increase to 5,000 for the specific genes whose job does not converge).
-* `IsOverwriteVarianceRatioFile`: if the file already exists, skip or overwrite, default is the latter (default: `TRUE`).
+* `tol`: convergence tolerance (default: 0.00001, which works well in our hands, we could test with a larger number to decrease cost).
+* `maxiterPCG`: convergence max number of iterations (default: 500 but increase to 5,000 for the specific genes whose job does not converge).
+* `IsOverwriteVarianceRatioFile`: if the file already exists, skip or overwrite, default is the latter (i.e. default: `TRUE`).
 
 Single-variant association testing ([common variants step 2](https://weizhou0.github.io/SAIGE-QTL-doc/docs/single_step2.html)):
 
-* ```vcf_file```: path to VCF file containing genetic variants to be tested
-* ```vcf_file_index```: corresponding .csi index file (not .tbi)
-* ```vcf_field```: DS for dosages, GT for genotypes (default = 'GT')
-* ```saige_output_file```: path to output file
-* ```chrom```: chromosome to be tested
-* ```cis_window_file```: path to file specifying cis window / region to test (generated in part 2 of the pipeline, get anndata script)
-* ```gmmat_model_path```: path to estimated null model (.rda) generated in step 2
-* ```variance_ratio_path```: path to variance ratio txt file generated in step 1
-* ```min_maf```: minimum minor allele frequency (MAF) (default: 0)
-* ```min_mac```: minimum minor allele count (MAC) (default: 5)
-* ```loco_bool```: boolean specifying whether leave-one-chromosome-out should be used (default: ```FALSE```)
-* ```n_markers```: internal parameter to batchify variants tested (default: 10000),
-* ```spa_cutoff```: internal parameter to do with the saddlepoint approximation, does not make much of a difference for us (default: 10000).
+In script (`saige_assoc.py`):
+
+* `vcf_file`: path to VCF file containing genetic variants to test.
+* `vcf_file_index`: corresponding .csi index file (not .tbi). check, just prefix?
+* `saige_output_file`: path to output file (check name).
+* `chrom`: chromosome to test.
+* `cis_window_file`: path to file specifying cis window / region to test (generated in part 2 of the pipeline, get anndata script).
+* `gmmat_model_path`: path to estimated null model (.rda) generated in step 1.
+* `variance_ratio_path`: path to variance ratio txt file generated in step 1.
+
+In config (under `[saige.sv_test]` in `saige_assoc_test.toml`):
+
+* `vcfField`: DS for dosages, GT for genotypes (default: `GT`).
+* `minMAF`: minimum minor allele frequency (MAF) (default: 0).
+* `minMAC`: minimum minor allele count (MAC) (default: 5).
+* `LOCO`: boolean specifying whether leave-one-chromosome-out should be used (default: `FALSE`).
+* `markers_per_chunk`: internal parameter to batchify variants tested (default: 10000). Confusingly the naming is Snake Case here.
+* `SPAcutoff`: internal parameter to do with the saddlepoint approximation, does not make much of a difference for us (default: 10000).
 
 Obtain gene-level p-values ([common variants only, step 3](https://weizhou0.github.io/SAIGE-QTL-doc/docs/gene_step3.html))
 
@@ -193,7 +198,7 @@ Set-based association testing ([rare variants step 2](https://weizhou0.github.io
 
 * ```vcf_file```: path to VCF file containing genetic variants to be tested
 * ```vcf_file_index```: corresponding .csi index file (not .tbi)
-* ```vcf_field```: DS for dosages, GT for genotypes (default = 'GT')
+* ```vcf_field```: DS for dosages, GT for genotypes (default: 'GT')
 * ```saige_output_file```: path to output file (if kept the same as single-variant test, step 1 only needs to be run once)
 * ```chrom```: chromosome to be tested
 * ```group_file```: path to file specifying variants to test (generated in the make_group_file.py script)
@@ -201,7 +206,7 @@ Set-based association testing ([rare variants step 2](https://weizhou0.github.io
 * ```variance_ratio_path```: path to variance ratio txt file generated in step 1
 * ```min_maf```: minimum minor allele frequency (MAF) (default: 0)
 * ```min_mac```: minimum minor allele count (MAC) (default: 5)
-* ```loco_bool```: boolean specifying whether leave-one-chromosome-out should be used (default: ```FALSE```)
+* ```loco_bool```: boolean specifying whether leave-one-chromosome-out should be used (default: `FALSE`)
 * ```n_markers```: internal parameter to batchify variants tested (default: 10000),
 * ```spa_cutoff```: internal parameter to do with the saddlepoint approximation, does not make much of a difference for us (default: 10000),
 
