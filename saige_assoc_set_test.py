@@ -244,7 +244,7 @@ def summarise_rv_results(
     from cpg_utils.hail_batch import output_path
 
     existing_rv_assoc_results = [
-        str(file) for file in to_path(gene_results_path).glob(f'{celltype}_*_cis_set')
+        str(file) for file in to_path(gene_results_path).glob(f'*/{celltype}_*_cis_set')
     ]
     results_all_df = pd.concat(
         [
@@ -355,7 +355,7 @@ def main(
 
                 # check if these outputs already exist, if so don't make a new job
                 null_job, null_output = run_fit_null_job(
-                    output_path(f'output_files/{celltype}_{gene}'),
+                    output_path(f'{celltype}/{chromosome}/{celltype}_{gene}'),
                     pheno_file=pheno_cov_path,
                     plink_path=vre_plink_path,
                     pheno_col=gene,
@@ -367,7 +367,7 @@ def main(
                 # step 2 (cis eQTL set-based test)
                 step2_job, step2_output = build_run_set_based_test_command(
                     output_path=output_path(
-                        f'output_files/{celltype}_{gene}_cis_set', 'analysis'
+                        f'{celltype}/{chromosome}/{celltype}_{gene}_cis_set', 'analysis'
                     ),
                     vcf_file=vcf_file_path,
                     chrom=(chromosome[3:]),
@@ -387,7 +387,7 @@ def main(
     for celltype in celltypes:
         logging.info(f'start summarising results for {celltype}')
         summary_output_path = (
-            f'output_files/summary_stats/{celltype}_all_cis_rv_results.tsv'
+            f'summary_stats/{celltype}_all_cis_rv_set_test_results.tsv'
         )
 
         summarise_job = get_batch().new_python_job(
@@ -397,7 +397,7 @@ def main(
         summarise_job.call(
             summarise_rv_results,
             celltype=celltype,
-            gene_results_path=output_path('output_files/', category='analysis'),
+            gene_results_path=output_path(celltype, category='analysis'),
             out_path=summary_output_path,
         )
     # set jobs running
