@@ -209,12 +209,12 @@ In script (`saige_assoc_set_test.py`):
 In config (under `[saige.set_test]` in `saige_assoc_test.toml`):
 
 * `vcfField`: DS for dosages, GT for genotypes (default: `GT`).
-* `maxMAF_in_groupTest`: TO DO: add description (default: 0.1).
-* `minMAF_in_groupTest_Exclude`: (default: 0).
-* `annotation_in_groupTest`: (default: `null`).
-* `MACCutoff_to_CollapseUltraRare`: (default: 10).
-* `is_single_in_groupTest`: (default: `TRUE`).
-* `is_equal_weight_in_groupTest`: (default: `TRUE`).
+* `maxMAF_in_groupTest`: max MAF of variants that should be included in the set test (default: 0.1).
+* `minMAF_in_groupTest_Exclude`: min MAF of variants to *exclude* from the set test (default: 0).
+* `annotation_in_groupTest`: annotations from the group file to test as separate sets (default: `null`).
+* `MACCutoff_to_CollapseUltraRare`: minor allele counts (MAC) cutoff under which variants are considered ultrarare and get collapsed (default: 10).
+* `is_single_in_groupTest`: run single-variant tests for variants in group file as well (default: `TRUE`).
+* `is_equal_weight_in_groupTest`: test using equal weights as well as using a Beta(1,25) distribution which is used by default; if set to true, both results get output (default: `TRUE`).
 
 ## To run
 
