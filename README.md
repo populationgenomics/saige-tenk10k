@@ -58,6 +58,7 @@ Outputs:
 * TSV sample covariate file (one per cohort)
 
 Notes: option to fill in missing values for sex (0, where 1 is male, 2 is female) and age (average age across the cohort).
+Additionally, add a user-specified (default=10) number of permuted IDs, where the individual ID is permuted at random, to assess calibration (by shuffling the individual IDs we disrupt any real association between genotype and phenotype, so we expect no significant associations left when testing).
 
 ## Gene expression preprocessing
 
@@ -142,10 +143,10 @@ Note: some of these are provided as arguments in the scripts (`saige_assoc.py`, 
 
 Fit null model ([step 1](https://weizhou0.github.io/SAIGE-QTL-doc/docs/step1.html)):
 
-* ```pheno_file```: path specifying the location of the phenotype covariate file described above (build during part 2 of the pipeline)
+* ```pheno_file```: path specifying the location of the phenotype covariate file described above (built during part 2 of the pipeline)
 * ```cov_col_list```: string specifying the columns of the pheno_file that should be used as covariates (separated by a comma, no spaces)
 * ```sample_cov_col_list```: same as above, but specifying only, out of the columns above, the ones that are well defined at individual level (e.g., sex, age, ancestry PCs). Both this and the above need to be specified, and this is always a subset of the above, which allows individual-level covariates to be processed more cheaply.
-* ```sample_id_pheno```: specify the column that represents individual IDs
+* ```sample_id_pheno```: specify the column that represents individual IDs (note, for calibration analysis use one of the permuted ids here).
 * ```output_prefix```: path to where the output files from step 1 (which will be read by step 2) should be written to
 * ```plink_path```: path to VRE plink files (specify just the prefix, but a .bim, .fam, and .bed files with the same prefix and in the same location should exist -- these are built in part 1)
 * ```pheno_col```: specify the column that should be used as phenotype, in our case the gene to test
