@@ -172,7 +172,7 @@ Single-variant association testing ([common variants step 2](https://weizhou0.gi
 In script (`saige_assoc.py`):
 
 * `vcf_file`: path to VCF file containing genetic variants to test. An index file that is called exactly the same, with `.csi` at the end, needs to exist at the same location, but is not passed in as an argument.
-* `output_path`: path to output file.
+* `sv_output_path`: path to output file.
 * `chrom`: chromosome to test.
 * `cis_window_file`: path to file specifying cis window / region to test (generated in part 2 of the pipeline, get anndata script).
 * `gmmat_model_path`: path to estimated null model (.rda) generated in step 1.
@@ -198,7 +198,7 @@ Set-based association testing ([rare variants step 2](https://weizhou0.github.io
 In script (`saige_assoc_set_test.py`):
 
 * `vcf_file`: path to VCF file containing genetic variants to test. As above, an index file that is called exactly the same, with `.csi` at the end, needs to exist at the same location, but is not passed in as an argument.
-* `output_path`: path to output file (if kept the same as single-variant test, step 1 only needs to be run once)
+* `set_output_path`: path to output file (if kept the same as single-variant test, step 1 only needs to be run once)
 * `chrom`: chromosome to test.
 * `group_file`: path to file specifying variants to test (generated in the `make_group_file.py` script).
 * `gmmat_model_path`: path to estimated null model (.rda) generated in step 1.
