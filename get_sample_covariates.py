@@ -15,27 +15,14 @@ building inputs for the SAIGE-QTL association pipeline.
 
 To run,
 
-in test:
-
 analysis-runner \
     --description "get sample covariates" \
     --dataset "bioheart" \
-    --access-level "test" \
-    --output-dir "saige-qtl/input_files/covariates/" \
-    python3 get_sample_covariates.py --tob-sex-file-path 'gs://cpg-bioheart-test/saige-qtl/input_files/mapping_for_anna.csv' \
-                --bioheart-sex-file-path 'gs://cpg-bioheart-test-analysis/hoptan-str/somalier/somalier.samples.tsv' \
-                --project-names 'tob-wgs,bioheart' --vds-version tenk10k1-0
-
-in main:
-
-analysis-runner \
-    --description "get sample covariates" \
-    --dataset "bioheart" \
-    --access-level "standard" \
-    --output-dir "saige-qtl/input_files/covariates/" \
-    python3 get_sample_covariates.py --tob-sex-file-path 'gs://cpg-bioheart-test/saige-qtl/input_files/mapping_for_anna.csv' \
-                --bioheart-sex-file-path 'gs://cpg-bioheart-main-analysis/qc-stand-alone/somalier/990_samples_somalier.samples.tsv' \
-                --project-names 'tob-wgs,bioheart' --vds-version v1-0
+    --access-level "full" \
+    --output-dir "saige-qtl/input_files/240920/covariates" \
+        python3 get_sample_covariates.py --tob-sex-file-path 'gs://cpg-bioheart-test/saige-qtl/input_files/mapping_for_anna.csv' \
+            --bioheart-sex-file-path 'gs://cpg-bioheart-main-analysis/qc-stand-alone/somalier/990_samples_somalier.samples.tsv' \
+            --project-names 'tob-wgs,bioheart' --vds-version tenk10k1-0
 
 """
 
