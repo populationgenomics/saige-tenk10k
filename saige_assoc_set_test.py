@@ -95,7 +95,7 @@ def build_fit_null_command(
 
 # Run set-based association (step 2b)
 def build_run_set_based_test_command(
-    output_path: str,
+    set_output_path: str,
     vcf_file: str,
     chrom: str,
     group_file: str,
@@ -107,11 +107,10 @@ def build_run_set_based_test_command(
     This will run a single variant test using a score test
 
     Input:
-    - vcfile: path to VCF file
-    - vcfFileIndex: path to VCF index file (csi)
-    - saige output path: path to output saige file
+    - vcf file: path to VCF file
+    - set test output path: path to output saige file
     - chrom: chromosome to run this on
-    - group: file with variants to test, and weights
+    - group file: file with variants to test, and weights
     - GMMAT model file: null model fit from previous step (.rda)
     - Variance Ratio file: as estimated from previous step (.txt)
 
@@ -119,8 +118,8 @@ def build_run_set_based_test_command(
     Rscript command (str) ready to run
     """
 
-    if to_path(output_path).exists():
-        return None, get_batch().read_input(output_path)
+    if to_path(set_output_path).exists():
+        return None, get_batch().read_input(set_output_path)
 
     vcf_group = get_batch().read_input_group(vcf=vcf_file, index=f'{vcf_file}.csi')
     group_file = get_batch().read_input(group_file)
@@ -148,7 +147,7 @@ def build_run_set_based_test_command(
     )
 
     # write the output
-    get_batch().write_output(second_job.output, output_path)
+    get_batch().write_output(second_job.output, set_output_path)
 
     return second_job, second_job.output
 
@@ -233,7 +232,7 @@ def run_fit_null_job(
 def summarise_rv_results(
     celltype: str,
     gene_results_path: str,
-    out_path: str,
+    summary_output_path: str,
 ):
     """
     Summarise gene-specific results
@@ -252,7 +251,7 @@ def summarise_rv_results(
             for pv_df in existing_rv_assoc_results
         ]
     )
-    result_all_filename = to_path(output_path(out_path, category='analysis'))
+    result_all_filename = to_path(output_path(summary_output_path, category='analysis'))
     logging.info(f'Write summary results to {result_all_filename}')
     with result_all_filename.open('w') as rf:
         results_all_df.to_csv(rf)
@@ -366,7 +365,7 @@ def main(
 
                 # step 2 (cis eQTL set-based test)
                 step2_job, step2_output = build_run_set_based_test_command(
-                    output_path=output_path(
+                    set_output_path=output_path(
                         f'{celltype}/{chromosome}/{celltype}_{gene}_cis_set', 'analysis'
                     ),
                     vcf_file=vcf_file_path,
@@ -398,7 +397,7 @@ def main(
             summarise_rv_results,
             celltype=celltype,
             gene_results_path=output_path(celltype, category='analysis'),
-            out_path=summary_output_path,
+            summary_output_path=summary_output_path,
         )
     # set jobs running
     batch.run(wait=False)

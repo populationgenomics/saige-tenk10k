@@ -108,7 +108,7 @@ def build_fit_null_command(
 
 # Run single variant association (step 2)
 def build_run_single_variant_test_command(
-    output_path: str,
+    sv_output_path: str,
     vcf_file: str,
     chrom: str,
     cis_window_file: str,
@@ -121,8 +121,7 @@ def build_run_single_variant_test_command(
 
     Input:
     - vcfile: path to VCF file
-    - vcfFileIndex: path to VCF index file (csi)
-    - saige output path: path to output saige file
+    - single variant output path: path to output saige file
     - chrom: chromosome to run this on
     - cis window: file with chrom | start | end to specify window
     - GMMAT model file: null model fit from previous step (.rda)
@@ -132,8 +131,8 @@ def build_run_single_variant_test_command(
     Rscript command (str) ready to run
     """
 
-    if to_path(output_path).exists():
-        return None, get_batch().read_input(output_path)
+    if to_path(sv_output_path).exists():
+        return None, get_batch().read_input(sv_output_path)
 
     vcf_group = get_batch().read_input_group(vcf=vcf_file, index=f'{vcf_file}.csi')
     cis_window_file = get_batch().read_input(cis_window_file)
@@ -161,7 +160,7 @@ def build_run_single_variant_test_command(
     )
 
     # write the output
-    get_batch().write_output(second_job.output, output_path)
+    get_batch().write_output(second_job.output, sv_output_path)
 
     return second_job, second_job.output
 
@@ -279,7 +278,7 @@ def run_fit_null_job(
 def summarise_cv_results(
     celltype: str,
     gene_results_path: str,
-    out_path: str,
+    summary_output_path: str,
 ):
     """
     Summarise gene-specific results
@@ -299,7 +298,7 @@ def summarise_cv_results(
             for pv_df in existing_cv_assoc_results
         ]
     )
-    result_all_filename = to_path(output_path(out_path, category='analysis'))
+    result_all_filename = to_path(output_path(summary_output_path, category='analysis'))
     logging.info(f'Write summary results to {result_all_filename}')
     with result_all_filename.open('w') as rf:
         results_all_df.to_csv(rf)
@@ -416,7 +415,7 @@ def main(
 
                 # step 2 (cis eQTL single variant test)
                 step2_job, step2_output = build_run_single_variant_test_command(
-                    output_path=output_path(
+                    sv_output_path=output_path(
                         f'{celltype}/{chromosome}/{celltype}_{gene}_cis', 'analysis'
                     ),
                     vcf_file=vcf_file_path,
@@ -461,7 +460,7 @@ def main(
             summarise_cv_results,
             celltype=celltype,
             gene_results_path=output_path(celltype),
-            out_path=summary_output_path,
+            summary_output_path=summary_output_path,
         )
     # set jobs running
     batch.run(wait=False)
