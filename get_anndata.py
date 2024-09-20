@@ -4,31 +4,26 @@
 This script will
 
 - open anndata expression files
-- open covariate files
+- open cell and samples covariate files
 - create pheno_cov_files
 - create cis window files
 
 these files will be used as inputs for the
-SAIGE-QTL association pipeline.
+SAIGE-QTL association pipelines (both common and rare).
 
 To run:
 
-In main:
-
-In test:
-
 analysis-runner \
-    --description "make expression input files" \
-    --dataset "bioheart" \
-    --access-level "test" \
-    --output-dir "saige-qtl/bioheart_n990_and_tob_n1055/input_files" \
-    --image australia-southeast1-docker.pkg.dev/cpg-common/images/scanpy:1.9.3 \
-    python3 get_anndata.py --celltypes B_naive --chromosomes chr21 \
-    --anndata-files-prefix gs://cpg-bioheart-test/saige-qtl/anndata_objects_from_HPC \
-    --celltype-covs-files-prefix gs://cpg-bioheart-test/saige-qtl/celltype_covs_from_HPC \
-    --sample-covs-file gs://cpg-bioheart-test-analysis/saige-qtl/input_files/covariates/sex_age_geno_pcs_shuffled_ids_tob_bioheart.csv \
-    --concurrent-job-cap=1000 --pc-job-cpu=1 --cis-job-cpu=1
-
+   --description "make expression input files" \
+   --dataset "bioheart" \
+   --access-level "full" \
+   --output-dir "saige-qtl/bioheart_n990_and_tob_n1055/input_files/240920" \
+   --image australia-southeast1-docker.pkg.dev/cpg-common/images/scanpy:1.9.3 \
+   python3 get_anndata.py --celltypes B_naive --chromosomes chr2 \
+   --anndata-files-prefix gs://cpg-bioheart-main/saige-qtl/240-libraries/anndata_objects_from_HPC \
+   --celltype-covs-files-prefix gs://cpg-bioheart-main/saige-qtl/240-libraries/celltype_covs_from_HPC \
+   --sample-covs-file gs://cpg-bioheart-main-analysis/saige-qtl/input_files/240920/covariates/sex_age_geno_pcs_shuffled_ids_tob_bioheart.csv \
+   --pc-job-mem=8G
 
 """
 
