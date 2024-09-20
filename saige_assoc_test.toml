@@ -21,9 +21,9 @@ skipVarianceRatioEstimation = 'FALSE'
 isRemoveZerosinPheno = 'FALSE'
 useSparseGRMtoFitNULL = 'FALSE'
 useGRMtoFitNULL = 'FALSE'
-# option to add an offset to the fixed covariates (???)
+# option to treat fixed covariates as offset
 isCovariateOffset = 'FALSE'
-# option to transform (scale?) covariates?
+# option to transform (scale) covariates
 isCovariateTransform = 'TRUE'
 # option to skip model fitting (discouraged)
 skipModelFitting = 'FALSE'
