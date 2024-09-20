@@ -121,8 +121,7 @@ def build_run_single_variant_test_command(
 
     Input:
     - vcfile: path to VCF file
-    - vcfFileIndex: path to VCF index file (csi)
-    - saige output path: path to output saige file
+    - single variant output path: path to output saige file
     - chrom: chromosome to run this on
     - cis window: file with chrom | start | end to specify window
     - GMMAT model file: null model fit from previous step (.rda)
