@@ -134,7 +134,7 @@ Outputs:
 * if set to true, single-variant test raw p-values for all variants in the group also (one per gene, cell type)
 * set-based association summary statistics (gene-level p-values summarised, one per cell type)
 
-### SAIGE-QTL parameters explanation
+## SAIGE-QTL parameters explanation
 
 Clarifying the reasoning behind the parameters / flags used to run SAIGE-QTL.
 Most of these are (or will be) included in the official [documentation](https://weizhou0.github.io/SAIGE-QTL-doc/).
