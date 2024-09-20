@@ -182,7 +182,7 @@ In config (under `[saige.sv_test]` in `saige_assoc_test.toml`):
 
 * `vcfField`: DS for dosages, GT for genotypes (default: `GT`).
 * `minMAF`: minimum minor allele frequency (MAF) (default: 0).
-* `minMAC`: minimum minor allele count (MAC) (default: 5).
+* `minMAC`: minimum minor allele count (MAC) (default: 5). Note that if this filter is discordant with the above one, the more stringent one will be applied (max between the two will be used).
 * `LOCO`: boolean specifying whether leave-one-chromosome-out should be used (default: `FALSE`).
 * `markers_per_chunk`: internal parameter to batchify variants tested (default: 10000). Confusingly the naming is Snake Case here.
 * `SPAcutoff`: internal parameter to do with the saddlepoint approximation, does not make much of a difference for us (default: 10000).
