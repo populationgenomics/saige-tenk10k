@@ -365,7 +365,7 @@ def main(
 
                 # step 2 (cis eQTL set-based test)
                 step2_job, step2_output = build_run_set_based_test_command(
-                    output_path=output_path(
+                    set_output_path=output_path(
                         f'{celltype}/{chromosome}/{celltype}_{gene}_cis_set', 'analysis'
                     ),
                     vcf_file=vcf_file_path,
