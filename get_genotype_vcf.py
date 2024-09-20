@@ -12,36 +12,12 @@ for variance ratio estimation
 this will be used as input for the
 SAIGE-QTL association pipeline.
 
-
-To run:
-
-In test:
-
 analysis-runner \
-    --description "get common variant VCF" \
-    --dataset "bioheart" \
-    --access-level "test" \
-    --output-dir "saige-qtl/bioheart_n990_and_tob_n1055/input_files/genotypes/v3" \
-    python3 get_genotype_vcf.py --vds-path=gs://cpg-bioheart-test/vds/tenk10k1-0.vds --chromosomes chr21 \
-        --cv-maf-threshold 0 --rv-maf-threshold 1 --vre-mac-threshold 1 --vre-n-markers 5
-
-In main:
-
-analysis-runner \
-    --description "get common and rare variant VCFs" \
-    --dataset "bioheart" \
-    --access-level "full" \
-    --output-dir "saige-qtl/input_files/genotypes/" \
-    python3 get_genotype_vcf.py --vds-path=gs:// --chromosomes chr1,chr2,chr22
-
-
-    analysis-runner \
    --description "get common and rare variant VCFs" \
-   --dataset "tob-wgs" \
+   --dataset "bioheart" \
    --access-level "full" \
-   --output-dir "saige-qtl/tob_n1055/input_files/genotypes/" \
-   python3 get_genotype_vcf.py --vds-path=gs://cpg-tob-wgs-main/vds/tob-wgs1-0.vds --chromosomes chr1,chr2,chr3,chr4,chr5,chr6,chr7,chr8,chr9,chr10,chr11,chr12,chr13,chr14,chr15,chr16,chr17,chr18,chr19,chr20,chr21,chr22
-
+   --output-dir saige-qtl/bioheart_n990_and_tob_n1055/input_files/240920/genotypes/ \
+    python3 get_genotype_vcf.py --vds-path=gs://cpg-bioheart-main/vds/tenk10k1-0.vds --chromosomes chr2
 
 """
 
