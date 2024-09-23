@@ -328,8 +328,8 @@ def main(
         mt = hl.vds.to_dense_mt(vds)
 
         # set a checkpoint, and either re-use or write
-        post_dense_checkpoint = output_path('post_dense_checkpoint.mt', category='tmp')
-        mt = checkpoint_mt(mt, post_dense_checkpoint)
+        # post_dense_checkpoint = output_path('post_dense_checkpoint.mt', category='tmp')
+        # mt = checkpoint_mt(mt, post_dense_checkpoint)
 
         # filter out related samples from vre too
         # this will get dropped as the vds file will already be clean
@@ -338,11 +338,11 @@ def main(
         related_samples = hl.literal(related_samples)
         mt = mt.filter_cols(~related_samples.contains(mt['s']))
 
-        # set a checkpoint, and either re-use or write
-        post_unrelated_checkpoint = output_path(
-            'post_unrelated_checkpoint.mt', category='tmp'
-        )
-        mt = checkpoint_mt(mt, post_unrelated_checkpoint)
+        # # set a checkpoint, and either re-use or write
+        # post_unrelated_checkpoint = output_path(
+        #     'post_unrelated_checkpoint.mt', category='tmp'
+        # )
+        # mt = checkpoint_mt(mt, post_unrelated_checkpoint)
 
         # again filter for biallelic SNPs
         mt = mt.filter_rows(
@@ -362,7 +362,8 @@ def main(
         post_common_checkpoint = output_path(
             'common_reduced_checkpoint.mt', category='tmp'
         )
-        vre_mt = checkpoint_mt(vre_mt, post_common_checkpoint)
+        # vre_mt = checkpoint_mt(vre_mt, post_common_checkpoint)
+        vre_mt = vre_mt.checkpoint(post_common_checkpoint)
 
         if (n_ac_vars := vre_mt.count_rows()) == 0:
             raise ValueError('No variants left, exiting!')
@@ -380,8 +381,8 @@ def main(
         )
         vre_mt = vre_mt.filter_rows(hl.is_defined(pruned_variant_table[vre_mt.row_key]))
 
-        post_prune_checkpoint = output_path('post_prune_checkpoint.mt', category='tmp')
-        vre_mt = checkpoint_mt(vre_mt, post_prune_checkpoint)
+        # post_prune_checkpoint = output_path('post_prune_checkpoint.mt', category='tmp')
+        # vre_mt = checkpoint_mt(vre_mt, post_prune_checkpoint)
 
         logging.info(f'pruning completed, {vre_mt.count_rows()} variants left')
         # randomly sample {vre_n_markers} variants
