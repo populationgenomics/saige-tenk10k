@@ -224,7 +224,7 @@ Briefly, if one wanted to run both common and rare variant pipelines, the order 
 2. get_sample_covariates.py (does not require any other part of the pipeline and can be run in parallel with 1)
 3. get_anndata.py (requires 2)
 4. saige_assoc.py (requires 1,3)
-5. make_group_file.py (requires 1,3)
+5. make_group_file.py (requires 1,3 and can be run in parallel with 4)
 6. saige_assoc_set_test.py (requires 1,3,4 (so that step1 is only run once) and 5)
 
 ## Data
