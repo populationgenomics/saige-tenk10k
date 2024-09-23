@@ -77,9 +77,12 @@ Outputs:
 * TSV phenotype covariate files (one per gene, cell type)
 * TSV gene cis window file (one per gene)
 
-Notes: as before, we remove 'chr' from the chromosome name in the gene cis window file.
+### Notes
+
+As in `get_genotype_vcf.py`, we remove 'chr' from the chromosome name in the gene cis window file.
 Additionally, we turn hyphens ('-') into underscores ('_') in the gene names.
 Both the AnnData objects and cell covariate files are generated on Garvan's HPC and copied over to GCP.
+A note that the `filter_lowly_expressed_genes` method will remove lowly-expressed genes that will not even get tested, which should be kept in mind when interpreting the results.
 
 ## Make group file
 
