@@ -29,9 +29,9 @@ analysis-runner \
 import click
 import logging
 
-import hailtop.batch.job as hb_job
+from typing import List
 
-import pandas as pd
+import hailtop.batch.job as hb_job
 
 from cpg_utils import to_path
 from cpg_utils.hail_batch import get_batch, init_batch
