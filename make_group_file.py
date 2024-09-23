@@ -57,7 +57,7 @@ def make_group_file(
     import math
 
     # import hail as hl
-    from hail import filter_intervals, parse_locus_interval
+    from hail import filter_intervals, import_vcf, parse_locus_interval
     import pandas as pd
 
     # from cpg_utils import to_path
@@ -74,7 +74,7 @@ def make_group_file(
     #     ds,
     #     [hl.parse_locus_interval(gene_interval, reference_genome=genome_reference)],
     # )
-    ds = hl.import_vcf(vcf_path_chrom, reference_genome=genome_reference)
+    ds = import_vcf(vcf_path_chrom, reference_genome=genome_reference)
     ds_result = filter_intervals(
         ds,
         [parse_locus_interval(gene_interval, reference_genome=genome_reference)],
