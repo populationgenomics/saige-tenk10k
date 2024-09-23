@@ -53,6 +53,7 @@ def make_group_file(
     """
     import math
     import hail as hl
+    import pandas as pd
     from cpg_utils import to_path
 
     gene_file = f'{cis_window_files_path}{chrom}/{gene}_{cis_window}bp.tsv'
