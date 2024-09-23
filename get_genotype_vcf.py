@@ -320,7 +320,11 @@ def main(
     plink_existence_outcome = can_reuse(vre_bim_path)
     logging.info(f'Does {vre_bim_path} exist? {plink_existence_outcome}')
     if not plink_existence_outcome:
+        # keep autosome chromosomes only
+        vds = hl.vds.filter_chromosomes(vds, keep_autosomes=True)
+        # split multiallelic loci pre densifying to mt
         vds = hl.vds.split_multi(vds, filter_changed_loci=True)
+        # densify to mt
         mt = hl.vds.to_dense_mt(vds)
 
         # set a checkpoint, and either re-use or write
