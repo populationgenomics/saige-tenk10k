@@ -193,7 +193,7 @@ def main(
                 group_file = (
                     f'{group_files_path}{chrom}/{gene}_{cis_window}bp_no_weights.tsv'
                 )
-            if not group_file.exists():
+            if not to_path(group_file).exists():
                 gene_group_job = get_batch().new_python_job(
                     name=f'gene make group file: {gene}'
                 )
