@@ -41,7 +41,14 @@ Outputs:
 * VCF files containing all retained rare variants (one per chromosome) + corresponding index files (`.csi`)
 * plink object for only 2,000 variants (minor allele count > 20), after LD pruning - this is for the estimation of the variance ratio (VRE plink files)
 
-Notes: SAIGE-QTL allows numeric chromosomes only, so both the .bim and the VCF files are modified in this script to remove the 'chr' notation (so that e.g., 'chr1' becomes '1').
+### Notes
+
+SAIGE-QTL allows numeric chromosomes only, so both the .bim and the VCF files are modified in this script to remove the 'chr' notation (so that e.g., 'chr1' becomes '1').
+
+For the VRE estimation, we need to select 2,000 (this number can be customised) variables at random, except we need them to be common enough (MAC>20, also customisable), and we want them to be somewhat independent, to be more representative.
+To achieve this, we perform LD pruning of the variables so that variants in strong LD get pruned to one in each LD block.
+Because the LD pruning operation is very costly, we downsample the variants first (to 1% by default).
+The LD pruning parameters can be user-adjusted, with default values as described in the [methods's documentation](https://hail.is/docs/0.2/guides/genetics.html#pruning-variants-in-linkage-disequilibrium).
 
 ## Get sample covariates
 
