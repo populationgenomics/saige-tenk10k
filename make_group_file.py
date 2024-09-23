@@ -32,7 +32,7 @@ import logging
 # import math
 
 import hail as hl
-import pandas as pd
+# import pandas as pd
 
 from cpg_utils import to_path
 from cpg_utils.hail_batch import get_batch, init_batch
