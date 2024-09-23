@@ -31,7 +31,7 @@ import logging
 
 # import math
 
-import hail as hl
+# import hail as hl
 
 # import pandas as pd
 
