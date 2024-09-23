@@ -57,7 +57,7 @@ Outputs:
 
 * TSV sample covariate file (one per cohort)
 
-### Notes
+### Notes (get_genotype_vcf.py)
 
 There is the option to fill in missing values for sex (0 for unknown, where 1 is male, 2 is female) and age (average age across the cohort).
 Additionally, add a user-specified (default: 10) number of permuted IDs, where the individual ID is permuted at random, to assess calibration (by shuffling the individual IDs we disrupt any real association between genotype and phenotype, so we expect no significant associations left when testing).
@@ -77,7 +77,7 @@ Outputs:
 * TSV phenotype covariate files (one per gene, cell type)
 * TSV gene cis window file (one per gene)
 
-### Notes
+### Notes (get_anndata.py)
 
 As in `get_genotype_vcf.py`, we remove 'chr' from the chromosome name in the gene cis window file.
 Additionally, we turn hyphens ('-') into underscores ('_') in the gene names.
