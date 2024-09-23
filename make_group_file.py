@@ -40,7 +40,8 @@ from cpg_utils.hail_batch import get_batch, init_batch
 
 
 def make_group_file(
-    ds: hl.vds,
+    # ds: hl.vds,
+    vcf_path_chrom: str,
     gene: str,
     chrom: str,
     cis_window_files_path: str,
@@ -73,6 +74,7 @@ def make_group_file(
     #     ds,
     #     [hl.parse_locus_interval(gene_interval, reference_genome=genome_reference)],
     # )
+    ds = hl.import_vcf(vcf_path_chrom, reference_genome=genome_reference)
     ds_result = filter_intervals(
         ds,
         [parse_locus_interval(gene_interval, reference_genome=genome_reference)],
@@ -169,7 +171,7 @@ def main(
 
         # load rare variant vcf file for specific chromosome
         vcf_path_chrom = f'{vcf_path}/{chrom}_rare_variants.vcf.bgz'
-        ds = hl.import_vcf(vcf_path_chrom, reference_genome=genome_reference)
+        # ds = hl.import_vcf(vcf_path_chrom, reference_genome=genome_reference)
 
         for gene in genes:
             print(f'gene: {gene}')
@@ -187,7 +189,8 @@ def main(
             # gene_group_job.cpu(group_job_cpu)
             gene_group_job.call(
                 make_group_file,
-                ds=ds,
+                # ds=ds,
+                vcf_path_chrom=vcf_path_chrom,
                 gene=gene,
                 chrom=chrom,
                 cis_window_files_path=cis_window_files_path,
