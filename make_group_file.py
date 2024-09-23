@@ -29,8 +29,6 @@ analysis-runner \
 import click
 import logging
 
-from typing import List
-
 import hailtop.batch.job as hb_job
 
 from cpg_utils import to_path
@@ -146,7 +144,7 @@ def main(
 
     init_batch()
 
-    all_jobs: List[hb_job.Job] = []
+    all_jobs: list[hb_job.Job] = []
 
     def manage_concurrency(new_job: hb_job.Job):
         """
