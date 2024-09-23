@@ -51,6 +51,7 @@ def make_group_file(
     """
     Make group file
     """
+    import hail as hl
     import math
 
     gene_file = f'{cis_window_files_path}{chrom}/{gene}_{cis_window}bp.tsv'
