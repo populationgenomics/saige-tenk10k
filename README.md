@@ -57,7 +57,9 @@ Outputs:
 
 * TSV sample covariate file (one per cohort)
 
-Notes: option to fill in missing values for sex (0, where 1 is male, 2 is female) and age (average age across the cohort).
+### Notes
+
+There is the option to fill in missing values for sex (0 for unknown, where 1 is male, 2 is female) and age (average age across the cohort).
 Additionally, add a user-specified (default: 10) number of permuted IDs, where the individual ID is permuted at random, to assess calibration (by shuffling the individual IDs we disrupt any real association between genotype and phenotype, so we expect no significant associations left when testing).
 
 ## Gene expression preprocessing
