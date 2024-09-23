@@ -54,6 +54,7 @@ def make_group_file(
     Make group file
     """
     import math
+
     # import hail as hl
     from hail import filter_intervals, parse_locus_interval
     import pandas as pd
