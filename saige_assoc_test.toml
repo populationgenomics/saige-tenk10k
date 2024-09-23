@@ -1,7 +1,7 @@
 [saige]
 # principal arguments
 celltypes = ['B_naive']
-chromosomes = ['chr2']
+chromosomes = ['chr22']
 drop_genes =[]
 
 # secondary arguments
@@ -30,7 +30,7 @@ skipModelFitting = 'FALSE'
 # tolerance for convergence
 tol = 0.00001
 # max iterations (increase if it fails to converge)
-maxiterPCG = 5000
+maxiterPCG = 500
 IsOverwriteVarianceRatioFile = 'TRUE'
 [saige.sv_test]
 vcfField = 'GT'
@@ -59,7 +59,7 @@ storage = "0G"
 memory = "4Gi"
 [saige.job_specs.sv_test]
 cpu = 1
-storage = '25G'
+storage = '12G'
 [saige.job_specs.set_test]
 cpu = 1
 storage = '12G'
