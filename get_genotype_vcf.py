@@ -218,6 +218,8 @@ def remove_chr_from_bim(input_bim: str, output_bim: str, bim_renamed: str):
     '--relateds-to-drop-path',
     default='gs://cpg-bioheart-test/large_cohort/v1-0/relateds_to_drop.ht',
 )
+@click.option('--ld-prune-r2', default=0.2)
+@click.option('--ld-prune-bp-window-size', default=500000)
 @click.command()
 def main(
     vds_path: str,
@@ -230,6 +232,8 @@ def main(
     exclude_indels: bool,
     plink_job_storage: str,
     relateds_to_drop_path: str,
+    ld_prune_r2: float,
+    ld_prune_bp_window_size: int,
 ):
     """
     Write genotypes as VCF
@@ -366,7 +370,9 @@ def main(
         logging.info('subset completed')
 
         # perform LD pruning
-        pruned_variant_table = hl.ld_prune(vre_mt.GT, r2=0.2, bp_window_size=500000)
+        pruned_variant_table = hl.ld_prune(
+            vre_mt.GT, r2=ld_prune_r2, bp_window_size=ld_prune_bp_window_size
+        )
         vre_mt = vre_mt.filter_rows(hl.is_defined(pruned_variant_table[vre_mt.row_key]))
 
         post_prune_checkpoint = output_path('post_prune_checkpoint.mt', category='tmp')
