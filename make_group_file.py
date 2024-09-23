@@ -56,7 +56,8 @@ def make_group_file(
     import math
     import hail as hl
     import pandas as pd
-    from cpg_utils import to_path
+
+    # from cpg_utils import to_path
 
     gene_file = f'{cis_window_files_path}{chrom}/{gene}_{cis_window}bp.tsv'
     print(f'gene file: {gene_file}')
@@ -107,7 +108,9 @@ def make_group_file(
     # combine
     group_vals_df = pd.merge(group_df, vals_df, on='category')
 
-    with to_path(group_file).open('w') as gdf:
+    # with to_path(group_file).open('w') as gdf:
+    #     group_vals_df.to_csv(gdf, index=False, header=False, sep=' ')
+    with group_file.open('w') as gdf:
         group_vals_df.to_csv(gdf, index=False, header=False, sep=' ')
 
 
@@ -183,7 +186,7 @@ def main(
                 chrom=chrom,
                 cis_window_files_path=cis_window_files_path,
                 # group_files_path=group_files_path,
-                group_file=group_file,
+                group_file=to_path(group_file),
                 cis_window=cis_window,
                 genome_reference=genome_reference,
                 gamma=gamma,
