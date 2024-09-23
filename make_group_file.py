@@ -35,8 +35,73 @@ import hail as hl
 import pandas as pd
 
 from cpg_utils import to_path
+from cpg_utils.hail_batch import get_batch, init_batch
 
-from cpg_utils.hail_batch import init_batch
+
+def make_group_file(
+    ds: hl.vds,
+    gene: str,
+    chrom: str,
+    cis_window_files_path: str,
+    group_files_path: str,
+    cis_window: int,
+    genome_reference: str,
+    gamma: str,
+):
+    """
+    Make group file
+    """
+    gene_file = f'{cis_window_files_path}{chrom}/{gene}_{cis_window}bp.tsv'
+    print(f'gene file: {gene_file}')
+    gene_df = pd.read_csv(gene_file, sep='\t')
+    num_chrom = gene_df.columns.values[0]
+    window_start = gene_df.columns.values[1]
+    window_end = gene_df.columns.values[2]
+    gene_interval = f'{num_chrom}:{window_start}-{window_end}'
+    # extract variants within interval
+    ds_result = hl.filter_intervals(
+        ds,
+        [hl.parse_locus_interval(gene_interval, reference_genome=genome_reference)],
+    )
+    variants_chrom_pos = [
+        f'{loc.contig}:{loc.position}' for loc in ds_result.locus.collect()
+    ]
+    variants_alleles = [
+        f'{allele[0]}:{allele[1]}' for allele in ds_result.alleles.collect()
+    ]
+    variants = [
+        f'{variants_chrom_pos[i]}:{variants_alleles[i]}'
+        for i in range(len(variants_chrom_pos))
+    ]
+
+    if gamma != 'none':
+        gene_tss = int(window_start) + cis_window
+        distances = [int(var.split(":")[1]) - gene_tss for var in variants]
+        # get weight for genetic variants based on
+        # the distance of that variant from the gene
+        # Following the approach used by the APEX authors
+        # doi: https://doi.org/10.1101/2020.12.18.423490
+        weights = [math.exp(-float(gamma) * abs(d)) for d in distances]
+        group_df = pd.DataFrame(
+            {
+                'gene': [gene, gene, gene],
+                'category': ['var', 'anno', 'weight:dTSS'],
+            }
+        )
+        vals_df = pd.DataFrame(
+            {'var': variants, 'anno': 'null', 'weight:dTSS': weights}
+        ).T
+        group_file = f'{group_files_path}{chrom}/{gene}_{cis_window}bp_dTSS_weights.tsv'
+    else:
+        group_df = pd.DataFrame({'gene': [gene, gene], 'category': ['var', 'anno']})
+        vals_df = pd.DataFrame({'var': variants, 'anno': 'null'}).T
+        group_file = f'{group_files_path}{chrom}/{gene}_{cis_window}bp_no_weights.tsv'
+    vals_df['category'] = vals_df.index
+    # combine
+    group_vals_df = pd.merge(group_df, vals_df, on='category')
+
+    with to_path(group_file).open('w') as gdf:
+        group_vals_df.to_csv(gdf, index=False, header=False, sep=' ')
 
 
 @click.command()
@@ -92,68 +157,86 @@ def main(
 
         for gene in genes:
             print(f'gene: {gene}')
-            # get gene cis window info
-            gene_file = f'{cis_window_files_path}{chrom}/{gene}_{cis_window}bp.tsv'
-            print(f'gene file: {gene_file}')
-            gene_df = pd.read_csv(gene_file, sep='\t')
-            num_chrom = gene_df.columns.values[0]
-            window_start = gene_df.columns.values[1]
-            window_end = gene_df.columns.values[2]
-            gene_interval = f'{num_chrom}:{window_start}-{window_end}'
-            # extract variants within interval
-            ds_result = hl.filter_intervals(
-                ds,
-                [
-                    hl.parse_locus_interval(
-                        gene_interval, reference_genome=genome_reference
-                    )
-                ],
+            gene_group_job = get_batch().new_python_job(
+                name=f'gene make group file: {gene}'
             )
-            variants_chrom_pos = [
-                f'{loc.contig}:{loc.position}' for loc in ds_result.locus.collect()
-            ]
-            variants_alleles = [
-                f'{allele[0]}:{allele[1]}' for allele in ds_result.alleles.collect()
-            ]
-            variants = [
-                f'{variants_chrom_pos[i]}:{variants_alleles[i]}'
-                for i in range(len(variants_chrom_pos))
-            ]
+            # gene_group_job.cpu(group_job_cpu)
+            gene_group_job.call(
+                make_group_file,
+                ds=ds,
+                gene=gene,
+                chrom=chrom,
+                cis_window_files_path=cis_window_files_path,
+                group_files_path=group_files_path,
+                cis_window=cis_window,
+                genome_reference=genome_reference,
+                gamma=gamma,
+            )
+            # manage_concurrency(gene_cis_job)
+            logging.info(f'make group file job for {gene} scheduled')
+            # # get gene cis window info
+            # gene_file = f'{cis_window_files_path}{chrom}/{gene}_{cis_window}bp.tsv'
+            # print(f'gene file: {gene_file}')
+            # gene_df = pd.read_csv(gene_file, sep='\t')
+            # num_chrom = gene_df.columns.values[0]
+            # window_start = gene_df.columns.values[1]
+            # window_end = gene_df.columns.values[2]
+            # gene_interval = f'{num_chrom}:{window_start}-{window_end}'
+            # # extract variants within interval
+            # ds_result = hl.filter_intervals(
+            #     ds,
+            #     [
+            #         hl.parse_locus_interval(
+            #             gene_interval, reference_genome=genome_reference
+            #         )
+            #     ],
+            # )
+            # variants_chrom_pos = [
+            #     f'{loc.contig}:{loc.position}' for loc in ds_result.locus.collect()
+            # ]
+            # variants_alleles = [
+            #     f'{allele[0]}:{allele[1]}' for allele in ds_result.alleles.collect()
+            # ]
+            # variants = [
+            #     f'{variants_chrom_pos[i]}:{variants_alleles[i]}'
+            #     for i in range(len(variants_chrom_pos))
+            # ]
 
-            if gamma != 'none':
-                gene_tss = int(window_start) + cis_window
-                distances = [int(var.split(":")[1]) - gene_tss for var in variants]
-                # get weight for genetic variants based on
-                # the distance of that variant from the gene
-                # Following the approach used by the APEX authors
-                # doi: https://doi.org/10.1101/2020.12.18.423490
-                weights = [math.exp(-float(gamma) * abs(d)) for d in distances]
-                group_df = pd.DataFrame(
-                    {
-                        'gene': [gene, gene, gene],
-                        'category': ['var', 'anno', 'weight:dTSS'],
-                    }
-                )
-                vals_df = pd.DataFrame(
-                    {'var': variants, 'anno': 'null', 'weight:dTSS': weights}
-                ).T
-                group_file = (
-                    f'{group_files_path}{chrom}/{gene}_{cis_window}bp_dTSS_weights.tsv'
-                )
-            else:
-                group_df = pd.DataFrame(
-                    {'gene': [gene, gene], 'category': ['var', 'anno']}
-                )
-                vals_df = pd.DataFrame({'var': variants, 'anno': 'null'}).T
-                group_file = (
-                    f'{group_files_path}{chrom}/{gene}_{cis_window}bp_no_weights.tsv'
-                )
-            vals_df['category'] = vals_df.index
-            # combine
-            group_vals_df = pd.merge(group_df, vals_df, on='category')
+            # if gamma != 'none':
+            #     gene_tss = int(window_start) + cis_window
+            #     distances = [int(var.split(":")[1]) - gene_tss for var in variants]
+            #     # get weight for genetic variants based on
+            #     # the distance of that variant from the gene
+            #     # Following the approach used by the APEX authors
+            #     # doi: https://doi.org/10.1101/2020.12.18.423490
+            #     weights = [math.exp(-float(gamma) * abs(d)) for d in distances]
+            #     group_df = pd.DataFrame(
+            #         {
+            #             'gene': [gene, gene, gene],
+            #             'category': ['var', 'anno', 'weight:dTSS'],
+            #         }
+            #     )
+            #     vals_df = pd.DataFrame(
+            #         {'var': variants, 'anno': 'null', 'weight:dTSS': weights}
+            #     ).T
+            #     group_file = (
+            #         f'{group_files_path}{chrom}/{gene}_{cis_window}bp_dTSS_weights.tsv'
+            #     )
+            # else:
+            #     group_df = pd.DataFrame(
+            #         {'gene': [gene, gene], 'category': ['var', 'anno']}
+            #     )
+            #     vals_df = pd.DataFrame({'var': variants, 'anno': 'null'}).T
+            #     group_file = (
+            #         f'{group_files_path}{chrom}/{gene}_{cis_window}bp_no_weights.tsv'
+            #     )
+            # vals_df['category'] = vals_df.index
+            # # combine
+            # group_vals_df = pd.merge(group_df, vals_df, on='category')
 
-            with to_path(group_file).open('w') as gdf:
-                group_vals_df.to_csv(gdf, index=False, header=False, sep=' ')
+            # with to_path(group_file).open('w') as gdf:
+            #     group_vals_df.to_csv(gdf, index=False, header=False, sep=' ')
+    get_batch().run(wait=False)
 
 
 if __name__ == '__main__':
