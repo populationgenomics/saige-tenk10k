@@ -55,6 +55,7 @@ def make_group_file(
     """
     import math
     import hail as hl
+    from hail import filter_intervals, parse_locus_interval
     import pandas as pd
 
     # from cpg_utils import to_path
@@ -67,9 +68,13 @@ def make_group_file(
     window_end = gene_df.columns.values[2]
     gene_interval = f'{num_chrom}:{window_start}-{window_end}'
     # extract variants within interval
-    ds_result = hl.filter_intervals(
+    # ds_result = hl.filter_intervals(
+    #     ds,
+    #     [hl.parse_locus_interval(gene_interval, reference_genome=genome_reference)],
+    # )
+    ds_result = filter_intervals(
         ds,
-        [hl.parse_locus_interval(gene_interval, reference_genome=genome_reference)],
+        [parse_locus_interval(gene_interval, reference_genome=genome_reference)],
     )
     variants_chrom_pos = [
         f'{loc.contig}:{loc.position}' for loc in ds_result.locus.collect()
