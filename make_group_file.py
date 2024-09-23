@@ -45,7 +45,7 @@ def make_group_file(
     chrom: str,
     cis_window_files_path: str,
     # group_files_path: str,
-    group_file: str,
+    group_file,
     cis_window: int,
     genome_reference: str,
     gamma: str,
