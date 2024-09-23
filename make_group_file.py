@@ -32,6 +32,7 @@ import logging
 # import math
 
 import hail as hl
+
 # import pandas as pd
 
 from cpg_utils import to_path
@@ -43,7 +44,8 @@ def make_group_file(
     gene: str,
     chrom: str,
     cis_window_files_path: str,
-    group_files_path: str,
+    # group_files_path: str,
+    group_file: str,
     cis_window: int,
     genome_reference: str,
     gamma: str,
@@ -96,11 +98,11 @@ def make_group_file(
         vals_df = pd.DataFrame(
             {'var': variants, 'anno': 'null', 'weight:dTSS': weights}
         ).T
-        group_file = f'{group_files_path}{chrom}/{gene}_{cis_window}bp_dTSS_weights.tsv'
+        # group_file = f'{group_files_path}{chrom}/{gene}_{cis_window}bp_dTSS_weights.tsv'
     else:
         group_df = pd.DataFrame({'gene': [gene, gene], 'category': ['var', 'anno']})
         vals_df = pd.DataFrame({'var': variants, 'anno': 'null'}).T
-        group_file = f'{group_files_path}{chrom}/{gene}_{cis_window}bp_no_weights.tsv'
+        # group_file = f'{group_files_path}{chrom}/{gene}_{cis_window}bp_no_weights.tsv'
     vals_df['category'] = vals_df.index
     # combine
     group_vals_df = pd.merge(group_df, vals_df, on='category')
@@ -162,6 +164,14 @@ def main(
 
         for gene in genes:
             print(f'gene: {gene}')
+            if gamma != 'none':
+                group_file = (
+                    f'{group_files_path}{chrom}/{gene}_{cis_window}bp_dTSS_weights.tsv'
+                )
+            else:
+                group_file = (
+                    f'{group_files_path}{chrom}/{gene}_{cis_window}bp_no_weights.tsv'
+                )
             gene_group_job = get_batch().new_python_job(
                 name=f'gene make group file: {gene}'
             )
@@ -172,7 +182,8 @@ def main(
                 gene=gene,
                 chrom=chrom,
                 cis_window_files_path=cis_window_files_path,
-                group_files_path=group_files_path,
+                # group_files_path=group_files_path,
+                group_file=group_file,
                 cis_window=cis_window,
                 genome_reference=genome_reference,
                 gamma=gamma,
