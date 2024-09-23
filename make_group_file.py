@@ -59,8 +59,11 @@ def make_group_file(
     # import hail as hl
     from hail import filter_intervals, import_vcf, parse_locus_interval
     import pandas as pd
+    from cpg_utils.hail_batch import init_batch
 
     # from cpg_utils import to_path
+
+    init_batch()
 
     gene_file = f'{cis_window_files_path}{chrom}/{gene}_{cis_window}bp.tsv'
     print(f'gene file: {gene_file}')
