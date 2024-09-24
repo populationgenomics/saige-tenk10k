@@ -109,7 +109,8 @@ def build_run_set_based_test_command(
     This will run a single variant test using a score test
 
     Input:
-    - step2_job: job to run this command in
+    - job: job to run this command in
+    - set_key: unique key for this set-based test (used to name output)
     - vcf group: VCF & index file ResourceGroup
     - set test output path: path to output saige file
     - chrom: chromosome to run this on
