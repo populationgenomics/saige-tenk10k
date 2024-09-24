@@ -96,7 +96,7 @@ def build_fit_null_command(
 # Run set-based association (step 2b)
 def build_run_set_based_test_command(
     set_output_path: str,
-    vcf_file: str,
+    vcf_group: hb.ResourceGroup,
     chrom: str,
     group_file: str,
     gmmat_model_path: str,
@@ -107,7 +107,7 @@ def build_run_set_based_test_command(
     This will run a single variant test using a score test
 
     Input:
-    - vcf file: path to VCF file
+    - vcf group: VCF & index file ResourceGroup
     - set test output path: path to output saige file
     - chrom: chromosome to run this on
     - group file: file with variants to test, and weights
@@ -121,7 +121,6 @@ def build_run_set_based_test_command(
     if to_path(set_output_path).exists():
         return None, get_batch().read_input(set_output_path)
 
-    vcf_group = get_batch().read_input_group(vcf=vcf_file, index=f'{vcf_file}.csi')
     group_file = get_batch().read_input(group_file)
 
     second_job = get_batch().new_job(name="saige-qtl part 2b")
@@ -310,6 +309,8 @@ def main(
     for chromosome in chromosomes:
         # genotype vcf files are one per chromosome
         vcf_file_path = f'{genotype_files_prefix}/{chromosome}_rare_variants.vcf.bgz'
+        vcf_group = get_batch().read_input_group(vcf=vcf_file_path, index=f'{vcf_file_path}.csi')
+
         # group files are split by gene but organised by chromosome also
         group_files_path_chrom = f'{group_files_path}/{chromosome}'
 
@@ -370,7 +371,7 @@ def main(
                     continue
                 step2_job = build_run_set_based_test_command(
                     set_output_path=set_output_path,
-                    vcf_file=vcf_file_path,
+                    vcf_group=vcf_group,
                     chrom=(chromosome[3:]),
                     group_file=group_path,
                     gmmat_model_path=null_output['rda'],
