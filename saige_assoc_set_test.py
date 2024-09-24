@@ -128,12 +128,14 @@ def build_run_set_based_test_command(
         [f'--{key}={value}' for key, value in get_config()['saige']['set_test'].items()]
     )
 
+    set_key_writeable = set_key.replace('/', '_')
+
     job.command(
         f"""
         Rscript /usr/local/bin/step2_tests_qtl.R \
         --vcfFile={vcf_group.vcf} \
         --vcfFileIndex={vcf_group.index} \
-        --SAIGEOutputFile={set_key} \
+        --SAIGEOutputFile={set_key_writeable} \
         --chrom={chrom} \
         --GMMATmodelFile={gmmat_model_path} \
         --varianceRatioFile={variance_ratio_path} \
@@ -144,15 +146,15 @@ def build_run_set_based_test_command(
     # declare a uniquely named resource group for this set-based test
     job.declare_resource_group(
         **{
-            set_key: {
-                'output': f'{set_key}.output',
+            set_key_writeable: {
+                'output': f'{set_key_writeable}.output',
             }
         }
     )
-    job.command(f'mv {set_key} {job[set_key]["output"]}')
+    job.command(f'mv {set_key_writeable} {job[set_key_writeable]["output"]}')
 
     # write the output
-    get_batch().write_output(job[set_key].output, set_output_path)
+    get_batch().write_output(job[set_key_writeable].output, set_output_path)
 
 
 def apply_job_settings(job: hb.batch.job.Job, job_name: str):
