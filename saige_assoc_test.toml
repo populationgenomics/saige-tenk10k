@@ -62,4 +62,4 @@ cpu = 1
 storage = '25G'
 [saige.job_specs.set_test]
 cpu = 1
-storage = '25G'
+storage = '30G'
