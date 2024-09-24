@@ -329,7 +329,9 @@ def main(
         jobs_in_vm = 0
         # genotype vcf files are one per chromosome, so read in at the top
         vcf_file_path = f'{genotype_files_prefix}/{chromosome}_rare_variants.vcf.bgz'
-        vcf_group = get_batch().read_input_group(vcf=vcf_file_path, index=f'{vcf_file_path}.csi')
+        vcf_group = get_batch().read_input_group(
+            vcf=vcf_file_path, index=f'{vcf_file_path}.csi'
+        )
 
         # group files are split by gene but organised by chromosome also
         group_files_path_chrom = f'{group_files_path}/{chromosome}'
@@ -389,9 +391,12 @@ def main(
                 set_key = f'{celltype}/{chromosome}/{celltype}_{gene}_cis_set'
                 # unique output path for this set-based test
                 set_output_path = output_path(set_key, 'analysis')
+
                 # if the output exists, do nothing
                 if to_path(set_output_path).exists():
                     continue
+
+                # instruct an additional command to run inside this VM
                 build_run_set_based_test_command(
                     job=step2_job,
                     set_key=set_key,
