@@ -108,8 +108,10 @@ def build_fit_null_command(
 
 # Run single variant association (step 2)
 def build_run_single_variant_test_command(
+    job: hb.batch.job.Job,
+    svt_key: str,
     sv_output_path: str,
-    vcf_file: str,
+    vcf_group: hb.ResourceGroup,
     chrom: str,
     cis_window_file: str,
     gmmat_model_path: str,
@@ -120,7 +122,9 @@ def build_run_single_variant_test_command(
     This will run a single variant test using a score test
 
     Input:
-    - vcfile: path to VCF file
+    - job: job to load this command into
+    - svt_key: unique key for this single variant test
+    - vcf_group: ResourceGroup with vcf and index
     - single variant output path: path to output saige file
     - chrom: chromosome to run this on
     - cis window: file with chrom | start | end to specify window
@@ -131,26 +135,21 @@ def build_run_single_variant_test_command(
     Rscript command (str) ready to run
     """
 
-    if to_path(sv_output_path).exists():
-        return None, get_batch().read_input(sv_output_path)
-
-    vcf_group = get_batch().read_input_group(vcf=vcf_file, index=f'{vcf_file}.csi')
     cis_window_file = get_batch().read_input(cis_window_file)
-
-    second_job = get_batch().new_job(name="saige-qtl part 2")
-    apply_job_settings(second_job, 'sv_test')
-    second_job.image(image_path('saige-qtl'))
 
     args_from_config = ' '.join(
         [f'--{key}={value}' for key, value in get_config()['saige']['sv_test'].items()]
     )
 
-    second_job.command(
+    # declare a uniquely named resource group for this set-based test
+    job.declare_resource_group(**{svt_key: {'output': f'{svt_key}.output'}})
+
+    job.command(
         f"""
         Rscript /usr/local/bin/step2_tests_qtl.R \
         --vcfFile={vcf_group.vcf} \
         --vcfFileIndex={vcf_group.index} \
-        --SAIGEOutputFile={second_job.output} \
+        --SAIGEOutputFile={job[svt_key].output} \
         --chrom={chrom} \
         --GMMATmodelFile={gmmat_model_path} \
         --varianceRatioFile={variance_ratio_path} \
@@ -160,9 +159,8 @@ def build_run_single_variant_test_command(
     )
 
     # write the output
-    get_batch().write_output(second_job.output, sv_output_path)
-
-    return second_job, second_job.output
+    get_batch().write_output(job[svt_key].output, sv_output_path)
+    return job[svt_key].output
 
 
 # Combine single variant associations at gene level (step 3)
@@ -182,9 +180,6 @@ def build_obtain_gene_level_pvals_command(
     - gene we need to aggregate results for (across SNPs)
     - path for output file
     """
-    if to_path(saige_gene_pval_output_file).exists():
-        return None
-
     saige_job = get_batch().new_job(name="saige-qtl part 3")
     saige_command_step3 = f"""
         Rscript /usr/local/bin/step3_gene_pvalue_qtl.R \
@@ -304,6 +299,16 @@ def summarise_cv_results(
         results_all_df.to_csv(rf)
 
 
+def create_second_job() -> hb.batch.job.Job:
+    """
+    Create a second job to run the single variant test
+    """
+    second_job = get_batch().new_job(name="saige-qtl part 2")
+    apply_job_settings(second_job, 'sv_test')
+    second_job.image(image_path('saige-qtl'))
+    return second_job
+
+
 @click.option(
     '--pheno-cov-files-path',
     default=dataset_path('saige-qtl/input_files/pheno_cov_files'),
@@ -319,6 +324,7 @@ def summarise_cv_results(
     '--vre-files-prefix', default=dataset_path('saige-qtl/input_files/genotypes')
 )
 @click.option('--test-str', is_flag=True, help='Test with STR VCFs')
+@click.option('--jobs-per-vm', type=int, default=25)
 @click.command()
 def main(
     # outputs from gene_expression processing
@@ -328,6 +334,7 @@ def main(
     genotype_files_prefix: str,
     vre_files_prefix: str,
     test_str: bool = False,
+    jobs_per_vm: int = 25,
 ):
     """
     Run SAIGE-QTL pipeline for all cell types
@@ -352,6 +359,10 @@ def main(
     vre_plink_path = f'{vre_files_prefix}/vre_plink_2000_variants'
 
     for chromosome in chromosomes:
+
+        single_var_test_job = create_second_job()
+        jobs_in_vm = 0
+
         # genotype vcf files are one per chromosome
         if test_str:
             vcf_file_path = (
@@ -361,6 +372,10 @@ def main(
             vcf_file_path = (
                 f'{genotype_files_prefix}/{chromosome}_common_variants.vcf.bgz'
             )
+
+        # read in vcf file once per chromosome
+        vcf_group = get_batch().read_input_group(vcf=vcf_file_path, index=f'{vcf_file_path}.csi')
+
         # cis window files are split by gene but organised by chromosome also
         cis_window_files_path_chrom = f'{cis_window_files_path}/{chromosome}'
 
@@ -414,36 +429,44 @@ def main(
                     gene_dependency = null_job
 
                 # step 2 (cis eQTL single variant test)
-                step2_job, step2_output = build_run_single_variant_test_command(
-                    sv_output_path=output_path(
-                        f'{celltype}/{chromosome}/{celltype}_{gene}_cis', 'analysis'
-                    ),
-                    vcf_file=vcf_file_path,
-                    chrom=(chromosome[3:]),
-                    cis_window_file=cis_window_path,
-                    gmmat_model_path=null_output['rda'],
-                    variance_ratio_path=null_output['varianceRatio.txt'],
-                )
-                if step2_job is not None:
-                    step2_job.depends_on(gene_dependency)
-                    gene_dependency = step2_job
+                sv_out_path = output_path(f'{celltype}/{chromosome}/{celltype}_{gene}_cis', 'analysis')
+                if to_path(sv_out_path).exists():
+                    step2_output = get_batch().read_input(sv_out_path)
+                else:
+                    step2_output = build_run_single_variant_test_command(
+                        job=single_var_test_job,
+                        svt_key=f'{celltype}_{chromosome}_{celltype}_{gene}_cis',
+                        sv_output_path=output_path(
+                            f'{celltype}/{chromosome}/{celltype}_{gene}_cis', 'analysis'
+                        ),
+                        vcf_group=vcf_group,
+                        chrom=(chromosome[3:]),
+                        cis_window_file=cis_window_path,
+                        gmmat_model_path=null_output['rda'],
+                        variance_ratio_path=null_output['varianceRatio.txt'],
+                    )
+                    single_var_test_job.depends_on(gene_dependency)
+                    jobs_in_vm += 1
 
                 # step 3 (gene-level p-values)
-                job3 = build_obtain_gene_level_pvals_command(
-                    gene_name=gene,
-                    saige_sv_output_file=step2_output,
-                    saige_gene_pval_output_file=output_path(
-                        f'{celltype}/{chromosome}/{celltype}_{gene}_cis_gene_pval'
-                    ),
+                saige_gene_pval_output_file = output_path(
+                    f'{celltype}/{chromosome}/{celltype}_{gene}_cis_gene_pval'
                 )
+                if not to_path(saige_gene_pval_output_file).exists():
+                    job3 = build_obtain_gene_level_pvals_command(
+                        gene_name=gene,
+                        saige_sv_output_file=step2_output,
+                        saige_gene_pval_output_file=output_path(
+                            f'{celltype}/{chromosome}/{celltype}_{gene}_cis_gene_pval'
+                        ),
+                    )
+                    job3.depends_on(single_var_test_job)
+                    # add this job to the list of jobs for this cell type
+                    celltype_jobs.setdefault(celltype, []).append(job3)
 
-                if job3 is not None:
-                    job3.depends_on(gene_dependency)
-                    gene_dependency = job3
-
-                # add this job to the list of jobs for this cell type
-                if gene_dependency is not None:
-                    celltype_jobs.setdefault(celltype, []).append(gene_dependency)
+                if jobs_in_vm >= jobs_per_vm:
+                    single_var_test_job.depends_on(jobs[-jobs_per_vm])
+                    jobs_in_vm = 0
 
     # summarise results (per cell type)
     for celltype in celltypes:
