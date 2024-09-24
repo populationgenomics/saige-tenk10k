@@ -327,22 +327,12 @@ def main(
         # densify to mt
         mt = hl.vds.to_dense_mt(vds)
 
-        # set a checkpoint, and either re-use or write
-        # post_dense_checkpoint = output_path('post_dense_checkpoint.mt', category='tmp')
-        # mt = checkpoint_mt(mt, post_dense_checkpoint)
-
         # filter out related samples from vre too
         # this will get dropped as the vds file will already be clean
         related_ht = hl.read_table(relateds_to_drop_path)
         related_samples = related_ht.s.collect()
         related_samples = hl.literal(related_samples)
         mt = mt.filter_cols(~related_samples.contains(mt['s']))
-
-        # # set a checkpoint, and either re-use or write
-        # post_unrelated_checkpoint = output_path(
-        #     'post_unrelated_checkpoint.mt', category='tmp'
-        # )
-        # mt = checkpoint_mt(mt, post_unrelated_checkpoint)
 
         # again filter for biallelic SNPs
         mt = mt.filter_rows(
@@ -352,18 +342,8 @@ def main(
         )
         mt = hl.variant_qc(mt)
 
-        print(vre_mac_threshold)
-        print(mt.count())
-
         # minor allele count (MAC) > {vre_mac_threshold}
         vre_mt = mt.filter_rows(mt.variant_qc.AC[1] > vre_mac_threshold)
-
-        # set a checkpoint, and either re-use or write
-        post_common_checkpoint = output_path(
-            'common_reduced_checkpoint.mt', category='tmp'
-        )
-        # vre_mt = checkpoint_mt(vre_mt, post_common_checkpoint)
-        vre_mt = vre_mt.checkpoint(post_common_checkpoint)
 
         if (n_ac_vars := vre_mt.count_rows()) == 0:
             raise ValueError('No variants left, exiting!')
@@ -375,14 +355,17 @@ def main(
             vre_mt = vre_mt.sample_rows(p=0.01)
             logging.info('subset completed')
 
+        # set a checkpoint, and either re-use or write
+        post_downsampling_checkpoint = output_path(
+            'common_subset_checkpoint.mt', category='tmp'
+        )
+        vre_mt = checkpoint_mt(vre_mt, post_downsampling_checkpoint, force=True)
+
         # perform LD pruning
         pruned_variant_table = hl.ld_prune(
             vre_mt.GT, r2=ld_prune_r2, bp_window_size=ld_prune_bp_window_size
         )
         vre_mt = vre_mt.filter_rows(hl.is_defined(pruned_variant_table[vre_mt.row_key]))
-
-        # post_prune_checkpoint = output_path('post_prune_checkpoint.mt', category='tmp')
-        # vre_mt = checkpoint_mt(vre_mt, post_prune_checkpoint)
 
         logging.info(f'pruning completed, {vre_mt.count_rows()} variants left')
         # randomly sample {vre_n_markers} variants
