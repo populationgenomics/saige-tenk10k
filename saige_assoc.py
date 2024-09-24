@@ -309,7 +309,7 @@ def create_second_job(vcf_path: str) -> hb.batch.job.Job:
     bucket, filepath = vcf_path.removeprefix('gs://').split('/', 1)
     blob = storage_client.bucket(bucket).blob(filepath)
     blob.reload()  # refresh the blob to get the metadata
-    size = blob.size // (1024 ** 3)  # bytes to GB
+    size = blob.size // (1024**3)  # bytes to GB
 
     second_job = get_batch().new_job(name="saige-qtl part 2")
     apply_job_settings(second_job, 'sv_test')
@@ -385,7 +385,9 @@ def main(
         jobs_in_vm = 0
 
         # read in vcf file once per chromosome
-        vcf_group = get_batch().read_input_group(vcf=vcf_file_path, index=f'{vcf_file_path}.csi')
+        vcf_group = get_batch().read_input_group(
+            vcf=vcf_file_path, index=f'{vcf_file_path}.csi'
+        )
 
         # cis window files are split by gene but organised by chromosome also
         cis_window_files_path_chrom = f'{cis_window_files_path}/{chromosome}'
@@ -440,7 +442,9 @@ def main(
                     gene_dependency = null_job
 
                 # step 2 (cis eQTL single variant test)
-                sv_out_path = output_path(f'{celltype}/{chromosome}/{celltype}_{gene}_cis', 'analysis')
+                sv_out_path = output_path(
+                    f'{celltype}/{chromosome}/{celltype}_{gene}_cis', 'analysis'
+                )
                 if to_path(sv_out_path).exists():
                     step2_output = get_batch().read_input(sv_out_path)
                 else:
