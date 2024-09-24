@@ -419,6 +419,7 @@ def main(
                 # check if we need a new VM, i.e. we've hit the jobs-per-VM limit
                 if jobs_in_vm >= jobs_per_vm:
                     step2_job = create_a_2b_job()
+                    jobs_in_vm = 0
 
     # summarise results (per cell type)
     for celltype in celltypes:
