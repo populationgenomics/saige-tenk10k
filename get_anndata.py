@@ -167,6 +167,7 @@ def make_pheno_cov(
         data=gene_adata.X.todense(), index=gene_adata.obs.index, columns=[gene_name]
     )
     # move index (barcode) into a 'cell' column and reset the index - required prior to merging
+    # TO DO adjust when final data comes (see issue #97)
     expr_df['cell'] = expr_df.index
     expr_df = expr_df.reset_index(drop=True)
     sample_covs_cells_df = sample_covs_cells_df.reset_index(drop=True)

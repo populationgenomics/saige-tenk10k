@@ -127,7 +127,7 @@ def main(
 
     # age
     # create a list from dictionary to populate
-    age_dict_list: list(dict) = []
+    age_dict_list = []
     # loop over projects (tob-wgs, bioheart)
     for project_name in project_names.split(','):
         query_vars = {'project_name': project_name}
