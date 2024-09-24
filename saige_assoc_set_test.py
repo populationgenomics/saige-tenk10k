@@ -149,7 +149,7 @@ def build_run_set_based_test_command(
     # write the output
     get_batch().write_output(second_job.output, set_output_path)
 
-    return second_job, second_job.output
+    return second_job
 
 
 def apply_job_settings(job: hb.batch.job.Job, job_name: str):
@@ -364,23 +364,22 @@ def main(
                     gene_dependency = null_job
 
                 # step 2 (cis eQTL set-based test)
-                step2_job, step2_output = build_run_set_based_test_command(
-                    set_output_path=output_path(
-                        f'{celltype}/{chromosome}/{celltype}_{gene}_cis_set', 'analysis'
-                    ),
+                set_output_path = output_path(f'{celltype}/{chromosome}/{celltype}_{gene}_cis_set', 'analysis')
+                # if the output exists, do nothing
+                if to_path(set_output_path).exists():
+                    continue
+                step2_job = build_run_set_based_test_command(
+                    set_output_path=set_output_path,
                     vcf_file=vcf_file_path,
                     chrom=(chromosome[3:]),
                     group_file=group_path,
                     gmmat_model_path=null_output['rda'],
                     variance_ratio_path=null_output['varianceRatio.txt'],
                 )
-                if step2_job is not None:
-                    step2_job.depends_on(gene_dependency)
-                    gene_dependency = step2_job
+                step2_job.depends_on(gene_dependency)
 
                 # add this job to the list of jobs for this cell type
-                if gene_dependency is not None:
-                    celltype_jobs.setdefault(celltype, []).append(gene_dependency)
+                celltype_jobs.setdefault(celltype, []).append(step2_job)
 
     # summarise results (per cell type)
     for celltype in celltypes:
