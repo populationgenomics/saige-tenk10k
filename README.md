@@ -41,7 +41,9 @@ Outputs:
 * VCF files containing all retained rare variants (one per chromosome) + corresponding index files (`.csi`)
 * plink object for only 2,000 variants (minor allele count > 20), after LD pruning - this is for the estimation of the variance ratio (VRE plink files)
 
-Notes: SAIGE-QTL allows numeric chromosomes only, so both the .bim and the VCF files are modified in this script to remove the 'chr' notation (so that e.g., 'chr1' becomes '1').
+### Notes (get_genotype_vcf.py)
+
+SAIGE-QTL allows numeric chromosomes only, so both the .bim and the VCF files are modified in this script to remove the 'chr' notation (so that e.g., 'chr1' becomes '1').
 
 ## Get sample covariates
 
@@ -57,7 +59,9 @@ Outputs:
 
 * TSV sample covariate file (one per cohort)
 
-Notes: option to fill in missing values for sex (0, where 1 is male, 2 is female) and age (average age across the cohort).
+### Notes (get_sample_covariates.py)
+
+There is the option to fill in missing values for sex (0 for unknown, where 1 is male, 2 is female) and age (average age across the cohort).
 Additionally, add a user-specified (default: 10) number of permuted IDs, where the individual ID is permuted at random, to assess calibration (by shuffling the individual IDs we disrupt any real association between genotype and phenotype, so we expect no significant associations left when testing).
 
 ## Gene expression preprocessing
@@ -75,9 +79,12 @@ Outputs:
 * TSV phenotype covariate files (one per gene, cell type)
 * TSV gene cis window file (one per gene)
 
-Notes: as before, we remove 'chr' from the chromosome name in the gene cis window file.
+### Notes (get_anndata.py)
+
+As in `get_genotype_vcf.py`, we remove 'chr' from the chromosome name in the gene cis window file.
 Additionally, we turn hyphens ('-') into underscores ('_') in the gene names.
 Both the AnnData objects and cell covariate files are generated on Garvan's HPC and copied over to GCP.
+A note that the `filter_lowly_expressed_genes` method will remove lowly-expressed genes that will not even get tested, which should be kept in mind when interpreting the results.
 
 ## Make group file
 
@@ -92,7 +99,9 @@ Outputs
 
 * group files (one per gene)
 
-Notes: option to include no weights or to compute weights that reflect the distance of each variant from the gene's transcription start site (`dTSS`).
+### Notes (make_group_file.py)
+
+Option to include no weights or to compute weights that reflect the distance of each variant from the gene's transcription start site (`dTSS`).
 Using one of the flags below it is possible to additionally test using equal weights.
 We use no annotations for now (set to `null`).
 
@@ -134,7 +143,7 @@ Outputs:
 * if set to true, single-variant test raw p-values for all variants in the group also (one per gene, cell type)
 * set-based association summary statistics (gene-level p-values summarised, one per cell type)
 
-### SAIGE-QTL parameters explanation
+## SAIGE-QTL parameters explanation
 
 Clarifying the reasoning behind the parameters / flags used to run SAIGE-QTL.
 Most of these are (or will be) included in the official [documentation](https://weizhou0.github.io/SAIGE-QTL-doc/).
