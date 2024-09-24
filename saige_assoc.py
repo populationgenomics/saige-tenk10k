@@ -56,6 +56,7 @@ import click
 
 import logging
 
+from google.cloud import storage
 import hailtop.batch as hb
 
 from cpg_utils import to_path
@@ -299,12 +300,21 @@ def summarise_cv_results(
         results_all_df.to_csv(rf)
 
 
-def create_second_job() -> hb.batch.job.Job:
+def create_second_job(vcf_path: str) -> hb.batch.job.Job:
     """
     Create a second job to run the single variant test
     """
+    # get the size of the vcf file
+    storage_client = storage.Client()
+    bucket, filepath = vcf_path.removeprefix('gs://').split('/', 1)
+    blob = storage_client.bucket(bucket).blob(filepath)
+    size = blob.size // (1024 ** 3)  # bytes to GB
+
     second_job = get_batch().new_job(name="saige-qtl part 2")
     apply_job_settings(second_job, 'sv_test')
+
+    # VCF size, plus a 5GB buffer
+    second_job.storage(f'{size + 5 }Gi')
     second_job.image(image_path('saige-qtl'))
     return second_job
 
