@@ -128,22 +128,8 @@ def build_run_set_based_test_command(
         [f'--{key}={value}' for key, value in get_config()['saige']['set_test'].items()]
     )
 
-    set_key_writeable = set_key.replace('/', '_')
-
-    job.command(
-        f"""
-        Rscript /usr/local/bin/step2_tests_qtl.R \
-        --vcfFile={vcf_group.vcf} \
-        --vcfFileIndex={vcf_group.index} \
-        --SAIGEOutputFile={set_key_writeable} \
-        --chrom={chrom} \
-        --GMMATmodelFile={gmmat_model_path} \
-        --varianceRatioFile={variance_ratio_path} \
-        --groupFile={group_file} \
-        {args_from_config}
-    """
-    )
     # declare a uniquely named resource group for this set-based test
+    set_key_writeable = set_key.replace('/', '_')
     job.declare_resource_group(
         **{
             set_key_writeable: {
@@ -151,7 +137,20 @@ def build_run_set_based_test_command(
             }
         }
     )
-    job.command(f'mv {set_key_writeable} {job[set_key_writeable]["output"]}')
+
+    job.command(
+        f"""
+        Rscript /usr/local/bin/step2_tests_qtl.R \
+        --vcfFile={vcf_group.vcf} \
+        --vcfFileIndex={vcf_group.index} \
+        --SAIGEOutputFile={job[set_key_writeable].output} \
+        --chrom={chrom} \
+        --GMMATmodelFile={gmmat_model_path} \
+        --varianceRatioFile={variance_ratio_path} \
+        --groupFile={group_file} \
+        {args_from_config}
+    """
+    )
 
     # write the output
     get_batch().write_output(job[set_key_writeable].output, set_output_path)
