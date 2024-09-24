@@ -371,9 +371,6 @@ def main(
 
     for chromosome in chromosomes:
 
-        single_var_test_job = create_second_job()
-        jobs_in_vm = 0
-
         # genotype vcf files are one per chromosome
         if test_str:
             vcf_file_path = (
@@ -383,6 +380,9 @@ def main(
             vcf_file_path = (
                 f'{genotype_files_prefix}/{chromosome}_common_variants.vcf.bgz'
             )
+
+        single_var_test_job = create_second_job(vcf_file_path)
+        jobs_in_vm = 0
 
         # read in vcf file once per chromosome
         vcf_group = get_batch().read_input_group(vcf=vcf_file_path, index=f'{vcf_file_path}.csi')
@@ -476,7 +476,7 @@ def main(
                     celltype_jobs.setdefault(celltype, []).append(job3)
 
                 if jobs_in_vm >= jobs_per_vm:
-                    single_var_test_job.depends_on(jobs[-jobs_per_vm])
+                    single_var_test_job = create_second_job(vcf_file_path)
                     jobs_in_vm = 0
 
     # summarise results (per cell type)
