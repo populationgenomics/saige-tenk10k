@@ -223,6 +223,12 @@ def copy_h5ad_local_and_open(adata_path: str) -> sc.AnnData:
     default=0.25,
     help='CPU for each cis window job',
 )
+@click.option(
+    '--cis-job-mem',
+    type=str,
+    default='standard',
+    help='Memory for each cis gene job',
+)
 def main(
     celltypes: str,
     chromosomes: str,
@@ -235,6 +241,7 @@ def main(
     pc_job_cpu: float,
     pc_job_mem: str,
     cis_job_cpu: float,
+    cis_job_mem: str,
 ):
     """
     Run expression processing pipeline
@@ -336,6 +343,7 @@ def main(
                         name=f'gene cis file: {gene}'
                     )
                     gene_cis_job.cpu(cis_job_cpu)
+                    gene_cis_job.memory(cis_job_mem)
 
                     gene_cis_job.call(
                         get_gene_cis_info,
