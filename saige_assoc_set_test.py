@@ -133,7 +133,8 @@ def build_run_set_based_test_command(
     job.declare_resource_group(
         **{
             set_key_writeable: {
-                'output': f'{set_key_writeable}.output',
+                'set': '{root}',
+                'singleAssoc.txt': '{root}.singleAssoc.txt',
             }
         }
     )
@@ -143,7 +144,7 @@ def build_run_set_based_test_command(
         Rscript /usr/local/bin/step2_tests_qtl.R \
         --vcfFile={vcf_group.vcf} \
         --vcfFileIndex={vcf_group.index} \
-        --SAIGEOutputFile={job[set_key_writeable].output} \
+        --SAIGEOutputFile={job[set_key_writeable]} \
         --chrom={chrom} \
         --GMMATmodelFile={gmmat_model_path} \
         --varianceRatioFile={variance_ratio_path} \
@@ -153,7 +154,7 @@ def build_run_set_based_test_command(
     )
 
     # write the output
-    get_batch().write_output(job[set_key_writeable].output, set_output_path)
+    get_batch().write_output(job[set_key_writeable], set_output_path)
 
 
 def apply_job_settings(job: hb.batch.job.Job, job_name: str):
