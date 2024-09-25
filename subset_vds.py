@@ -6,7 +6,8 @@ Arguments:
     --vds-path: str. Path to the VDS in GCS. Does not need the project. e.g cpg-bioheart-test/vds/bioheart1-0.vds should be entered as vds/bioheart1-0.vds
     --n-samples: int, optional. The number of samples to subset the VDS down to.
     --intervals: str, optional. A (comma separated) string in the format 'chr:start-end' of the interval to subset to, or the path to a file in gcs with one interval per line.
-    --output-format: str. A comma separated string of output formats to generate. Only formats in [vcf, bed, vds] can be chosen.
+    --output-format: str. A space separated string of output formats to generate. Only formats in [vcf, bed, vds] can be chosen.
+    --random-seed: int, optional. An int to control the random number generator (default: 19700101)
 
 Raises:
     ValueError: only supports values of n-samples that are less than the total number of sampels in the input VDS.
@@ -17,11 +18,11 @@ Raises:
 
 from argparse import ArgumentParser
 from io import StringIO
-from random import sample
-from re import fullmatch, split
+from random import sample, seed
+from re import split
 from typing import Any
 
-from cpg_utils.config import dataset_path, get_access_level, output_path, to_path
+from cpg_utils.config import dataset_path, output_path, to_path
 from cpg_utils.hail_batch import init_batch
 from hail import (
     IntervalExpression,
@@ -33,6 +34,7 @@ from hail import (
     parse_locus_interval,
     split_multi_hts,
 )
+from hail.utils.java import FatalError
 from hail.vds import filter_intervals, filter_samples, read_vds, to_dense_mt
 from hail.vds.variant_dataset import VariantDataset
 
@@ -75,26 +77,15 @@ def parse_intervals(intervals: str) -> list[str]:
     Args:
         intervals (str): a string of either comma separated intervals, or a path to a file of intervals (one per line) in gcs
 
-    Raises:
-        ValueError: the intervals need to match the following pattern: ^[0-9cxymt]+ (does it start with some kind of contig identifier?)
-
     Returns:
         list[str]: a list of strings representing intervals
     """
     interval_list: list[str] = []
-    problem_intervals: list[str] = []
     if to_path(intervals).exists():
         with open(to_path(intervals), "rt") as interval_file:
             interval_list = interval_file.readlines()
     else:
         interval_list = intervals.split(",")
-    for interval in interval_list:
-        if not fullmatch("^[0-9chrxymt]+", interval.split(":")[0].lower()):
-            problem_intervals.append(interval)
-    if len(problem_intervals) > 0:
-        raise ValueError(
-            f"The list of supplied intervals contains the following incorrectly formatted contigs: {[problem for problem in problem_intervals]}"
-        )
     return interval_list
 
 
@@ -105,55 +96,41 @@ def convert_intervals_to_locus(interval_list: list[str]) -> list[IntervalExpress
         interval_list (list[str]): a list of intervals to convert to locuses
 
     Raises:
-        ValueError: chromosome start positions have to be greter than 0
-        ValueError: intervals need to be in the format of either 'chrom', 'chrom:pos' or 'chrom:start-end'.
+        ValueError: intervals need to be in the format of either 'chrom', 'chrom:pos', 'chrom:start-end' or chrom:pos-chrom:pos. Each contig also needs to be in the list of reference contigs for GRCh38
 
     Returns:
         list[IntervalExpression]: the list of locuses in a format that hail can understand
     """
     locus_list: list[IntervalExpression] = []
-    contig: str = ""
-    start: str | int = ""
-    end: str | int = ""
+    hail_reference_contigs: list[Any] = get_reference("GRCh38").contigs
+    invalid_locuses: list[str] = []
+    locus_errors: str = ""
     for interval in interval_list:
         split_interval: list[str] = split("[:-]", interval)
-        if len(split_interval) == 1:
-            contig = split_interval[0]
-            start = "start"
-            end = "end"
-        elif len(split_interval) == 2:
-            contig = split_interval[0]
-            assert int(
-                start := split_interval[1]
-            ), f"If only one position is specified, it must be an int, not {start}"
-            start = int(split_interval[1])
-            end = int(split_interval[1]) + 1
-        elif len(split_interval) == 3:
-            contig = split_interval[0]
-            if start != "start":
-                assert int(
-                    start := split_interval[1]
-                ), f"The start value: {start} couldn't be converted to an int"
-                if int(start) < 1:
-                    raise ValueError(
-                        "Chromosome start positions must be greater than 0."
-                    )
-            start = int(split_interval[1])
-            if end != "end":
-                assert int(
-                    end := split_interval[2]
-                ), f"The end value: {end} couldn't be converted to an int."
-                if int(end) > get_reference("GRCh38").lengths[contig]:
-                    end = get_reference("GRCh38").lengths[contig]
-            end = int(split_interval[2])
-        else:
-            raise ValueError(
-                f"The interval: {interval} does not conform to the required format of either 'chrom', 'chrom:pos' or 'chrom:start-end'."
-            )
-        if start != "start" and end != "end":
-            assert int(start) < int(end)
-        locus_list.append(
-            parse_locus_interval(f"{contig}:{start}-{end}", reference_genome="GRCh38")
+        n_interval_elements: int = len(split_interval)
+        if n_interval_elements < 4 and split_interval[0] not in hail_reference_contigs:
+            invalid_locuses.append(interval)
+            locus_errors += f"The contig: {split_interval[0]} is not in the list of reference contigs: {hail_reference_contigs}."
+        elif n_interval_elements == 4 and not all(
+            [
+                contig in hail_reference_contigs
+                for contig in [split_interval[0], split_interval[2]]
+            ]
+        ):
+            invalid_locuses.append(interval)
+            locus_errors += f"Not all input contigs {[split_interval[0], split_interval[2]]} are in the list of reference contigs {hail_reference_contigs}.\n"
+        elif n_interval_elements > 4:
+            invalid_locuses.append(interval)
+            locus_errors += f"The interval {interval} does not conform to any acceptable input format.\n See https://hail.is/docs/0.2/functions/genetics.html#hail.expr.functions.parse_locus_interval for the acceptable formats.\n"
+        try:
+            locus_list.append(parse_locus_interval(interval, reference_genome="GRCh38"))
+        except FatalError as e:
+            invalid_locuses.append(interval)
+            locus_errors += f"{e}\n"
+
+    if len(invalid_locuses) > 0:
+        raise ValueError(
+            f"The following locus(es) contain errors: {invalid_locuses}. For more information, read the error message(s) \n{locus_errors}"
         )
     return locus_list
 
@@ -232,7 +209,6 @@ def write_outputs(
     subset_vds: VariantDataset | None,
     subset_sample_list: list[str] | None,
     infile_name: str,
-    is_test: bool,
 ) -> None:
     """Writes the vds out in the specified formats
 
@@ -247,11 +223,7 @@ def write_outputs(
         FileExistsError: throws an error if any of the proposed output paths exist, as it will not overwrite them
     """
     if "vds" in output_formats:
-        if to_path(output_path(f"{infile_name}_subset")).exists():
-            raise FileExistsError(
-                f'The file {to_path(output_path("{infile_name}_subset"))} exists. Refusing to overwrite it.'
-            )
-        subset_vds.write(output_path(f"{infile_name}_subset", test=is_test))
+        subset_vds.write(output_path(f"{infile_name}_subset"))
 
     subset_dense_mt: MatrixTable | Table | Any = to_dense_mt(subset_vds)
     subset_dense_mt = split_multi_hts(subset_dense_mt)
@@ -260,7 +232,7 @@ def write_outputs(
         if format == "bed":
             export_plink(
                 subset_dense_mt,
-                output_path(f"{infile_name}_subset", test=is_test),
+                output_path(f"{infile_name}_subset"),
                 call=subset_dense_mt.LGT,
                 ind_id=subset_dense_mt.s,
             )
@@ -269,7 +241,7 @@ def write_outputs(
                 subset_dense_mt = subset_dense_mt.drop("gvcf_info")
             export_vcf(
                 subset_dense_mt,
-                output_path(f"{infile_name}_subset.vcf.bgz", test=is_test),
+                output_path(f"{infile_name}_subset.vcf.bgz"),
                 tabix=True,
             )
 
@@ -281,9 +253,7 @@ def write_outputs(
         outdata = StringIO()
         for single_sample in subset_sample_list:
             outdata.write(f"{single_sample}\n")
-        with to_path(output_path("subset_samples_file.txt", test=is_test)).open(
-            "wt"
-        ) as outfile:
+        with to_path(output_path("subset_samples_file.txt")).open("wt") as outfile:
             outfile.write(outdata.getvalue())
             outdata.close()
 
@@ -293,31 +263,18 @@ def main(
     n_samples: int | None,
     intervals: str | None,
     output_formats: list[str],
+    random_seed: int,
 ) -> None:
-    allowed_output_formats: list[str] = ["vcf", "bed", "vds"]
-    if len(output_formats) == 0:
-        raise ValueError(
-            f"A value for 'output_formats' needs to be supplied, one of: {allowed_output_formats}"
-        )
-    if not all([outformat in allowed_output_formats for outformat in output_formats]):
-        raise NotImplementedError(
-            f"This script only supports {allowed_output_formats} as output formats."
-        )
-
+    seed(random_seed)
     init_batch()
     input_vds: VariantDataset = read_vds(dataset_path(vds_path))
     infile_name: str = vds_path.split("/")[-1].split(".")[0]
     subset_vds: VariantDataset | None = None
     subset_sample_list: list[str] | None = None
-    is_test: bool = True
-    access: str = get_access_level()
     parsed_intervals: list[str]
     parsed_locus: list[IntervalExpression]
 
     check_output_already_exists(output_formats, infile_name)
-
-    if access != "test":
-        is_test = False
 
     if n_samples:
         subset_sample_list = get_subset_sample_list(input_vds, n_samples)
@@ -330,12 +287,12 @@ def main(
             )
         else:
             subset_vds = subset_by_samples(input_vds, subset_sample_list)
-    elif intervals and not n_samples:
+    elif intervals:
         parsed_intervals = parse_intervals(intervals)
         parsed_locus = convert_intervals_to_locus(parsed_intervals)
         subset_vds = subset_by_locus(parsed_locus, input_vds)
 
-    write_outputs(output_formats, subset_vds, subset_sample_list, infile_name, is_test)
+    write_outputs(output_formats, subset_vds, subset_sample_list, infile_name)
 
 
 if __name__ == "__main__":
@@ -356,12 +313,21 @@ if __name__ == "__main__":
         "--output-formats",
         help="Comma separated string indicating what output formats you would like. One of [vcf, bed, vds]",
         required=True,
+        nargs="+",
+        choices=["vcf", "bed", "vds"],
+    )
+    parser.add_argument(
+        "--random-seed",
+        help="Seed for the random number generator when subsetting by samples",
+        required=False,
+        default=19700101,
+        type=int,
     )
     args, failures = parser.parse_known_args()
     if failures:
         parser.print_help()
         raise AttributeError(f"Invalid arguments {failures}")
-    if not args.n_samples and not args.interval:
+    if not args.n_samples and not args.intervals:
         raise AttributeError(
             "If neither a number of samples or intervals are provided, this script will not do any subsetting!"
         )
@@ -369,5 +335,6 @@ if __name__ == "__main__":
         vds_path=args.vds_path,
         n_samples=args.n_samples,
         intervals=args.intervals,
-        output_formats=args.output_formats.lower().split(","),
+        output_formats=args.output_formats,
+        random_seed=args.random_seed,
     )
