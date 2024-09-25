@@ -15,7 +15,7 @@ To run:
 analysis-runner \
    --description "make variant group input files" \
    --dataset "bioheart" \
-   --access-level "full" \
+   --access-level "standard" \
    --output-dir "saige-qtl/bioheart_n990_and_tob_n1055/input_files/240920" \
    python3 make_group_file.py --chromosomes chr2 \
        --cis-window-files-path gs://cpg-bioheart-main/saige-qtl/bioheart_n990_and_tob_n1055/input_files/240920/cis_window_files/ \
