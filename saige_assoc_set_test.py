@@ -43,8 +43,8 @@ import logging
 import hailtop.batch as hb
 
 from cpg_utils import to_path
-from cpg_utils.config import get_config
-from cpg_utils.hail_batch import dataset_path, get_batch, image_path, output_path
+from cpg_utils.config import get_config, image_path, output_path
+from cpg_utils.hail_batch import dataset_path, get_batch
 
 
 # Fit null model (step 1)
@@ -125,14 +125,23 @@ def build_run_set_based_test_command(
         [f'--{key}={value}' for key, value in get_config()['saige']['set_test'].items()]
     )
 
+    # declare a uniquely named resource group for this set-based test
     set_key_writeable = set_key.replace('/', '_')
+    job.declare_resource_group(
+        **{
+            set_key_writeable: {
+                'set': '{root}',
+                'singleAssoc.txt': '{root}.singleAssoc.txt',
+            }
+        }
+    )
 
     job.command(
         f"""
         Rscript /usr/local/bin/step2_tests_qtl.R \
         --vcfFile={vcf_group.vcf} \
         --vcfFileIndex={vcf_group.index} \
-        --SAIGEOutputFile={set_key_writeable} \
+        --SAIGEOutputFile={job[set_key_writeable]} \
         --chrom={chrom} \
         --GMMATmodelFile={gmmat_model_path} \
         --varianceRatioFile={variance_ratio_path} \
@@ -140,18 +149,9 @@ def build_run_set_based_test_command(
         {args_from_config}
     """
     )
-    # declare a uniquely named resource group for this set-based test
-    job.declare_resource_group(
-        **{
-            set_key_writeable: {
-                'output': f'{set_key_writeable}.output',
-            }
-        }
-    )
-    job.command(f'mv {set_key_writeable} {job[set_key_writeable]["output"]}')
 
     # write the output
-    get_batch().write_output(job[set_key_writeable].output, set_output_path)
+    get_batch().write_output(job[set_key_writeable], set_output_path)
 
 
 def apply_job_settings(job: hb.batch.job.Job, job_name: str):
