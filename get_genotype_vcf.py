@@ -195,6 +195,8 @@ def remove_chr_from_bim(input_bim: str, output_bim: str, bim_renamed: str):
 @click.option('--exclude-multiallelic', is_flag=False)
 @click.option('--exclude-indels', is_flag=False)
 @click.option('--plink-job-storage', default='1G')
+@click.option('--ld-prune-r2', default=0.2)
+@click.option('--ld-prune-bp-window-size', default=500000)
 @click.command()
 def main(
     vds_path: str,
@@ -207,6 +209,8 @@ def main(
     exclude_multiallelic: bool,
     exclude_indels: bool,
     plink_job_storage: str,
+    ld_prune_r2: float,
+    ld_prune_bp_window_size: int,
 ):
     """
     Write genotypes as VCF
@@ -293,12 +297,12 @@ def main(
     plink_existence_outcome = can_reuse(vre_bim_path)
     logging.info(f'Does {vre_bim_path} exist? {plink_existence_outcome}')
     if not plink_existence_outcome:
+        # keep autosome chromosomes only
+        vds = hl.vds.filter_chromosomes(vds, keep_autosomes=True)
+        # split multiallelic loci pre densifying to mt
         vds = hl.vds.split_multi(vds, filter_changed_loci=True)
+        # densify to mt
         mt = hl.vds.to_dense_mt(vds)
-
-        # set a checkpoint, and either re-use or write
-        post_dense_checkpoint = output_path('post_dense_checkpoint.mt', category='tmp')
-        mt = checkpoint_mt(mt, post_dense_checkpoint)
 
         # filter out related samples from vre too
         # this will get dropped as the vds file will already be clean
@@ -306,12 +310,6 @@ def main(
         related_samples = related_ht.s.collect()
         related_samples = hl.literal(related_samples)
         mt = mt.filter_cols(~related_samples.contains(mt['s']))
-
-        # set a checkpoint, and either re-use or write
-        post_unrelated_checkpoint = output_path(
-            'post_unrelated_checkpoint.mt', category='tmp'
-        )
-        mt = checkpoint_mt(mt, post_unrelated_checkpoint)
 
         # again filter for biallelic SNPs
         mt = mt.filter_rows(
@@ -321,17 +319,8 @@ def main(
         )
         mt = hl.variant_qc(mt)
 
-        print(vre_mac_threshold)
-        print(mt.count())
-
         # minor allele count (MAC) > {vre_mac_threshold}
         vre_mt = mt.filter_rows(mt.variant_qc.AC[1] > vre_mac_threshold)
-
-        # set a checkpoint, and either re-use or write
-        post_common_checkpoint = output_path(
-            'common_reduced_checkpoint.mt', category='tmp'
-        )
-        vre_mt = checkpoint_mt(vre_mt, post_common_checkpoint)
 
         if (n_ac_vars := vre_mt.count_rows()) == 0:
             raise ValueError('No variants left, exiting!')
@@ -339,15 +328,21 @@ def main(
 
         # since pruning is very costly, subset first a bit
         random.seed(0)
-        vre_mt = vre_mt.sample_rows(p=0.01)
-        logging.info('subset completed')
+        if n_ac_vars > {vre_n_markers * 100}:
+            vre_mt = vre_mt.sample_rows(p=0.01)
+            logging.info('subset completed')
+
+        # set a checkpoint, and either re-use or write
+        post_downsampling_checkpoint = output_path(
+            'common_subset_checkpoint.mt', category='tmp'
+        )
+        vre_mt = checkpoint_mt(vre_mt, post_downsampling_checkpoint, force=True)
 
         # perform LD pruning
-        pruned_variant_table = hl.ld_prune(vre_mt.GT, r2=0.2, bp_window_size=500000)
+        pruned_variant_table = hl.ld_prune(
+            vre_mt.GT, r2=ld_prune_r2, bp_window_size=ld_prune_bp_window_size
+        )
         vre_mt = vre_mt.filter_rows(hl.is_defined(pruned_variant_table[vre_mt.row_key]))
-
-        post_prune_checkpoint = output_path('post_prune_checkpoint.mt', category='tmp')
-        vre_mt = checkpoint_mt(vre_mt, post_prune_checkpoint)
 
         logging.info(f'pruning completed, {vre_mt.count_rows()} variants left')
         # randomly sample {vre_n_markers} variants

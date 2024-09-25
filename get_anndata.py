@@ -104,8 +104,6 @@ def make_pheno_cov(
     sample_covs_file: str,
     celltype_covs_file: str,
     out_path: str,
-    fill_in_sex: bool = False,
-    fill_in_age: bool = False,
 ):
     """
     Combine expression and covariates into a single file
@@ -133,9 +131,6 @@ def make_pheno_cov(
     celltype_covs_df = pd.read_csv(celltype_covs_file, index_col=0)
     logging.info('cell covariate file opened')
 
-    # determine average age to fill in later
-    if fill_in_age:
-        mean_age = sample_covs_df['age'].mean()
     cell_ind_df = expression_adata.obs.loc[
         :, ['cell', 'individual', 'total_counts', 'sequencing_library', 'cohort']
     ]
@@ -149,11 +144,6 @@ def make_pheno_cov(
         sample_covs_df, on='individual', how='inner'
     )
     sample_covs_cells_df.index = sample_covs_cells_df['cell']
-    # fill missing values for sex and age
-    if fill_in_sex:
-        sample_covs_cells_df['sex'] = sample_covs_cells_df['sex'].fillna(0)
-    if fill_in_age:
-        sample_covs_cells_df['age'] = sample_covs_cells_df['age'].fillna(mean_age)
     # drop rows with missing values (SAIGE throws an error otherwise:  https://batch.hail.populationgenomics.org.au/batches/435978/jobs/91)
     sample_covs_cells_df = sample_covs_cells_df.dropna()
     gene_adata = expression_adata[:, expression_adata.var.index == gene]
@@ -162,6 +152,7 @@ def make_pheno_cov(
         data=gene_adata.X.todense(), index=gene_adata.obs.index, columns=[gene_name]
     )
     # move index (barcode) into a 'cell' column and reset the index - required prior to merging
+    # TO DO adjust when final data comes (see issue #97)
     expr_df['cell'] = expr_df.index
     expr_df = expr_df.reset_index(drop=True)
     sample_covs_cells_df = sample_covs_cells_df.reset_index(drop=True)
