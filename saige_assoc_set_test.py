@@ -95,8 +95,10 @@ def build_fit_null_command(
 
 # Run set-based association (step 2b)
 def build_run_set_based_test_command(
+    job: hb.batch.job.Job,
+    set_key: str,
     set_output_path: str,
-    vcf_file: str,
+    vcf_group: hb.ResourceGroup,
     chrom: str,
     group_file: str,
     gmmat_model_path: str,
@@ -107,7 +109,9 @@ def build_run_set_based_test_command(
     This will run a single variant test using a score test
 
     Input:
-    - vcf file: path to VCF file
+    - job: job to run this command in
+    - set_key: unique key for this set-based test (used to name output)
+    - vcf group: VCF & index file ResourceGroup
     - set test output path: path to output saige file
     - chrom: chromosome to run this on
     - group file: file with variants to test, and weights
@@ -118,26 +122,20 @@ def build_run_set_based_test_command(
     Rscript command (str) ready to run
     """
 
-    if to_path(set_output_path).exists():
-        return None, get_batch().read_input(set_output_path)
-
-    vcf_group = get_batch().read_input_group(vcf=vcf_file, index=f'{vcf_file}.csi')
     group_file = get_batch().read_input(group_file)
-
-    second_job = get_batch().new_job(name="saige-qtl part 2b")
-    apply_job_settings(second_job, 'set_test')
-    second_job.image(image_path('saige-qtl'))
 
     args_from_config = ' '.join(
         [f'--{key}={value}' for key, value in get_config()['saige']['set_test'].items()]
     )
 
-    second_job.command(
+    set_key_writeable = set_key.replace('/', '_')
+
+    job.command(
         f"""
         Rscript /usr/local/bin/step2_tests_qtl.R \
         --vcfFile={vcf_group.vcf} \
         --vcfFileIndex={vcf_group.index} \
-        --SAIGEOutputFile={second_job.output} \
+        --SAIGEOutputFile={set_key_writeable} \
         --chrom={chrom} \
         --GMMATmodelFile={gmmat_model_path} \
         --varianceRatioFile={variance_ratio_path} \
@@ -145,11 +143,18 @@ def build_run_set_based_test_command(
         {args_from_config}
     """
     )
+    # declare a uniquely named resource group for this set-based test
+    job.declare_resource_group(
+        **{
+            set_key_writeable: {
+                'output': f'{set_key_writeable}.output',
+            }
+        }
+    )
+    job.command(f'mv {set_key_writeable} {job[set_key_writeable]["output"]}')
 
     # write the output
-    get_batch().write_output(second_job.output, set_output_path)
-
-    return second_job, second_job.output
+    get_batch().write_output(job[set_key_writeable].output, set_output_path)
 
 
 def apply_job_settings(job: hb.batch.job.Job, job_name: str):
@@ -257,6 +262,16 @@ def summarise_rv_results(
         results_all_df.to_csv(rf)
 
 
+def create_a_2b_job() -> hb.batch.job.Job:
+    """
+    Create a job that will run a set-based test
+    """
+    second_job = get_batch().new_job(name="saige-qtl part 2b")
+    apply_job_settings(second_job, 'set_test')
+    second_job.image(image_path('saige-qtl'))
+    return second_job
+
+
 @click.option(
     '--pheno-cov-files-path',
     default=dataset_path('saige-qtl/input_files/pheno_cov_files'),
@@ -273,6 +288,7 @@ def summarise_rv_results(
 )
 @click.option('--ngenes-to-test', default='all')
 @click.option('--group-file-specs', default='')
+@click.option('--jobs-per-vm', default=10, type=int)
 @click.command()
 def main(
     # output from get_anndata.py
@@ -284,6 +300,7 @@ def main(
     vre_files_prefix: str,
     ngenes_to_test: str,
     group_file_specs: str,
+    jobs_per_vm: int,
 ):
     """
     Run SAIGE-QTL RV pipeline for all cell types
@@ -308,8 +325,17 @@ def main(
     vre_plink_path = f'{vre_files_prefix}/vre_plink_2000_variants'
 
     for chromosome in chromosomes:
-        # genotype vcf files are one per chromosome
+        # create one job, and stack multiple jobs on it
+        step2_job = create_a_2b_job()
+
+        # to start with, we have no jobs in the image
+        jobs_in_vm = 0
+        # genotype vcf files are one per chromosome, so read in at the top
         vcf_file_path = f'{genotype_files_prefix}/{chromosome}_rare_variants.vcf.bgz'
+        vcf_group = get_batch().read_input_group(
+            vcf=vcf_file_path, index=f'{vcf_file_path}.csi'
+        )
+
         # group files are split by gene but organised by chromosome also
         group_files_path_chrom = f'{group_files_path}/{chromosome}'
 
@@ -364,23 +390,38 @@ def main(
                     gene_dependency = null_job
 
                 # step 2 (cis eQTL set-based test)
-                step2_job, step2_output = build_run_set_based_test_command(
-                    set_output_path=output_path(
-                        f'{celltype}/{chromosome}/{celltype}_{gene}_cis_set', 'analysis'
-                    ),
-                    vcf_file=vcf_file_path,
+                # unique key for this set-based test
+                set_key = f'{celltype}/{chromosome}/{celltype}_{gene}_cis_set'
+                # unique output path for this set-based test
+                set_output_path = output_path(set_key, 'analysis')
+
+                # if the output exists, do nothing
+                if to_path(set_output_path).exists():
+                    continue
+
+                # instruct an additional command to run inside this VM
+                build_run_set_based_test_command(
+                    job=step2_job,
+                    set_key=set_key,
+                    set_output_path=set_output_path,
+                    vcf_group=vcf_group,
                     chrom=(chromosome[3:]),
                     group_file=group_path,
                     gmmat_model_path=null_output['rda'],
                     variance_ratio_path=null_output['varianceRatio.txt'],
                 )
-                if step2_job is not None:
-                    step2_job.depends_on(gene_dependency)
-                    gene_dependency = step2_job
+                jobs_in_vm += 1
+
+                # if we ran this job, an additional dependency
+                step2_job.depends_on(gene_dependency)
 
                 # add this job to the list of jobs for this cell type
-                if gene_dependency is not None:
-                    celltype_jobs.setdefault(celltype, []).append(gene_dependency)
+                celltype_jobs.setdefault(celltype, []).append(step2_job)
+
+                # check if we need a new VM, i.e. we've hit the jobs-per-VM limit
+                if jobs_in_vm >= jobs_per_vm:
+                    step2_job = create_a_2b_job()
+                    jobs_in_vm = 0
 
     # summarise results (per cell type)
     for celltype in celltypes:

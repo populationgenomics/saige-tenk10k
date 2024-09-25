@@ -79,13 +79,17 @@ GET_PARTICIPANT_META_QUERY = gql(
 @click.option('--vds-version', help=' e.g. 1-0 ')
 @click.option('--project-names', default='tob-wgs,bioheart')
 @click.option('--number-of-sample-perms', default=10)
+@click.option('--fill-in-sex', default=False)
+@click.option('--fill-in-age', default=False)
 @click.command()
 def main(
-    tob_sex_file_path,
-    bioheart_sex_file_path,
-    vds_version,
-    project_names,
-    number_of_sample_perms,
+    tob_sex_file_path: str,
+    bioheart_sex_file_path: str,
+    vds_version: str,
+    project_names: str,
+    number_of_sample_perms: int,
+    fill_in_sex: bool,
+    fill_in_age: bool,
 ):
     """
     Get sex, age and genotype PCs for TOB and BioHEART individuals
@@ -112,14 +116,18 @@ def main(
     # rename s as sample id to match bioheart file
     tob_meta['sample_id'] = tob_meta['new_CPG_id']
     tob_sex = tob_meta.loc[:, ["sample_id", "sex"]]
+
     # extract sex for BioHEART
     bioheart_sex = bioheart_meta.loc[:, ["sample_id", "sex"]]
     # combine_info
     sex_df = pd.concat([tob_sex, bioheart_sex], axis=0)
+    # add sex as unknown (0) if missing
+    if fill_in_sex:
+        sex_df['sex'] = sex_df['sex'].fillna(0)
 
     # age
     # create a list from dictionary to populate
-    age_dict_list: list(dict) = []
+    age_dict_list = []
     # loop over projects (tob-wgs, bioheart)
     for project_name in project_names.split(','):
         query_vars = {'project_name': project_name}
@@ -134,6 +142,10 @@ def main(
                 age = 'NA'
             age_dict_list.append({'sample_id': cpg_id, 'age': age})
     age_df = pd.DataFrame(age_dict_list)
+    # add average age if missing
+    if fill_in_age:
+        mean_age = age_df['age'].mean()
+        age_df['age'].fillna(mean_age)
 
     # genotype PCs
     pcs_ht_path = dataset_path(f'large_cohort/{vds_version}/ancestry/scores.ht')
