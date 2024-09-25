@@ -41,7 +41,7 @@ Outputs:
 * VCF files containing all retained rare variants (one per chromosome) + corresponding index files (`.csi`)
 * plink object for only 2,000 variants (minor allele count > 20), after LD pruning - this is for the estimation of the variance ratio (VRE plink files)
 
-### Notes
+### Notes (get_genotype_vcf.py)
 
 SAIGE-QTL allows numeric chromosomes only, so both the .bim and the VCF files are modified in this script to remove the 'chr' notation (so that e.g., 'chr1' becomes '1').
 
