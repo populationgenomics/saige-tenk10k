@@ -1,8 +1,8 @@
 [saige]
 # principal arguments
 celltypes = ['B_naive']
-chromosomes = ['chr22']
-drop_genes =[]
+chromosomes = ['chr2']
+drop_genes =['ENSG00000115355','ENSG00000197585','ENSG00000228262','ENSG00000231969','ENSG00000289474','ENSG00000291127']
 
 # secondary arguments
 max_parallel_jobs = 350
@@ -59,7 +59,7 @@ storage = "0G"
 memory = "4Gi"
 [saige.job_specs.sv_test]
 cpu = 1
-storage = '12G'
+storage = '25G'
 [saige.job_specs.set_test]
 cpu = 1
-storage = '12G'
+storage = '30G'

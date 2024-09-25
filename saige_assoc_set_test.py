@@ -13,29 +13,26 @@ typically used for rare variants
     - VRE genotypes (from get_genotype_vcf.py)
     - group file (from make_group_file.py)
 - builds saige commands (just add to str)
-- run SAIGE-QTL (execute Rscript from command line)
+- run set-based tests using SAIGE-QTL (execute Rscript from command line)
 - aggregate & summarise results
 
 
 To run:
 
-Main:
-
 analysis-runner \
-    --config saige_assoc_test.toml \
-    --description "SAIGE-QTL RV association pipeline" \
-    --memory='32G' \
-    --storage='50G' \
-    --dataset "bioheart" \
-    --access-level "full" \
-    --output-dir "saige-qtl/bioheart_n990_and_tob_n1055/v1" \
-     python3 saige_assoc_set_test.py \
-     --pheno-cov-files-path=gs://cpg-bioheart-main/saige-qtl/bioheart_n990_and_tob_n1055/input_files/pheno_cov_files \
-        --group-files-path=gs://cpg-bioheart-main/saige-qtl/bioheart_n990_and_tob_n1055/input_files/group_files \
-        --genotype-files-prefix=gs://cpg-bioheart-main/saige-qtl/bioheart_n990/input_files/genotypes/v4/vds-tenk10k1-0 \
-        --vre-files-prefix=gs://cpg-bioheart-main/saige-qtl/bioheart_n990/input_files/genotypes/v4/vds-tenk10k1-0 \
-        --group-file-specs _dTSS_weights
-
+   --config saige_assoc_test.toml \
+   --description "SAIGE-QTL RV association pipeline" \
+   --memory='32G' \
+   --storage='50G' \
+   --dataset "bioheart" \
+   --access-level "full" \
+   --output-dir "saige-qtl/bioheart_n990_and_tob_n1055/output_files/240920" \
+    python3 saige_assoc_set_test.py \
+    --pheno-cov-files-path=gs://cpg-bioheart-main/saige-qtl/bioheart_n990_and_tob_n1055/input_files/240920/pheno_cov_files \
+       --group-files-path=gs://cpg-bioheart-main/saige-qtl/bioheart_n990_and_tob_n1055/input_files/240920/group_files \
+       --genotype-files-prefix=gs://cpg-bioheart-main/saige-qtl/bioheart_n990_and_tob_n1055/input_files/240920/genotypes/vds-tenk10k1-0 \
+       --vre-files-prefix=gs://cpg-bioheart-main/saige-qtl/bioheart_n990_and_tob_n1055/input_files/240920/genotypes/vds-tenk10k1-0 \
+       --group-file-specs _dTSS_weights
 
 """
 

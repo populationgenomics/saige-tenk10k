@@ -13,16 +13,14 @@ SAIGE-QTL association pipeline.
 To run:
 
 analysis-runner \
-    --description "make variant group input files" \
-    --dataset "bioheart" \
-    --access-level "test" \
-    --output-dir "saige-qtl/input_files/" \
-    python3 make_group_file.py --chromosomes chr22 \
-        --cis-window-files-path gs://cpg-bioheart-test/saige-qtl/input_files/cis_window_files/ \
-        --group-files-path gs://cpg-bioheart-test/saige-qtl/input_files/group_files/ \
-        --vcf-path gs://cpg-bioheart-test/saige-qtl/bioheart_n990_and_tob_n1055/input_files/genotypes/v3/vds-bioheart1-0 \
-        --ngenes-to-test 5
-
+   --description "make variant group input files" \
+   --dataset "bioheart" \
+   --access-level "standard" \
+   --output-dir "saige-qtl/bioheart_n990_and_tob_n1055/input_files/240920" \
+   python3 make_group_file.py --chromosomes chr2 \
+       --cis-window-files-path gs://cpg-bioheart-main/saige-qtl/bioheart_n990_and_tob_n1055/input_files/240920/cis_window_files/ \
+       --group-files-path gs://cpg-bioheart-main/saige-qtl/bioheart_n990_and_tob_n1055/input_files/240920/group_files/ \
+       --vcf-path gs://cpg-bioheart-main/saige-qtl/bioheart_n990_and_tob_n1055/input_files/240920/genotypes/vds-tenk10k1-0
 
 """
 

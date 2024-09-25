@@ -41,7 +41,7 @@ Outputs:
 * VCF files containing all retained rare variants (one per chromosome) + corresponding index files (`.csi`)
 * plink object for only 2,000 variants (minor allele count > 20), after LD pruning - this is for the estimation of the variance ratio (VRE plink files)
 
-### Notes
+### Notes (get_genotype_vcf.py)
 
 SAIGE-QTL allows numeric chromosomes only, so both the .bim and the VCF files are modified in this script to remove the 'chr' notation (so that e.g., 'chr1' becomes '1').
 
@@ -239,7 +239,7 @@ Briefly, if one wanted to run both common and rare variant pipelines, the order 
 2. get_sample_covariates.py (does not require any other part of the pipeline and can be run in parallel with 1)
 3. get_anndata.py (requires 2)
 4. saige_assoc.py (requires 1,3)
-5. make_group_file.py (requires 1,3)
+5. make_group_file.py (requires 1,3 and can be run in parallel with 4)
 6. saige_assoc_set_test.py (requires 1,3,4 (so that step1 is only run once) and 5)
 
 ## Data
