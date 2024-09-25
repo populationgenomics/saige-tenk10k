@@ -134,7 +134,7 @@ def build_run_set_based_test_command(
         **{
             set_key_writeable: {
                 'set': '{root}',
-                'singleAssoc.txt': '{root}.singleAssoc.txt'
+                'singleAssoc.txt': '{root}.singleAssoc.txt',
             }
         }
     )
