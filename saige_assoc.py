@@ -10,45 +10,24 @@ Hail Batch workflow to perform association tests using SAIGE-QTL
     - genotype file (from get_genotype_vcf.py)
     - VRE genotypes (from get_genotype_vcf.py)
 - builds saige commands (just add to str)
-- run SAIGE-QTL (execute Rscript from command line)
-- aggregate & summarise results (not yet)
+- run single-variant test using SAIGE-QTL (execute Rscript from command line)
+- aggregate & summarise results
 
 
 To run:
 
-In test:
-
 analysis-runner \
-    --config saige_assoc_test.toml \
-    --description "SAIGE-QTL association pipeline" \
-    --memory='32G' \
-    --storage='50G' \
-    --dataset "bioheart" \
-    --access-level "test" \
-    --output-dir "saige-qtl/bioheart_n990_and_tob_n1055/v1" \
-     python3 saige_assoc.py \
-     --pheno-cov-files-path=gs://cpg-bioheart-test/saige-qtl/bioheart_n990_and_tob_n1055/input_files/pheno_cov_files \
-        --cis-window-files-path=gs://cpg-bioheart-test/saige-qtl/bioheart_n990_and_tob_n1055/input_files/cis_window_files \
-        --genotype-files-prefix=gs://cpg-bioheart-test/saige-qtl/bioheart_n990_and_tob_n1055/input_files/genotypes/v3/vds-tenk10k1-0 \
-        --vre-files-prefix=gs://cpg-bioheart-test/saige-qtl/bioheart_n990_and_tob_n1055/input_files/genotypes/v3/vds-tenk10k1-0
-
-
-In main:
-
-analysis-runner \
-    --config saige_assoc_test.toml \
-    --description "SAIGE-QTL association pipeline" \
-    --memory='32G' \
-    --storage='50G' \
-    --dataset "bioheart" \
-    --access-level "full" \
-    --output-dir "saige-qtl/bioheart_n990/v1" \
-     python3 saige_assoc.py \
-     --pheno-cov-files-path=gs://cpg-bioheart-main/saige-qtl/bioheart_n990/input_files/v1/pheno_cov_files \
-        --cis-window-files-path=gs://cpg-bioheart-main/saige-qtl/bioheart_n990/input_files/v1/cis_window_files \
-        --genotype-files-prefix=gs://cpg-bioheart-main/saige-qtl/bioheart_n990/input_files/genotypes/vds-bioheart1-0 \
-        --vre-files-prefix=gs://cpg-bioheart-main/saige-qtl/bioheart_n990/input_files/genotypes/vds-bioheart1-0
-
+   --config saige_assoc_test.toml \
+   --description "SAIGE-QTL CV association pipeline" \
+   --memory='32G' \
+   --storage='50G' \
+   --dataset "bioheart" \
+   --access-level "full" \
+   --output-dir "saige-qtl/bioheart_n990_and_tob_n1055/output_files/240920" \
+    python3 saige_assoc.py  --pheno-cov-files-path=gs://cpg-bioheart-main/saige-qtl/bioheart_n990_and_tob_n1055/input_files/240920/pheno_cov_files \
+       --cis-window-files-path=gs://cpg-bioheart-main/saige-qtl/bioheart_n990_and_tob_n1055/input_files/240920/cis_window_files \
+       --genotype-files-prefix=gs://cpg-bioheart-main/saige-qtl/bioheart_n990_and_tob_n1055/input_files/240920/genotypes/vds-tenk10k1-0 \
+       --vre-files-prefix=gs://cpg-bioheart-main/saige-qtl/bioheart_n990_and_tob_n1055/input_files/240920/genotypes/vds-tenk10k1-0
 
 """
 

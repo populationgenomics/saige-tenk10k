@@ -24,7 +24,6 @@ analysis-runner \
                --bioheart-sex-file-path 'gs://cpg-bioheart-main-analysis/large_cohort/bioheart1-0/sample_qc.ht' \
                --project-names 'tob-wgs,bioheart' --vds-version tenk10k1-0
 
-
 """
 
 from cpg_utils.hail_batch import dataset_path, init_batch, output_path
