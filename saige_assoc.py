@@ -60,8 +60,8 @@ from google.cloud import storage
 import hailtop.batch as hb
 
 from cpg_utils import to_path
-from cpg_utils.config import get_config
-from cpg_utils.hail_batch import dataset_path, get_batch, image_path, output_path
+from cpg_utils.config import get_config, image_path, output_path
+from cpg_utils.hail_batch import dataset_path, get_batch
 
 
 # Fit null model (step 1)
