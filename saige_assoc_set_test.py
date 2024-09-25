@@ -392,6 +392,13 @@ def main(
                 # unique output path for this set-based test
                 set_output_path = output_path(set_key, 'analysis')
 
+                step2_job.declare_resource_group(
+                    output={
+                        'set': '{root}',
+                        'singleAssoc.txt': '{root}.singleAssoc.txt',
+                    }
+                )
+
                 # if the output exists, do nothing
                 if to_path(set_output_path).exists():
                     continue
@@ -400,7 +407,7 @@ def main(
                 build_run_set_based_test_command(
                     job=step2_job,
                     set_key=set_key,
-                    set_output_path=set_output_path,
+                    set_output_path=set_output_path.output,
                     vcf_group=vcf_group,
                     chrom=(chromosome[3:]),
                     group_file=group_path,
