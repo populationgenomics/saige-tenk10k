@@ -15,9 +15,10 @@ SAIGE-QTL association pipeline.
 analysis-runner \
    --description "get common and rare variant VCFs" \
    --dataset "bioheart" \
-   --access-level "full" \
+   --access-level "standard" \
    --output-dir saige-qtl/bioheart_n990_and_tob_n1055/input_files/240920/genotypes/ \
-    python3 get_genotype_vcf.py --vds-path=gs://cpg-bioheart-main/vds/tenk10k1-0.vds --chromosomes chr2
+    python3 get_genotype_vcf.py --vds-path=gs://cpg-bioheart-main/vds/tenk10k1-0.vds --chromosomes chr2 \
+    --relateds-to-drop-path=gs://cpg-bioheart-main-analysis/large_cohort/bioheart1-0/relateds_to_drop.ht
 
 """
 
@@ -183,6 +184,10 @@ def remove_chr_from_bim(input_bim: str, output_bim: str, bim_renamed: str):
 # inputs:
 @click.option('--vds-path', help=' GCP gs:// path to the VDS')
 @click.option('--chromosomes', help=' e.g., chr22,chrX ')
+@click.option(
+    '--relateds-to-drop-path',
+    default='gs://cpg-bioheart-main-analysis/large_cohort/bioheart1-0/relateds_to_drop.ht',
+)
 @click.option('--cv-maf-threshold', default=0.01)
 @click.option('--rv-maf-threshold', default=0.01)
 @click.option('--vre-mac-threshold', default=20)
@@ -190,14 +195,11 @@ def remove_chr_from_bim(input_bim: str, output_bim: str, bim_renamed: str):
 @click.option('--exclude-multiallelic', is_flag=False)
 @click.option('--exclude-indels', is_flag=False)
 @click.option('--plink-job-storage', default='1G')
-@click.option(
-    '--relateds-to-drop-path',
-    default='gs://cpg-bioheart-test/large_cohort/v1-0/relateds_to_drop.ht',
-)
 @click.command()
 def main(
     vds_path: str,
     chromosomes: str,
+    relateds_to_drop_path: str,
     cv_maf_threshold: float,
     rv_maf_threshold: float,
     vre_mac_threshold: int,
@@ -205,7 +207,6 @@ def main(
     exclude_multiallelic: bool,
     exclude_indels: bool,
     plink_job_storage: str,
-    relateds_to_drop_path: str,
 ):
     """
     Write genotypes as VCF
