@@ -76,7 +76,7 @@ GET_PARTICIPANT_META_QUERY = gql(
     '--bioheart-sex-file-path',
     help='this file should contain sample id and inferred sex info for the bioheart cohort',
 )
-@click.option('--vds-version', help=' e.g. 1-0 ')
+@click.option('--vds-version', help=' e.g. tenk10k1-0,bioheart1-0 ')
 @click.option('--project-names', default='tob-wgs,bioheart')
 @click.option('--number-of-sample-perms', default=10)
 @click.option('--fill-in-sex', default=False)
@@ -98,29 +98,36 @@ def main(
     init_batch()
 
     # sex
-    # check if files exist
-    try:
-        # TOB sex info from Vlad's metadata file
-        tob_meta = pd.read_csv(tob_sex_file_path)
-        # BioHEART sex info from Hope's Somalier stand alone run
-        bioheart_meta = pd.read_csv(bioheart_sex_file_path, sep="\t")
-    except FileNotFoundError as e:
-        print(f"Error: File not found - {e}")
-        sys.exit(1)
-    # extract sex for TOB
-    # remove samples with ambiguous sex inference
-    tob_meta = tob_meta[tob_meta['sex_karyotype'].isin(["XX", "XY"])]
-    # encode sex as 1,2 instead
-    tob_meta['sex'] = tob_meta['sex_karyotype'].replace('XY', '1')
-    tob_meta['sex'] = tob_meta['sex'].replace('XX', '2')
-    # rename s as sample id to match bioheart file
-    tob_meta['sample_id'] = tob_meta['new_CPG_id']
-    tob_sex = tob_meta.loc[:, ["sample_id", "sex"]]
-
-    # extract sex for BioHEART
-    bioheart_sex = bioheart_meta.loc[:, ["sample_id", "sex"]]
+    # option 1: separate files
+    # tob
+    tob_sample_qc_ht = hl.read_table(tob_sex_file_path)
+    # convert to pandas
+    tob_sample_qc_df = tob_sample_qc_ht.to_pandas()
+    # extract info and reformat to table
+    tob_sample_qc_df['sample_id'] = [str(s) for s in tob_sample_qc_df['s']]
+    # only retain relevant columns
+    tob_sex_df = tob_sample_qc_df[['sample_id', 'sex']]
+    # bioheart
+    bioheart_sample_qc_ht = hl.read_table(bioheart_sex_file_path)
+    # convert to pandas
+    bioheart_sample_qc_df = bioheart_sample_qc_ht.to_pandas()
+    # extract info and reformat to table
+    bioheart_sample_qc_df['sample_id'] = [str(s) for s in bioheart_sample_qc_df['s']]
+    # only retain relevant columns
+    bioheart_sex_df = bioheart_sample_qc_df[['sample_id', 'sex']]
     # combine_info
-    sex_df = pd.concat([tob_sex, bioheart_sex], axis=0)
+    sex_df = pd.concat([tob_sex_df, bioheart_sex_df], axis=0)
+
+    # option 2: combined file
+    sample_qc_ht_path = dataset_path(f'large_cohort/{vds_version}/sample_qc.ht')
+    sample_qc_ht = hl.read_table(sample_qc_ht_path)
+    # convert to pandas
+    sample_qc_df = sample_qc_ht.to_pandas()
+    # extract info and reformat to table
+    sample_qc_df['sample_id'] = [str(s) for s in sample_qc_df['s']]
+    # only retain relevant columns
+    sex_df = sample_qc_df[['sample_id', 'sex']]
+
     # add sex as unknown (0) if missing
     if fill_in_sex:
         sex_df['sex'] = sex_df['sex'].fillna(0)
