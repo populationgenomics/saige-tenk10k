@@ -105,7 +105,7 @@ def main(
     sex_df = pd.concat([tob_sex_df, bioheart_sex_df], axis=0)
 
     # # option 2: combined file
-    # at the moment this is not up to date, but ideally this would be ideal to run instead
+    # at the moment this is not up to date, but ideally this would be what we'd run instead
     # sample_qc_ht_path = dataset_path(f'large_cohort/{vds_version}/sample_qc.ht')
     # sample_qc_ht = hl.read_table(sample_qc_ht_path)
     # # convert to pandas
