@@ -86,14 +86,10 @@ def plot_pvalues(
         results_top_snp_df = pd.concat(results_top_snp_df_list)
 
         # save
-        results_all_file = (
-            f'{results_path}/summary_stats/{celltype}_all_cis_raw_pvalues.tsv'
-        )
+        results_all_file = f'{results_path}/summary_stats/{celltype}_{common_or_rare}_all_cis_raw_pvalues.tsv'
         results_all_df.to_csv(results_all_file, sep='\t')
 
-        results_top_snp_file = (
-            f'{results_path}/summary_stats/{celltype}_top_snp_cis_raw_pvalues.tsv'
-        )
+        results_top_snp_file = f'{results_path}/summary_stats/{celltype}_{common_or_rare}_top_snp_cis_raw_pvalues.tsv'
         results_top_snp_df.to_csv(results_top_snp_file, sep='\t')
 
         # plot histograms
@@ -101,7 +97,8 @@ def plot_pvalues(
         plt.hist(results_all_df['p.value'])
         plt.savefig('histo.png')
         gcs_path_p = output_path(
-            f'plots/pvalues_histo/{celltype}_{title}_all.png', 'analysis'
+            f'plots/pvalues_histo/{celltype}_{common_or_rare}_{title}_all.png',
+            'analysis',
         )
         hl.hadoop_copy('histo.png', gcs_path_p)
 
@@ -118,7 +115,8 @@ def plot_pvalues(
         ax.scatter(x_all, y_all)
         fig.savefig('qqplot.png')
         gcs_path_p = output_path(
-            f'plots/pvalues_qqplot/{celltype}_{title}_all.png', 'analysis'
+            f'plots/pvalues_qqplot/{celltype}_{common_or_rare}_{title}_all.png',
+            'analysis',
         )
         hl.hadoop_copy('qqplot.png', gcs_path_p)
 
