@@ -17,7 +17,6 @@ Raises:
 """
 
 from argparse import ArgumentParser, Namespace
-from io import StringIO
 from random import sample, seed
 from re import split
 from typing import Any
@@ -250,12 +249,8 @@ def write_outputs(
             )
 
     if subset_sample_list:
-        outdata = StringIO()
-        for single_sample in subset_sample_list:
-            outdata.write(f"{single_sample}\n")
         with to_path(output_path("subset_samples_file.txt")).open("wt") as outfile:
-            outfile.write(outdata.getvalue())
-            outdata.close()
+            outfile.write("\n".join(subset_sample_list))
 
 
 def main(
