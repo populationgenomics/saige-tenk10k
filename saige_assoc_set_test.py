@@ -93,8 +93,8 @@ def build_fit_null_command(
 # Run set-based association (step 2b)
 def build_run_set_based_test_command(
     job: hb.batch.job.Job,
-    set_key: str,
-    set_output_path: str,
+    rare_key: str,
+    rare_output_path: str,
     vcf_group: hb.ResourceGroup,
     chrom: str,
     group_file: str,
@@ -107,7 +107,7 @@ def build_run_set_based_test_command(
 
     Input:
     - job: job to run this command in
-    - set_key: unique key for this set-based test (used to name output)
+    - rare_key: unique key for this rare variant test (used to name output)
     - vcf group: VCF & index file ResourceGroup
     - set test output path: path to output saige file
     - chrom: chromosome to run this on
@@ -126,11 +126,11 @@ def build_run_set_based_test_command(
     )
 
     # declare a uniquely named resource group for this set-based test
-    set_key_writeable = set_key.replace('/', '_')
+    rare_key_writeable = rare_key.replace('/', '_')
     job.declare_resource_group(
         **{
-            set_key_writeable: {
-                'set': '{root}',
+            rare_key_writeable: {
+                'set': '{root}.set',
                 'singleAssoc.txt': '{root}.singleAssoc.txt',
             }
         }
@@ -141,7 +141,7 @@ def build_run_set_based_test_command(
         Rscript /usr/local/bin/step2_tests_qtl.R \
         --vcfFile={vcf_group.vcf} \
         --vcfFileIndex={vcf_group.index} \
-        --SAIGEOutputFile={job[set_key_writeable]} \
+        --SAIGEOutputFile={job[rare_key_writeable]} \
         --chrom={chrom} \
         --GMMATmodelFile={gmmat_model_path} \
         --varianceRatioFile={variance_ratio_path} \
@@ -151,7 +151,7 @@ def build_run_set_based_test_command(
     )
 
     # write the output
-    get_batch().write_output(job[set_key_writeable], set_output_path)
+    get_batch().write_output(job[rare_key_writeable], rare_output_path)
 
 
 def apply_job_settings(job: hb.batch.job.Job, job_name: str):
@@ -245,7 +245,8 @@ def summarise_rv_results(
     from cpg_utils.hail_batch import output_path
 
     existing_rv_assoc_results = [
-        str(file) for file in to_path(gene_results_path).glob(f'*/{celltype}_*_cis_set')
+        str(file)
+        for file in to_path(gene_results_path).glob(f'*/{celltype}_*_cis_rare.set')
     ]
     results_all_df = pd.concat(
         [
@@ -388,19 +389,19 @@ def main(
 
                 # step 2 (cis eQTL set-based test)
                 # unique key for this set-based test
-                set_key = f'{celltype}/{chromosome}/{celltype}_{gene}_cis_set'
+                rare_key = f'{celltype}/{chromosome}/{celltype}_{gene}_cis_rare'
                 # unique output path for this set-based test
-                set_output_path = output_path(set_key, 'analysis')
+                rare_output_path = output_path(rare_key, 'analysis')
 
                 # if the output exists, do nothing
-                if to_path(set_output_path).exists():
+                if to_path(f'{rare_output_path}.set').exists():
                     continue
 
                 # instruct an additional command to run inside this VM
                 build_run_set_based_test_command(
                     job=step2_job,
-                    set_key=set_key,
-                    set_output_path=set_output_path,
+                    rare_key=rare_key,
+                    rare_output_path=rare_output_path,
                     vcf_group=vcf_group,
                     chrom=(chromosome[3:]),
                     group_file=group_path,
