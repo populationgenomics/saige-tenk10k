@@ -16,7 +16,7 @@ Raises:
     AttributeError: The user must provide one of n-samples or intervals, optherwise the script will not do any subsetting.
 """
 
-from argparse import ArgumentParser
+from argparse import ArgumentParser, Namespace
 from io import StringIO
 from random import sample, seed
 from re import split
@@ -52,9 +52,13 @@ def check_output_already_exists(output_format: list[str], infile_name: str) -> N
     output_errors: str = ""
     files_exist_errors: bool = False
     for format in output_format:
-        if format == "vds" and to_path(output_path(f"{infile_name}_subset")).exists():
-            output_errors += f"The output VDS {infile_name}_subset already exists. Refusing to overwrite it.\n"
-            files_exist_errors = True
+        if format == "vds":
+            if to_path(output_path(f"{infile_name}_subset")).exists():
+                output_errors += f"The output VDS {infile_name}_subset already exists. Refusing to overwrite it.\n"
+                files_exist_errors = True
+            if to_path(output_path("subset_samples_file.txt")).exists():
+                output_errors += f"The file {to_path(output_path('subset_samples_file.txt'))} exists. Refusing to overwrite it."
+                files_exist_errors = True
         if (
             format == "bed"
             and to_path(output_path(f"{infile_name}_subset.bed")).exists()
@@ -246,10 +250,6 @@ def write_outputs(
             )
 
     if subset_sample_list:
-        if to_path(output_path("subset_samples_file.txt")).exists():
-            raise FileExistsError(
-                f"The file {to_path(output_path('subset_samples_file.txt'))} exists. Refusing to overwrite it."
-            )
         outdata = StringIO()
         for single_sample in subset_sample_list:
             outdata.write(f"{single_sample}\n")
@@ -323,10 +323,7 @@ if __name__ == "__main__":
         default=19700101,
         type=int,
     )
-    args, failures = parser.parse_known_args()
-    if failures:
-        parser.print_help()
-        raise AttributeError(f"Invalid arguments {failures}")
+    args: Namespace = parser.parse_args()
     if not args.n_samples and not args.intervals:
         raise AttributeError(
             "If neither a number of samples or intervals are provided, this script will not do any subsetting!"
