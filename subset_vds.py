@@ -52,21 +52,29 @@ def check_output_already_exists(output_format: list[str], infile_name: str) -> N
     files_exist_errors: bool = False
     for format in output_format:
         if format == "vds":
-            if to_path(output_path(f"{infile_name}_subset")).exists():
+            if to_path(
+                output_path(f"{infile_name}_subset", category="analysis")
+            ).exists():
                 output_errors += f"The output VDS {infile_name}_subset already exists. Refusing to overwrite it.\n"
                 files_exist_errors = True
-            if to_path(output_path("subset_samples_file.txt")).exists():
+            if to_path(
+                output_path("subset_samples_file.txt", category="analysis")
+            ).exists():
                 output_errors += f"The file {to_path(output_path('subset_samples_file.txt'))} exists. Refusing to overwrite it."
                 files_exist_errors = True
         if (
             format == "bed"
-            and to_path(output_path(f"{infile_name}_subset.bed")).exists()
+            and to_path(
+                output_path(f"{infile_name}_subset.bed", category="analysis")
+            ).exists()
         ):
             output_errors += f"The output {to_path(output_path(infile_name))}_subset.bed fileset exists. Refusing to overwrite it.\n"
             files_exist_errors = True
         if (
             format == "vcf"
-            and to_path(output_path(f"{infile_name}_subset.vcf.bgz")).exists()
+            and to_path(
+                output_path(f"{infile_name}_subset.vcf.bgz", category="analysis")
+            ).exists()
         ):
             output_errors += f"The output file {to_path(output_path(infile_name))}_subset.vcf.bgz exists. Refusing to overwrite it.\n"
             files_exist_errors = True
@@ -226,7 +234,7 @@ def write_outputs(
         FileExistsError: throws an error if any of the proposed output paths exist, as it will not overwrite them
     """
     if "vds" in output_formats:
-        subset_vds.write(output_path(f"{infile_name}_subset"))
+        subset_vds.write(output_path(f"{infile_name}_subset", category="analysis"))
 
     subset_dense_mt: MatrixTable | Table | Any = to_dense_mt(subset_vds)
     subset_dense_mt = split_multi_hts(subset_dense_mt)
@@ -235,7 +243,7 @@ def write_outputs(
         if format == "bed":
             export_plink(
                 subset_dense_mt,
-                output_path(f"{infile_name}_subset"),
+                output_path(f"{infile_name}_subset", category="analysis"),
                 call=subset_dense_mt.LGT,
                 ind_id=subset_dense_mt.s,
             )
@@ -244,12 +252,14 @@ def write_outputs(
                 subset_dense_mt = subset_dense_mt.drop("gvcf_info")
             export_vcf(
                 subset_dense_mt,
-                output_path(f"{infile_name}_subset.vcf.bgz"),
+                output_path(f"{infile_name}_subset.vcf.bgz", category="analysis"),
                 tabix=True,
             )
 
     if subset_sample_list:
-        with to_path(output_path("subset_samples_file.txt")).open("wt") as outfile:
+        with to_path(output_path("subset_samples_file.txt", category="analysis")).open(
+            "wt"
+        ) as outfile:
             outfile.write("\n".join(subset_sample_list))
 
 
