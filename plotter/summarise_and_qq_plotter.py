@@ -67,9 +67,10 @@ def plot_pvalues(
             df = pd.read_csv(to_path(pv_df), sep='\t')
             # add gene as column before merging
             df['gene'] = (
-                pv_df.replace(f'{results_path}/', '')
+                pv_df.split('/')[-1]
+                .split('.')[0]
                 .replace(f'{celltype}_', '')
-                .replace('_cis', '')
+                .split('_')[0]
             )
             # add SNP info
             df['is_snp'] = [
