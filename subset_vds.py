@@ -14,6 +14,17 @@ Raises:
     FileExistsError: Will not overwrite existing files.
     AttributeError: Unrecognised arguments.
     AttributeError: The user must provide one of n-samples or intervals, optherwise the script will not do any subsetting.
+
+Example usage:
+
+analysis-runner --dataset bioheart \
+    --access-level test \
+    --output test-subset \
+    --description 'Test VDS subsetting script' \
+    python3 subset_vds.py --vds-path vds/bioheart1-0.vds \
+    --output-format vcf bed \
+    --intervals chr22,chr1:50000-100000 \
+    --n-samples 2
 """
 
 from argparse import ArgumentParser, Namespace
