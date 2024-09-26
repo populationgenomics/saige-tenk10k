@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """
-This script summarise SAIGE-QTL raw p-value results
+This script summarise SAIGE-QTL single-variant test
+raw p-values from common (or rare) variant results
 and plots QQ plots and histograms of the p-values
 
 To run:
@@ -30,10 +31,12 @@ from cpg_utils.hail_batch import init_batch, output_path
 @click.option('--celltype', required=True)
 @click.option('--results-path', required=True)
 @click.option('--title', default='shuffled')
+@click.option('--common-or-rare', default='common')
 def plot_pvalues(
     celltype: str,
     results_path: str,
     title: str,
+    common_or_rare: str,
 ):
     """
     combines the results for a given cell type,
@@ -43,13 +46,21 @@ def plot_pvalues(
     init_batch()
 
     # collect all raw p-value files
-    existing_cv_assoc_results = [
-        str(file) for file in to_path(results_path).glob(f'{celltype}_*_cis')
-    ]
+    if common_or_rare == 'common':
+        existing_assoc_results = [
+            str(file) for file in to_path(results_path).glob(f'{celltype}_*_cis')
+        ]
+    elif common_or_rare == 'rare':
+        existing_assoc_results = [
+            str(file)
+            for file in to_path(results_path).glob(
+                f'{celltype}_*_cis_rare.singleAssoc.txt'
+            )
+        ]
     # concatenates the dataframes using pandas
     results_all_df_list = []
     results_top_snp_df_list = []
-    for pv_df in existing_cv_assoc_results:
+    for pv_df in existing_assoc_results:
         df = pd.read_csv(to_path(pv_df), sep='\t')
         # add gene as column before merging
         df['gene'] = (
@@ -85,19 +96,7 @@ def plot_pvalues(
     # all results
     plt.hist(results_all_df['p.value'])
     plt.savefig('histo.png')
-    gcs_path_p = output_path(
-        f'plots/pvalues_histo/{celltype}_{title}_all.png', 'analysis'
-    )
-    hl.hadoop_copy('histo.png', gcs_path_p)
-
-    # top SNP
-    plt.figure(figsize=(8, 8))
-    fig, ax = plt.subplots(figsize=(8, 8))
-    ax.hist(results_top_snp_df['p.value'])
-    fig.savefig('histo.png')
-    gcs_path_p = output_path(
-        f'plots/pvalues_histo/{celltype}_{title}_top_snp.png', 'analysis'
-    )
+    gcs_path_p = output_path(f'plots/pvalues_histo/{title}_all.png', 'analysis')
     hl.hadoop_copy('histo.png', gcs_path_p)
 
     # QQ plots
@@ -110,25 +109,7 @@ def plot_pvalues(
     fig, ax = plt.subplots(figsize=(8, 8))
     ax.scatter(x_all, y_all)
     fig.savefig('qqplot.png')
-    gcs_path_p = output_path(
-        f'plots/pvalues_qqplot/{celltype}_{title}_all.png', 'analysis'
-    )
-    hl.hadoop_copy('qqplot.png', gcs_path_p)
-
-    # top SNP
-    expected_pvals_top = np.random.uniform(
-        low=0, high=1, size=results_top_snp_df.shape[0]
-    )
-    x_top = -np.log10(np.sort(expected_pvals_top))
-    y_top = -np.log10(np.sort(results_top_snp_df['p.value']))
-
-    plt.figure(figsize=(8, 8))
-    fig, ax = plt.subplots(figsize=(8, 8))
-    ax.scatter(x_top, y_top)
-    fig.savefig('qqplot.png')
-    gcs_path_p = output_path(
-        f'plots/pvalues_qqplot/{celltype}_{title}_top_snp.png', 'analysis'
-    )
+    gcs_path_p = output_path(f'plots/pvalues_qqplot/{title}_all.png', 'analysis')
     hl.hadoop_copy('qqplot.png', gcs_path_p)
 
 
