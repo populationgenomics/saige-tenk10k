@@ -13,7 +13,7 @@ analysis-runner \
     --output-dir "saige-qtl/" \
     python3 plotter/summarise_and_qq_plotter.py \
         --celltype='B_naive' \
-        --results-path=gs://cpg-bioheart-main-analysis/saige-qtl/bioheart_n990_and_tob_n1055/output_files/sample_perm0/output_files \
+        --results-path=gs://cpg-bioheart-main-analysis/saige-qtl/bioheart_n990_and_tob_n1055/output_files/sample_perm0/output_files/ \
         --title='shuffled'
 """
 
@@ -48,13 +48,14 @@ def plot_pvalues(
     # collect all raw p-value files
     if common_or_rare == 'common':
         existing_assoc_results = [
-            str(file) for file in to_path(results_path).glob(f'{celltype}_*_cis')
+            str(file)
+            for file in to_path(results_path).glob(f'{celltype}/*/{celltype}_*_cis')
         ]
     elif common_or_rare == 'rare':
         existing_assoc_results = [
             str(file)
             for file in to_path(results_path).glob(
-                f'{celltype}_*_cis_rare.singleAssoc.txt'
+                f'{celltype}/*/{celltype}_*_cis_rare.singleAssoc.txt'
             )
         ]
     # concatenates the dataframes using pandas
