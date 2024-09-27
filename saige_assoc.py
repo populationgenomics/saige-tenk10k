@@ -34,6 +34,9 @@ analysis-runner \
 import click
 
 import logging
+import pandas as pd
+
+from datetime import datetime
 
 from google.cloud import storage
 import hailtop.batch as hb
@@ -313,6 +316,7 @@ def create_second_job(vcf_path: str) -> hb.batch.job.Job:
 @click.option(
     '--vre-files-prefix', default=dataset_path('saige-qtl/input_files/genotypes')
 )
+@click.option('--writeout-file-prefix', default=dataset_path('saige-qtl'))
 @click.option('--test-str', is_flag=True, help='Test with STR VCFs')
 @click.option('--jobs-per-vm', type=int, default=25)
 @click.command()
@@ -323,6 +327,8 @@ def main(
     # outputs from genotype processing
     genotype_files_prefix: str,
     vre_files_prefix: str,
+    # write out inputs and flags used for this run
+    writeout_file_prefix: str,
     test_str: bool = False,
     jobs_per_vm: int = 25,
 ):
@@ -341,10 +347,21 @@ def main(
             job.depends_on(jobs[-get_config()['saige']['max_parallel_jobs']])
         jobs.append(job)
 
+    # define writeout file by type of pipeline and date and time
+    date_and_time = datetime.today().strftime('%Y-%m-%d_%H:%M:%S')
+    writeout_file = f'{writeout_file_prefix}/saige_qtl_cv_pipeline_{date_and_time}.csv'
+
     # pull principal args from config
     chromosomes: list[str] = get_config()['saige']['chromosomes']
     celltypes: list[str] = get_config()['saige']['celltypes']
+    drop_genes: list[str] = get_config()['saige']['drop_genes']
     celltype_jobs: dict[str, list] = dict()
+
+    # add config params
+    writeout_dict: dict[str, str] = dict()
+    writeout_dict['chromosomes'] = ",".join(str(chrom) for chrom in chromosomes)
+    writeout_dict['celltypes'] = ",".join(str(ct) for ct in celltypes)
+    writeout_dict['drop_genes'] = ",".join(str(dg) for dg in drop_genes)
 
     vre_plink_path = f'{vre_files_prefix}/vre_plink_2000_variants'
 
@@ -391,8 +408,6 @@ def main(
 
             genes = [f.replace(f'_{celltype}_pheno_cov.tsv', '') for f in files]
             logging.info(f'I found these genes: {", ".join(genes)}')
-
-            drop_genes: list[str] = get_config()['saige']['drop_genes']
 
             genes = [x for x in genes if x not in drop_genes]
 
@@ -481,6 +496,9 @@ def main(
         )
     # set jobs running
     batch.run(wait=False)
+
+    writeout_df = pd.DataFrame.from_dict(writeout_dict)
+    writeout_df.to_csv(writeout_file)
 
 
 if __name__ == '__main__':
