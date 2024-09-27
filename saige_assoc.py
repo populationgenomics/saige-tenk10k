@@ -96,6 +96,7 @@ def build_run_single_variant_test_command(
     cis_window_file: str,
     gmmat_model_path: str,
     variance_ratio_path: str,
+    conditional_string: str = '',
 ):
     """
     Build SAIGE command for running single variant test
@@ -110,6 +111,7 @@ def build_run_single_variant_test_command(
     - cis window: file with chrom | start | end to specify window
     - GMMAT model file: null model fit from previous step (.rda)
     - Variance Ratio file: as estimated from previous step (.txt)
+    - optionally: SNPs to condition on
 
     Output:
     Rscript command (str) ready to run
@@ -134,7 +136,7 @@ def build_run_single_variant_test_command(
         --GMMATmodelFile={gmmat_model_path} \
         --varianceRatioFile={variance_ratio_path} \
         --rangestoIncludeFile={cis_window_file} \
-        {args_from_config}
+        {conditional_string} {args_from_config}
     """
     )
 
@@ -254,6 +256,7 @@ def summarise_cv_results(
     celltype: str,
     gene_results_path: str,
     summary_output_path: str,
+    conditional_suffix: str = '',
 ):
     """
     Summarise gene-specific results
@@ -265,7 +268,9 @@ def summarise_cv_results(
 
     existing_cv_assoc_results = [
         str(file)
-        for file in to_path(gene_results_path).glob(f'*/{celltype}_*_cis_gene_pval')
+        for file in to_path(gene_results_path).glob(
+            f'*/{celltype}_*_cis_gene_pval{conditional_suffix}'
+        )
     ]
     results_all_df = pd.concat(
         [
@@ -315,6 +320,7 @@ def create_second_job(vcf_path: str) -> hb.batch.job.Job:
 )
 @click.option('--test-str', is_flag=True, help='Test with STR VCFs')
 @click.option('--jobs-per-vm', type=int, default=25)
+@click.option('--conditional-files-prefix', default='no_condition')
 @click.command()
 def main(
     # outputs from gene_expression processing
@@ -325,6 +331,7 @@ def main(
     vre_files_prefix: str,
     test_str: bool = False,
     jobs_per_vm: int = 25,
+    conditional_files_prefix: str = 'no_condition',
 ):
     """
     Run SAIGE-QTL pipeline for all cell types
@@ -421,17 +428,25 @@ def main(
                     gene_dependency = null_job
 
                 # step 2 (cis eQTL single variant test)
+
+                if conditional_files_prefix == 'no_condition':
+                    suffix = ''
+                else:
+                    conditional_suffix = conditional_files_prefix.split('/')[-1]
+                    suffix = f'_{conditional_suffix}'
+
                 sv_out_path = output_path(
-                    f'{celltype}/{chromosome}/{celltype}_{gene}_cis', 'analysis'
+                    f'{celltype}/{chromosome}/{celltype}_{gene}_cis{suffix}', 'analysis'
                 )
                 if to_path(sv_out_path).exists():
                     step2_output = get_batch().read_input(sv_out_path)
                 else:
                     step2_output = build_run_single_variant_test_command(
                         job=single_var_test_job,
-                        svt_key=f'{celltype}_{chromosome}_{celltype}_{gene}_cis',
+                        svt_key=f'{celltype}_{chromosome}_{celltype}_{gene}_cis{suffix}',
                         sv_output_path=output_path(
-                            f'{celltype}/{chromosome}/{celltype}_{gene}_cis', 'analysis'
+                            f'{celltype}/{chromosome}/{celltype}_{gene}_cis{suffix}',
+                            'analysis',
                         ),
                         vcf_group=vcf_group,
                         chrom=(chromosome[3:]),
@@ -444,14 +459,14 @@ def main(
 
                 # step 3 (gene-level p-values)
                 saige_gene_pval_output_file = output_path(
-                    f'{celltype}/{chromosome}/{celltype}_{gene}_cis_gene_pval'
+                    f'{celltype}/{chromosome}/{celltype}_{gene}_cis_gene_pval{suffix}'
                 )
                 if not to_path(saige_gene_pval_output_file).exists():
                     job3 = build_obtain_gene_level_pvals_command(
                         gene_name=gene,
                         saige_sv_output_file=step2_output,
                         saige_gene_pval_output_file=output_path(
-                            f'{celltype}/{chromosome}/{celltype}_{gene}_cis_gene_pval'
+                            f'{celltype}/{chromosome}/{celltype}_{gene}_cis_gene_pval{suffix}'
                         ),
                     )
                     job3.depends_on(single_var_test_job)
@@ -464,13 +479,13 @@ def main(
 
     # summarise results (per cell type)
     for celltype in celltypes:
-        logging.info(f'start summarising results for {celltype}')
+        logging.info(f'start summarising results for {celltype}{suffix}')
         summary_output_path = (
-            f'summary_stats/{celltype}_all_cis_cv_gene_level_results.tsv'
+            f'summary_stats/{celltype}{suffix}_all_cis_cv_gene_level_results.tsv'
         )
 
         summarise_job = get_batch().new_python_job(
-            f'Summarise CV results for {celltype}'
+            f'Summarise CV results for {celltype}{suffix}'
         )
         summarise_job.depends_on(*celltype_jobs[celltype])
         summarise_job.call(
@@ -478,6 +493,7 @@ def main(
             celltype=celltype,
             gene_results_path=output_path(celltype),
             summary_output_path=summary_output_path,
+            conditional_suffix=suffix,
         )
     # set jobs running
     batch.run(wait=False)
