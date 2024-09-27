@@ -366,6 +366,10 @@ def main(
     vre_plink_path = f'{vre_files_prefix}/vre_plink_2000_variants'
     writeout_dict['vre_plink_files_prefix_used'] = vre_plink_path
 
+    writeout_dict['cis_window_files_path_used'] = cis_window_files_path
+    cis_window_size = get_config()['saige']['cis_window_size']
+    writeout_dict['cis_window_size_used'] = cis_window_size
+
     for chromosome in chromosomes:
 
         # genotype vcf files are one per chromosome
@@ -388,8 +392,6 @@ def main(
 
         # cis window files are split by gene but organised by chromosome also
         cis_window_files_path_chrom = f'{cis_window_files_path}/{chromosome}'
-
-        cis_window_size = get_config()['saige']['cis_window_size']
 
         for celltype in celltypes:
             # extract gene list based on genes for which we have pheno cov files
