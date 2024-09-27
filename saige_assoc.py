@@ -364,6 +364,7 @@ def main(
     writeout_dict['drop_genes'] = ",".join(str(dg) for dg in drop_genes)
 
     vre_plink_path = f'{vre_files_prefix}/vre_plink_2000_variants'
+    writeout_dict['vre_plink_files_prefix_used'] = vre_plink_path
 
     for chromosome in chromosomes:
 
@@ -376,7 +377,7 @@ def main(
             vcf_file_path = (
                 f'{genotype_files_prefix}/{chromosome}_common_variants.vcf.bgz'
             )
-
+        writeout_dict[f'{chromosome}_vcf_file_used'] = vcf_file_path
         single_var_test_job = create_second_job(vcf_file_path)
         jobs_in_vm = 0
 
