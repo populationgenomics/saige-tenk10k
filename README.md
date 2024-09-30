@@ -267,6 +267,9 @@ TenK10K is matched single-cell RNA-seq (scRNA-seq) and whole-genome sequencing (
 * MAC: minor allele count
 * MAF: minor allele frequency
 * scRNA-seq: single-cell RNA sequencing
+* SNP: single-nucleotide polymorphism
 * TOB: Tasmanian Ophtalmic Biobank
+* TSV: tab-separated file
+* VCF: Variant Call Format
 * VRE: variant ration estimate
 * WGS: whole-genome sequencing
