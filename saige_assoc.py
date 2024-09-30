@@ -358,6 +358,7 @@ def main(
     celltype_jobs: dict[str, list] = dict()
 
     vre_plink_path = f'{vre_files_prefix}/vre_plink_2000_variants'
+    cis_window_size = get_config()['saige']['cis_window_size']
 
     # populate all the important params into a file for long-term reference
     writeout_dict: dict = {
