@@ -32,17 +32,17 @@ analysis-runner \
 """
 
 import click
-
+import json
 import logging
-import pandas as pd
 
 from datetime import datetime
+from os import getenv
 
 from google.cloud import storage
 import hailtop.batch as hb
 
 from cpg_utils import to_path
-from cpg_utils.config import get_config, image_path, output_path
+from cpg_utils.config import get_config, image_path, output_path, try_get_ar_guid
 from cpg_utils.hail_batch import dataset_path, get_batch
 
 
@@ -357,18 +357,21 @@ def main(
     drop_genes: list[str] = get_config()['saige']['drop_genes']
     celltype_jobs: dict[str, list] = dict()
 
-    # add config params
-    writeout_dict: dict[str, str] = dict()
-    writeout_dict['chromosomes'] = ",".join(str(chrom) for chrom in chromosomes)
-    writeout_dict['celltypes'] = ",".join(str(ct) for ct in celltypes)
-    writeout_dict['drop_genes'] = ",".join(str(dg) for dg in drop_genes)
-
     vre_plink_path = f'{vre_files_prefix}/vre_plink_2000_variants'
-    writeout_dict['vre_plink_files_prefix_used'] = vre_plink_path
 
-    writeout_dict['cis_window_files_path_used'] = cis_window_files_path
     cis_window_size = get_config()['saige']['cis_window_size']
-    writeout_dict['cis_window_size_used'] = cis_window_size
+
+    # populate all the important params into a file for long-term reference
+    writeout_dict: dict = {
+        'ar_guid': try_get_ar_guid() or 'UNKNOWN',
+        'chromosomes': chromosomes,
+        'celltypes': celltypes,
+        'drop_genes': drop_genes,
+        'vre_plink_files_prefix_used': vre_plink_path,
+        'cis_window_files_path_used': cis_window_files_path,
+        'cis_window_size_used': cis_window_size,
+        'runtime_config': getenv('CPG_CONFIG_PATH'),
+    }
 
     for chromosome in chromosomes:
 
@@ -497,11 +500,13 @@ def main(
             gene_results_path=output_path(celltype),
             summary_output_path=summary_output_path,
         )
+
+    # write the file containing all important input parameters
+    with to_path(writeout_file).open('wt') as out_handle:
+        json.dump(writeout_dict, fp=out_handle, indent=4)
+
     # set jobs running
     batch.run(wait=False)
-
-    writeout_df = pd.DataFrame.from_dict(writeout_dict)
-    writeout_df.to_csv(writeout_file)
 
 
 if __name__ == '__main__':
