@@ -39,7 +39,7 @@ Outputs:
 
 * VCF files containing all retained common variants (one per chromosome) + corresponding index files (`.csi`)
 * VCF files containing all retained rare variants (one per chromosome) + corresponding index files (`.csi`)
-* plink object for only 2,000 variants (minor allele count > 20), after LD pruning - this is for the estimation of the variance ratio (VRE plink files)
+* plink objects (`.bed`, `.bim`, `.fam`) for only 2,000 variants (minor allele count > 20), after LD pruning - this is for the estimation of the variance ratio (VRE plink files)
 
 ### Notes (get_genotype_vcf.py)
 
@@ -256,3 +256,12 @@ TenK10K is matched single-cell RNA-seq (scRNA-seq) and whole-genome sequencing (
 * [OneK1K paper](https://www.science.org/doi/10.1126/science.abf3041)
 * [SAIGE-QTL pipeline flowchart GSlides](https://docs.google.com/presentation/d/1OhNiA6DaP9ZGlAbh8uZuZWzvrrr_QwvJwJ_lVPBZoic/edit#slide=id.g25daf727307_0_102)
 * [SAIGE-QTL pipeline notes GDoc](https://docs.google.com/document/d/1t11VafeU1THA4X58keHd5oPVglTYiY3DKC7P05GHCzw/edit)
+
+## Abbreviations
+
+* AIM: Australian IBD microbiome (?)
+* CPG: centre for population genomics, the centre at which this work is being done
+* GCP: Google Cloud Platform
+* LBIO: liquid biopsies, a cancer cohort
+* TOB: Tasmanian Ophtalmic Biobank
+* VRE: variant ration estimate
