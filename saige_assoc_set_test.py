@@ -43,7 +43,6 @@ import logging
 from datetime import datetime
 from os import getenv
 
-from google.cloud import storage
 import hailtop.batch as hb
 
 from cpg_utils import to_path
