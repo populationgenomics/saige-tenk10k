@@ -324,7 +324,7 @@ def main(
     # define writeout file by type of pipeline and date and time
     date_and_time = datetime.today().strftime('%Y-%m-%d_%H:%M:%S')
     writeout_file = (
-        f'{writeout_file_prefix}/saige_qtl_rare_variant_pipeline_{date_and_time}.csv'
+        f'{writeout_file_prefix}/saige_qtl_rare_variant_pipeline_{date_and_time}.json'
     )
 
     # pull principal args from config
