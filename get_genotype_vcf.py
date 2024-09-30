@@ -320,7 +320,7 @@ def main(
         mt = hl.variant_qc(mt)
 
         # minor allele count (MAC) > {vre_mac_threshold}
-        vre_mt = mt.filter_rows(mt.variant_qc.AC[1] > vre_mac_threshold)
+        vre_mt = mt.filter_rows(hl.min(mt.variant_qc.AC) > vre_mac_threshold)
 
         if (n_ac_vars := vre_mt.count_rows()) == 0:
             raise ValueError('No variants left, exiting!')
