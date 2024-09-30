@@ -43,10 +43,10 @@ Outputs:
 
 ### Notes (get_genotype_vcf.py)
 
-SAIGE-QTL allows numeric chromosomes only, so both the .bim and the VCF files are modified in this script to remove the 'chr' notation (so that e.g., 'chr1' becomes '1').
+SAIGE-QTL allows numeric chromosomes only, so both the `.bim` and the VCF files are modified in this script to remove the 'chr' notation (so that e.g., 'chr1' becomes '1').
 
 For the VRE estimation, we need to select 2,000 (this number can be customised) variables at random, except we need them to be common enough (MAC>20, also customisable), and we want them to be somewhat independent, to be more representative of the entire cohort.
-We also subset to only variants on autosome chromosomes.
+We also subset to only variants on autosome (1-22) chromosomes.
 To achieve this, we perform LD pruning of the variables so that variants in strong LD get pruned to one in each LD block.
 Because the LD pruning operation is very costly, we downsample the variants first (to 1% by default).
 The LD pruning parameters can be user-adjusted, with default values as described in the [methods's documentation](https://hail.is/docs/0.2/guides/genetics.html#pruning-variants-in-linkage-disequilibrium).
@@ -59,7 +59,7 @@ Inputs:
 
 * sex info for the cohort(s) of interest
 * genotype principal components for the cohort(s) of interest
-* (information from metamist, mainly age atm)
+* (information from metamist, at the moment just age)
 
 Outputs:
 
@@ -111,8 +111,7 @@ Option to include no weights or to compute weights that reflect the distance of 
 Using one of the flags below it is possible to additionally test using equal weights.
 We use no annotations for now (set to `null`).
 
-
-## SAIGE-QTL association pipeline
+## SAIGE-QTL common variant association pipeline
 
 Script: [`saige_assoc.py`](saige_assoc.py)
 
@@ -130,7 +129,7 @@ Outputs:
 * single-variant raw p-values (one per gene, cell type)
 * association summary statistics (ACAT gene-corrected p-values summarised, one per cell type)
 
-## SAIGE-QTL RV association pipeline
+## SAIGE-QTL rare variant association pipeline
 
 Script: [`saige_assoc_set_test.py`](saige_assoc_set_test.py)
 
@@ -262,6 +261,7 @@ TenK10K is matched single-cell RNA-seq (scRNA-seq) and whole-genome sequencing (
 * AIM: Australian IBD microbiome (?)
 * CPG: centre for population genomics, the centre at which this work is being done
 * GCP: Google Cloud Platform
+* HPC: high performance computing
 * LBIO: liquid biopsies, a cancer cohort
 * LD: linkage disequilibrium
 * MAC: minor allele count
