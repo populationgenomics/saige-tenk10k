@@ -363,6 +363,7 @@ def main(
     # populate all the important params into a file for long-term reference
     writeout_dict: dict = {
         'ar_guid': try_get_ar_guid() or 'UNKNOWN',
+        'results_output_path': output_path(''),
         'vre_plink_files_prefix_used': vre_plink_path,
         'pheno_cov_files_path_used': pheno_cov_files_path,
         'cis_window_files_path_used': cis_window_files_path,
