@@ -258,7 +258,7 @@ TenK10K is matched single-cell RNA-seq (scRNA-seq) and whole-genome sequencing (
 
 ## Abbreviations
 
-* AIM: Australian IBD microbiome (?)
+* AIM: Australia IBD Microbiome study
 * CPG: centre for population genomics, the centre at which this work is being done
 * GCP: Google Cloud Platform
 * HPC: high performance computing
