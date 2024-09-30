@@ -53,7 +53,7 @@ The LD pruning parameters can be user-adjusted, with default values as described
 
 ## Get sample covariates
 
-Script: `get_sample_covariates.py`
+Script: [`get_sample_covariates.py`](get_sample_covariates.py)
 
 Inputs:
 
@@ -72,7 +72,7 @@ Additionally, add a user-specified (default: 10) number of permuted IDs, where t
 
 ## Gene expression preprocessing
 
-Script: `get_anndata.py`
+Script: [`get_anndata.py`](get_anndata.py)
 
 Inputs:
 
@@ -94,7 +94,7 @@ A note that the `filter_lowly_expressed_genes` method will remove lowly-expresse
 
 ## Make group file
 
-Script: `make_group_file.py`
+Script: [`make_group_file.py`](make_group_file.py)
 
 Inputs:
 
