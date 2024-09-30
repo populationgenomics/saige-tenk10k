@@ -37,13 +37,17 @@ analysis-runner \
 """
 
 import click
-
+import json
 import logging
 
+from datetime import datetime
+from os import getenv
+
+from google.cloud import storage
 import hailtop.batch as hb
 
 from cpg_utils import to_path
-from cpg_utils.config import get_config, image_path, output_path
+from cpg_utils.config import get_config, image_path, output_path, try_get_ar_guid
 from cpg_utils.hail_batch import dataset_path, get_batch
 
 
@@ -284,6 +288,7 @@ def create_a_2b_job() -> hb.batch.job.Job:
 @click.option(
     '--vre-files-prefix', default=dataset_path('saige-qtl/input_files/genotypes')
 )
+@click.option('--writeout-file-prefix', default=dataset_path('saige-qtl'))
 @click.option('--ngenes-to-test', default='all')
 @click.option('--group-file-specs', default='')
 @click.option('--jobs-per-vm', default=10, type=int)
@@ -296,6 +301,8 @@ def main(
     # outputs from get_genotype_vcf.py
     genotype_files_prefix: str,
     vre_files_prefix: str,
+    # write out inputs and flags used for this run
+    writeout_file_prefix: str,
     ngenes_to_test: str,
     group_file_specs: str,
     jobs_per_vm: int,
@@ -315,12 +322,32 @@ def main(
             job.depends_on(jobs[-get_config()['saige']['max_parallel_jobs']])
         jobs.append(job)
 
+    # define writeout file by type of pipeline and date and time
+    date_and_time = datetime.today().strftime('%Y-%m-%d_%H:%M:%S')
+    writeout_file = (
+        f'{writeout_file_prefix}/saige_qtl_rare_variant_pipeline_{date_and_time}.csv'
+    )
+
     # pull principal args from config
     chromosomes: list[str] = get_config()['saige']['chromosomes']
     celltypes: list[str] = get_config()['saige']['celltypes']
     celltype_jobs: dict[str, list] = dict()
 
     vre_plink_path = f'{vre_files_prefix}/vre_plink_2000_variants'
+
+    # populate all the important params into a file for long-term reference
+    writeout_dict: dict = {
+        'ar_guid': try_get_ar_guid() or 'UNKNOWN',
+        'results_output_path': output_path(''),
+        'vre_plink_files_prefix_used': vre_plink_path,
+        'pheno_cov_files_path_used': pheno_cov_files_path,
+        'group_files_path_used': group_files_path,
+        'saige_fit_null_params': get_config()['saige'],
+        'saige_set_test_params': get_config()['saige.set_test'],
+        'saige_fit_null_job_specs': get_config()['saige.job_specs.fit_null'],
+        'saige_set_test_job_specs': get_config()['saige.job_specs.set_test'],
+        'runtime_config': getenv('CPG_CONFIG_PATH'),
+    }
 
     for chromosome in chromosomes:
         # create one job, and stack multiple jobs on it
@@ -333,6 +360,7 @@ def main(
         vcf_group = get_batch().read_input_group(
             vcf=vcf_file_path, index=f'{vcf_file_path}.csi'
         )
+        writeout_dict[f'{chromosome}_vcf_file_used'] = vcf_file_path
 
         # group files are split by gene but organised by chromosome also
         group_files_path_chrom = f'{group_files_path}/{chromosome}'
@@ -438,6 +466,11 @@ def main(
             gene_results_path=output_path(celltype, category='analysis'),
             summary_output_path=summary_output_path,
         )
+
+    # write the file containing all important input parameters
+    with to_path(writeout_file).open('wt') as out_handle:
+        json.dump(writeout_dict, fp=out_handle, indent=4)
+
     # set jobs running
     batch.run(wait=False)
 

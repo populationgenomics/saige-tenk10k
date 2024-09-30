@@ -349,7 +349,9 @@ def main(
 
     # define writeout file by type of pipeline and date and time
     date_and_time = datetime.today().strftime('%Y-%m-%d_%H:%M:%S')
-    writeout_file = f'{writeout_file_prefix}/saige_qtl_cv_pipeline_{date_and_time}.csv'
+    writeout_file = (
+        f'{writeout_file_prefix}/saige_qtl_common_variant_pipeline_{date_and_time}.csv'
+    )
 
     # pull principal args from config
     chromosomes: list[str] = get_config()['saige']['chromosomes']
