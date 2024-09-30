@@ -316,7 +316,9 @@ def create_second_job(vcf_path: str) -> hb.batch.job.Job:
 @click.option(
     '--vre-files-prefix', default=dataset_path('saige-qtl/input_files/genotypes')
 )
-@click.option('--writeout-file-prefix', default=dataset_path('saige-qtl'))
+@click.option(
+    '--writeout-file-prefix', default=dataset_path('saige-qtl', category='analysis')
+)
 @click.option('--test-str', is_flag=True, help='Test with STR VCFs')
 @click.option('--jobs-per-vm', type=int, default=25)
 @click.command()

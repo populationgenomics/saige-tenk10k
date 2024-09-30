@@ -287,7 +287,9 @@ def create_a_2b_job() -> hb.batch.job.Job:
 @click.option(
     '--vre-files-prefix', default=dataset_path('saige-qtl/input_files/genotypes')
 )
-@click.option('--writeout-file-prefix', default=dataset_path('saige-qtl'))
+@click.option(
+    '--writeout-file-prefix', default=dataset_path('saige-qtl', category='analysis')
+)
 @click.option('--ngenes-to-test', default='all')
 @click.option('--group-file-specs', default='')
 @click.option('--jobs-per-vm', default=10, type=int)
