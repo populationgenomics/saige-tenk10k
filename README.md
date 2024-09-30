@@ -263,8 +263,10 @@ TenK10K is matched single-cell RNA-seq (scRNA-seq) and whole-genome sequencing (
 * CPG: centre for population genomics, the centre at which this work is being done
 * GCP: Google Cloud Platform
 * LBIO: liquid biopsies, a cancer cohort
+* LD: linkage disequilibrium
 * MAC: minor allele count
 * MAF: minor allele frequency
+* scRNA-seq: single-cell RNA sequencing
 * TOB: Tasmanian Ophtalmic Biobank
 * VRE: variant ration estimate
 * WGS: whole-genome sequencing
