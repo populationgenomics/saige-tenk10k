@@ -114,7 +114,7 @@ We use no annotations for now (set to `null`).
 
 ## SAIGE-QTL association pipeline
 
-Script: `saige_assoc.py`
+Script: [`saige_assoc.py`](saige_assoc.py)
 
 Run this for single-variant tests (typically for common variants).
 
@@ -132,7 +132,7 @@ Outputs:
 
 ## SAIGE-QTL RV association pipeline
 
-Script: `saige_assoc_set_test.py`
+Script: [`saige_assoc_set_test.py`](saige_assoc_set_test.py)
 
 Run this for set-based tests (typically for rare variants).
 
@@ -263,5 +263,8 @@ TenK10K is matched single-cell RNA-seq (scRNA-seq) and whole-genome sequencing (
 * CPG: centre for population genomics, the centre at which this work is being done
 * GCP: Google Cloud Platform
 * LBIO: liquid biopsies, a cancer cohort
+* MAC: minor allele count
+* MAF: minor allele frequency
 * TOB: Tasmanian Ophtalmic Biobank
 * VRE: variant ration estimate
+* WGS: whole-genome sequencing
