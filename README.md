@@ -16,12 +16,12 @@ Additionally, two helper scripts are also part of this pipeline:
 
 ## Genotypes preprocessing
 
-Script: `get_genotype_vcf.py`
+Script: [`get_genotype_vcf.py`](get_genotype_vcf.py)
 
 Variant selection for VCF files:
 
 * variants that are: i) QC-passing, ii) not ref-ref variants, and iii) not indels or multi-allelic SNPs (when run with `--exclude-indels` and `--exclude-multiallelic`).
-* separately, variants that are common or rare at a set threshold (MAF > T, MAF <= T, respectively) in our population (by default, T=0.01)
+* separately, variants that are common or rare at a set threshold (MAF >= T, MAF < T, respectively) in our population (by default, T=0.01)
 * two per chromosome (one for common, one for rare variants)
 
 Variant selection for PLINK files for variance ratio estimation (VRE):
