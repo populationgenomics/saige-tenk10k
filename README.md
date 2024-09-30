@@ -153,7 +153,7 @@ Outputs:
 Clarifying the reasoning behind the parameters / flags used to run SAIGE-QTL.
 Most of these are (or will be) included in the official [documentation](https://weizhou0.github.io/SAIGE-QTL-doc/).
 
-Note: some of these are provided as arguments in the scripts (`saige_assoc.py`, `saige_assoc_set_test.py`), but most are provided as a separate config file (`saige_assoc_test.toml`). TO DO: update styling of flags to reflect this below.
+Note: some of these are provided as arguments in the scripts (`saige_assoc.py`, `saige_assoc_set_test.py`), but most are provided as a separate config file (`saige_assoc_test.toml`).
 
 Fit null model ([step 1](https://weizhou0.github.io/SAIGE-QTL-doc/docs/step1.html)).
 
@@ -215,7 +215,7 @@ In script (`saige_assoc_set_test.py`):
 * `set_output_path`: path to output file (if kept the same as single-variant test, step 1 only needs to be run once)
 * `chrom`: chromosome to test.
 * `group_file`: path to file specifying variants to test (generated in the `make_group_file.py` script).
-* `gmmat_model_path`: path to estimated null model (.rda) generated in step 1.
+* `gmmat_model_path`: path to estimated null model (`.rda`) generated in step 1.
 * `variance_ratio_path`: path to variance ratio txt file generated in step 1.
 
 In config (under `[saige.set_test]` in `saige_assoc_test.toml`):
@@ -246,7 +246,7 @@ Briefly, if one wanted to run both common and rare variant pipelines, the order 
 TenK10K is matched single-cell RNA-seq (scRNA-seq) and whole-genome sequencing (WGS) data from up to 10,000 individuals:
 
 * Phase 0: OneK1K data only (~1,000 individuals) - already generated (both WGS and scRNA-seq, though with an older technology)
-* Phase 1: OneK1K + BioHEART (~2,000 individuals) - WGS done, scRNA-seq in progress (almost done)
+* Phase 1: OneK1K + BioHEART (~2,000 individuals) - freeze 1 generated (~1,700 individuals), freeze 2 ongoing
 * Phase 2/final: aim is ~ 10,000 individuals from the (extended) TOB/OneK1K, BioHEART, ADAPT, LBIO and AIM cohorts (nothing generated besides current stage of Phase 1)
 
 ## Additional resources
