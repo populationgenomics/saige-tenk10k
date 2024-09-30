@@ -368,6 +368,7 @@ def main(
         'celltypes': celltypes,
         'drop_genes': drop_genes,
         'vre_plink_files_prefix_used': vre_plink_path,
+        'pheno_cov_files_path_used': pheno_cov_files_path,
         'cis_window_files_path_used': cis_window_files_path,
         'cis_window_size_used': cis_window_size,
         'runtime_config': getenv('CPG_CONFIG_PATH'),
