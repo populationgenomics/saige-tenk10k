@@ -41,7 +41,7 @@ from hail.methods import export_vcf
 @click.command()
 @click.option('--vds-path', default=dataset_path('vds/bioheart1-0.vds'))
 @click.option(
-    '--output-vcf-path',
+    '--cv-demux-vcf-path',
     default=output_path('bioheart_demux_vcf_common_variants.vcf.bgz'),
 )
 @click.option('--cv-maf-threshold', default=0.05)
