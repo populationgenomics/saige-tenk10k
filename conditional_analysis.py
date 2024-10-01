@@ -1,39 +1,30 @@
 #!/usr/bin/env python3
-# pylint: disable=import-error,line-too-long
+# pylint: disable=import-error
 
 """
-Hail Batch workflow to perform conditional analysis using SAIGE-QTL
+This script will run a conditional analysis
 """
 
 import click
-import json
-import logging
+import pandas as pd
 
-from datetime import datetime
-from os import getenv
-
-from google.cloud import storage
 import hailtop.batch as hb
 
-from cpg_utils import to_path
-from cpg_utils.config import get_config, image_path, output_path, try_get_ar_guid
-from cpg_utils.hail_batch import dataset_path, get_batch
+from cpg_utils.config import get_config
+from cpg_utils.hail_batch import get_batch
 
-def build_conditional_string(snps):
-    # TO DO: add check that they are in the same order as in VCF
-    return ",".join(str(snp) for snp in snps)
-
-# Run single variant association (step 2)
+# Run single variant or set-based association (step 2)
 def build_run_single_variant_test_command(
     job: hb.batch.job.Job,
-    svt_key: str,
-    sv_output_path: str,
+    test_key: str,
+    test_output_path: str,
     vcf_group: hb.ResourceGroup,
     chrom: str,
-    cis_window_file: str,
+    cis_window_or_group_file: str,
     gmmat_model_path: str,
     variance_ratio_path: str,
     conditional_string: str,
+    common_or_rare: str = 'common',
 ):
     """
     Build SAIGE command for running single variant test
@@ -41,11 +32,13 @@ def build_run_single_variant_test_command(
 
     Input:
     - job: job to load this command into
-    - svt_key: unique key for this single variant test
+    - test_key: unique key for this test
     - vcf_group: ResourceGroup with vcf and index
-    - single variant output path: path to output saige file
+    - test output path: path to output saige file
     - chrom: chromosome to run this on
-    - cis window: file with chrom | start | end to specify window
+    - either / or
+      - cis window: file with chrom | start | end to specify window
+      - group: file with variants to test + weights + annotations
     - GMMAT model file: null model fit from previous step (.rda)
     - Variance Ratio file: as estimated from previous step (.txt)
     - SNPs to condition on (provided as a single comma-separated string)
@@ -53,333 +46,99 @@ def build_run_single_variant_test_command(
     Output:
     Rscript command (str) ready to run
     """
-
-    cis_window_file = get_batch().read_input(cis_window_file)
-
-    args_from_config = ' '.join(
-        [f'--{key}={value}' for key, value in get_config()['saige']['sv_test'].items()]
-    )
-
-    # declare a uniquely named resource group for this set-based test
-    job.declare_resource_group(**{svt_key: {'output': f'{svt_key}.output'}})
+    if common_or_rare == 'common':
+        cis_window_file = get_batch().read_input(cis_window_or_group_file)
+        variants_to_include_arg = f'--rangestoIncludeFile={cis_window_file}'
+        args_from_config = ' '.join(
+            [
+                f'--{key}={value}'
+                for key, value in get_config()['saige']['sv_test'].items()
+            ]
+        )
+        # declare a uniquely named resource group for this single variant test
+        job.declare_resource_group(**{test_key: {'output': f'{test_key}.output'}})
+        output_arg = f'--SAIGEOutputFile={job[test_key].output}'
+    elif common_or_rare == 'rare':
+        group_file = get_batch().read_input(cis_window_or_group_file)
+        variants_to_include_arg = f'--groupFile={group_file}'
+        args_from_config = ' '.join(
+            [
+                f'--{key}={value}'
+                for key, value in get_config()['saige']['set_test'].items()
+            ]
+        )
+        # declare a uniquely named resource group for this set-based test
+        rare_key_writeable = test_key.replace('/', '_')
+        job.declare_resource_group(
+            **{
+                rare_key_writeable: {
+                    'set': '{root}.set',
+                    'singleAssoc.txt': '{root}.singleAssoc.txt',
+                }
+            }
+        )
+        output_arg = f'--SAIGEOutputFile={job[rare_key_writeable]}'
 
     job.command(
         f"""
         Rscript /usr/local/bin/step2_tests_qtl.R \
         --vcfFile={vcf_group.vcf} \
         --vcfFileIndex={vcf_group.index} \
-        --SAIGEOutputFile={job[svt_key].output} \
         --chrom={chrom} \
         --GMMATmodelFile={gmmat_model_path} \
         --varianceRatioFile={variance_ratio_path} \
-        --rangestoIncludeFile={cis_window_file} \
         --condition={conditional_string} \
+        {variants_to_include_arg} \
+        {output_arg} \
         {args_from_config}
     """
     )
-
-    # write the output
-    get_batch().write_output(job[svt_key].output, sv_output_path)
-    return job[svt_key].output
-
-
-# Combine single variant associations at gene level (step 3)
-def build_obtain_gene_level_pvals_command(
-    gene_name: str,
-    saige_sv_output_file: str,
-    saige_gene_pval_output_file: str,
-):
-    """
-    Build SAIGE command to obtain gene-level pvals
-    Only for single-variant tests (Step3)
-    combines single-variant p-values to obtain one gene
-    level p-value
-
-    Input:
-    - output of previous step, association file (txt)
-    - gene we need to aggregate results for (across SNPs)
-    - path for output file
-    """
-    saige_job = get_batch().new_job(name="saige-qtl part 3")
-    saige_command_step3 = f"""
-        Rscript /usr/local/bin/step3_gene_pvalue_qtl.R \
-        --assocFile={saige_sv_output_file} \
-        --geneName={gene_name} \
-        --genePval_outputFile={saige_job.output}
-    """
-    saige_job.image(image_path('saige-qtl'))
-    saige_job.command(saige_command_step3)
-    get_batch().write_output(saige_job.output, saige_gene_pval_output_file)
-    return saige_job
+    if common_or_rare == 'common':
+        # write the output
+        get_batch().write_output(job[test_key].output, test_output_path)
+        return job[test_key].output
+    elif common_or_rare == 'rare':
+        get_batch().write_output(job[rare_key_writeable], test_output_path)
 
 
-def apply_job_settings(job: hb.batch.job.Job, job_name: str):
-    """
-    Apply settings to a job based on the name
-
-    Args:
-        job (hb.batch.job): job to apply settings to
-        job_name (str): name used to find settings
-    """
-    # if this job has a section in config
-    if job_settings := get_config()['saige']['job_specs'].get(job_name):
-        # if memory setting in config - apply it
-        if memory := job_settings.get('memory'):
-            job.memory(memory)
-        # if storage setting in config - apply it
-        if storage := job_settings.get('storage'):
-            job.storage(storage)
-        # if cpu setting in config - apply it
-        if cpu := job_settings.get('cpu'):
-            job.cpu(cpu)
-
-
-def summarise_cv_results(
-    celltype: str,
-    gene_results_path: str,
-    summary_output_path: str,
-):
-    """
-    Summarise gene-specific results
-    """
-    import logging
-    import pandas as pd
-    from cpg_utils import to_path
-    from cpg_utils.hail_batch import output_path
-
-    existing_cv_assoc_results = [
-        str(file)
-        for file in to_path(gene_results_path).glob(f'*/{celltype}_*_cis_gene_pval')
-    ]
-    results_all_df = pd.concat(
-        [
-            pd.read_csv(to_path(pv_df), index_col=0)
-            for pv_df in existing_cv_assoc_results
-        ]
-    )
-    result_all_filename = to_path(output_path(summary_output_path, category='analysis'))
-    logging.info(f'Write summary results to {result_all_filename}')
-    with result_all_filename.open('w') as rf:
-        results_all_df.to_csv(rf)
-
-
-def create_second_job(vcf_path: str) -> hb.batch.job.Job:
-    """
-    Create a second job to run the single variant test
-    """
-    # get the size of the vcf file
-    storage_client = storage.Client()
-    bucket, filepath = vcf_path.removeprefix('gs://').split('/', 1)
-    blob = storage_client.bucket(bucket).blob(filepath)
-    blob.reload()  # refresh the blob to get the metadata
-    size = blob.size // (1024**3)  # bytes to GB
-
-    second_job = get_batch().new_job(name="saige-qtl part 2")
-    apply_job_settings(second_job, 'sv_test')
-
-    # VCF size, plus a 5GB buffer
-    second_job.storage(f'{size + 5 }Gi')
-    second_job.image(image_path('saige-qtl'))
-    return second_job
-
-
-@click.option(
-    '--fit-null-files-path',
-    default=dataset_path('saige-qtl/output_files'),
-)
-@click.option(
-    '--cis-window-files-path',
-    default=dataset_path('saige-qtl/input_files/cis_window_files'),
-)
-@click.option(
-    '--genotype-files-prefix', default=dataset_path('saige-qtl/input_files/genotypes')
-)
-@click.option(
-    '--writeout-file-prefix', default=dataset_path('saige-qtl', category='analysis')
-)
-@click.option('--jobs-per-vm', type=int, default=25)
 @click.command()
-def main(
+@click.option('--celltypes')
+@click.option('--chromosomes')
+@click.option('--round1-results-path', required=True)
+@click.option('--fit-null-files-path', required=True)
+@click.option('--genotype-files-prefix', required=True)
+@click.option('--cis-window-or-group-files-path', required=True)
+@click.option('--qv-significance-threshold', default=0.05)
+@click.option('--common-or-rare', default='common', help='type of analysis to perform')
+@click.command()
+def conditional_analysis(
+    celltypes: str,
+    chromosomes: str,
+    # results from running saige-qtl main pipeline
+    round1_results_path: str,
     # outputs from step 1 of saige
     fit_null_files_path: str,
-    # output of get_anndata.py script
-    cis_window_files_path: str,
+    # cis window for common, group for rare
+    cis_window_or_group_files_path: str,
     # outputs from get_genotype_vcf.py
     genotype_files_prefix: str,
-    # write out inputs and flags used for this run
-    writeout_file_prefix: str,
-    jobs_per_vm: int = 25,
+    # significance threshold
+    qv_significance_threshold: float,
+    common_or_rare: str,
 ):
-    """
-    Run SAIGE-QTL conditional analysis
-    """
-
     batch = get_batch('SAIGE-QTL conditional pipeline')
-    jobs: list[hb.batch.job.Job] = []
 
-    def manage_concurrency_for_job(job: hb.batch.job.Job):
-        """
-        To avoid having too many jobs running at once, we have to limit concurrency.
-        """
-        if len(jobs) >= get_config()['saige']['max_parallel_jobs']:
-            job.depends_on(jobs[-get_config()['saige']['max_parallel_jobs']])
-        jobs.append(job)
-
-    # define writeout file by type of pipeline and date and time
-    date_and_time = datetime.today().strftime('%Y-%m-%d_%H:%M:%S')
-    writeout_file = (
-        f'{writeout_file_prefix}/saige_qtl_common_variant_pipeline_{date_and_time}.json'
-    )
-
-    # pull principal args from config
-    chromosomes: list[str] = get_config()['saige']['chromosomes']
-    celltypes: list[str] = get_config()['saige']['celltypes']
-    drop_genes: list[str] = get_config()['saige']['drop_genes']
-    celltype_jobs: dict[str, list] = dict()
-
-    cis_window_size = get_config()['saige']['cis_window_size']
-
-    # populate all the important params into a file for long-term reference
-    writeout_dict: dict = {
-        'ar_guid': try_get_ar_guid() or 'UNKNOWN',
-        'results_output_path': output_path(''),
-        'fit_null_files_used': fit_null_files_path,
-        'saige_fit_null_params': get_config()['saige'],
-        'saige_single_variant_test_params': get_config()['saige.sv_test'],
-        'saige_fit_null_job_specs': get_config()['saige.job_specs.fit_null'],
-        'saige_single_variant_test_job_specs': get_config()['saige.job_specs.sv_test'],
-        'runtime_config': getenv('CPG_CONFIG_PATH'),
-    }
-
-    for chromosome in chromosomes:
-
-        # genotype vcf files are one per chromosome
-        vcf_file_path = (f'{genotype_files_prefix}/{chromosome}_common_variants.vcf.bgz')
-        writeout_dict[f'{chromosome}_vcf_file_used'] = vcf_file_path
-        single_var_test_job = create_second_job(vcf_file_path)
-        jobs_in_vm = 0
-
-        # read in vcf file once per chromosome
-        vcf_group = get_batch().read_input_group(
-            vcf=vcf_file_path, index=f'{vcf_file_path}.csi'
-        )
-
-        # cis window files are split by gene but organised by chromosome also
-        cis_window_files_path_chrom = f'{cis_window_files_path}/{chromosome}'
-
-        for celltype in celltypes:
-            # extract gene list based on genes for which we have pheno cov files
-            pheno_cov_files_path_ct_chrom = (
-                f'{pheno_cov_files_path}/{celltype}/{chromosome}'
-            )
-            logging.info(f'globbing {pheno_cov_files_path_ct_chrom}')
-
-            # do a glob, then pull out all file names as Strings
-            files = [
-                file.name
-                for file in to_path(pheno_cov_files_path_ct_chrom).glob(
-                    f'*_{celltype}_pheno_cov.tsv'
-                )
-            ]
-            logging.info(f'I found these files: {", ".join(files)}')
-
-            genes = [f.replace(f'_{celltype}_pheno_cov.tsv', '') for f in files]
-            logging.info(f'I found these genes: {", ".join(genes)}')
-
-            genes = [x for x in genes if x not in drop_genes]
-
-            # extract relevant gene-related files
-            for gene in genes:
-                pheno_cov_path = (
-                    f'{pheno_cov_files_path_ct_chrom}/{gene}_{celltype}_pheno_cov.tsv'
-                )
-                cis_window_path = (
-                    f'{cis_window_files_path_chrom}/{gene}_{cis_window_size}bp.tsv'
-                )
-
-                gene_dependency = get_batch().new_job(f' Always run job for {gene}')
-                gene_dependency.always_run()
-                manage_concurrency_for_job(gene_dependency)
-
-                # check if these outputs already exist, if so don't make a new job
-                null_job, null_output = run_fit_null_job(
-                    output_path(f'{celltype}/{chromosome}/{celltype}_{gene}'),
-                    pheno_file=pheno_cov_path,
-                    plink_path=vre_plink_path,
-                    pheno_col=gene,
-                )
-                if null_job is not None:
-                    null_job.depends_on(gene_dependency)
-                    gene_dependency = null_job
-
-                # step 2 (cis eQTL single variant test)
-                sv_out_path = output_path(
-                    f'{celltype}/{chromosome}/{celltype}_{gene}_cis', 'analysis'
-                )
-                if to_path(sv_out_path).exists():
-                    step2_output = get_batch().read_input(sv_out_path)
-                else:
-                    step2_output = build_run_single_variant_test_command(
-                        job=single_var_test_job,
-                        svt_key=f'{celltype}_{chromosome}_{celltype}_{gene}_cis',
-                        sv_output_path=output_path(
-                            f'{celltype}/{chromosome}/{celltype}_{gene}_cis', 'analysis'
-                        ),
-                        vcf_group=vcf_group,
-                        chrom=(chromosome[3:]),
-                        cis_window_file=cis_window_path,
-                        gmmat_model_path=null_output['rda'],
-                        variance_ratio_path=null_output['varianceRatio.txt'],
-                    )
-                    single_var_test_job.depends_on(gene_dependency)
-                    jobs_in_vm += 1
-
-                # step 3 (gene-level p-values)
-                saige_gene_pval_output_file = output_path(
-                    f'{celltype}/{chromosome}/{celltype}_{gene}_cis_gene_pval'
-                )
-                if not to_path(saige_gene_pval_output_file).exists():
-                    job3 = build_obtain_gene_level_pvals_command(
-                        gene_name=gene,
-                        saige_sv_output_file=step2_output,
-                        saige_gene_pval_output_file=output_path(
-                            f'{celltype}/{chromosome}/{celltype}_{gene}_cis_gene_pval'
-                        ),
-                    )
-                    job3.depends_on(single_var_test_job)
-                    # add this job to the list of jobs for this cell type
-                    celltype_jobs.setdefault(celltype, []).append(job3)
-
-                if jobs_in_vm >= jobs_per_vm:
-                    single_var_test_job = create_second_job(vcf_file_path)
-                    jobs_in_vm = 0
-
-    # summarise results (per cell type)
-    for celltype in celltypes:
-        logging.info(f'start summarising results for {celltype}')
-        summary_output_path = (
-            f'summary_stats/{celltype}_all_cis_cv_gene_level_results.tsv'
-        )
-
-        summarise_job = get_batch().new_python_job(
-            f'Summarise CV results for {celltype}'
-        )
-        summarise_job.depends_on(*celltype_jobs[celltype])
-        summarise_job.call(
-            summarise_cv_results,
-            celltype=celltype,
-            gene_results_path=output_path(celltype),
-            summary_output_path=summary_output_path,
-        )
-
-    # write the file containing all important input parameters
-    with to_path(writeout_file).open('wt') as out_handle:
-        json.dump(writeout_dict, fp=out_handle, indent=4)
-
-    # set jobs running
-    batch.run(wait=False)
+    for celltype in celltypes.split(','):
+        # open the summary results from round 1 of running SAIGE-QTL
+        celltype_results_path = f'{round1_results_path}/summary_stats/{celltype}_common_top_snp_cis_raw_pvalues.tsv'
+        results_df = pd.read_csv(celltype_results_path)
+        # extract significant results
+        results_df_sign = results_df[results_df['qv' < qv_significance_threshold]]
+        genes = results_df_sign[['gene']]
+        top_snps = results_df_sign[['top_snp']]
+        # as more rounds of conditional analysis are performed, more snps will be added
+        significant_snps_gene_dict: dict = {genes: top_snps}
 
 
 if __name__ == '__main__':
-    logging.basicConfig(level=logging.INFO)
-    main()  # pylint: disable=no-value-for-parameter
+    conditional_analysis()
