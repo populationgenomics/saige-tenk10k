@@ -10,7 +10,7 @@ import pandas as pd
 
 import hailtop.batch as hb
 
-from cpg_utils.config import get_config
+from cpg_utils.config import get_config, image_path
 from cpg_utils.hail_batch import get_batch
 
 # Run single variant or set-based association (step 2)
@@ -100,6 +100,34 @@ def build_run_single_variant_test_command(
     elif common_or_rare == 'rare':
         get_batch().write_output(job[rare_key_writeable], test_output_path)
 
+# Combine single variant associations at gene level (step 3)
+def build_obtain_gene_level_pvals_command(
+    gene_name: str,
+    saige_sv_output_file: str,
+    saige_gene_pval_output_file: str,
+):
+    """
+    Build SAIGE command to obtain gene-level pvals
+    Only for single-variant tests (Step3)
+    combines single-variant p-values to obtain one gene
+    level p-value
+
+    Input:
+    - output of previous step, association file (txt)
+    - gene we need to aggregate results for (across SNPs)
+    - path for output file
+    """
+    saige_job = get_batch().new_job(name="saige-qtl part 3")
+    saige_command_step3 = f"""
+        Rscript /usr/local/bin/step3_gene_pvalue_qtl.R \
+        --assocFile={saige_sv_output_file} \
+        --geneName={gene_name} \
+        --genePval_outputFile={saige_job.output}
+    """
+    saige_job.image(image_path('saige-qtl'))
+    saige_job.command(saige_command_step3)
+    get_batch().write_output(saige_job.output, saige_gene_pval_output_file)
+    return saige_job
 
 @click.command()
 @click.option('--celltypes')
@@ -129,15 +157,28 @@ def conditional_analysis(
     batch = get_batch('SAIGE-QTL conditional pipeline')
 
     for celltype in celltypes.split(','):
-        # open the summary results from round 1 of running SAIGE-QTL
+        # open the summary results from round 1 of running SAIGE-QTL (common variant analysis)
         celltype_results_path = f'{round1_results_path}/summary_stats/{celltype}_common_top_snp_cis_raw_pvalues.tsv'
         results_df = pd.read_csv(celltype_results_path)
         # extract significant results
-        results_df_sign = results_df[results_df['qv' < qv_significance_threshold]]
+        results_df_sign = results_df[results_df['qv'] < qv_significance_threshold]
         genes = results_df_sign[['gene']]
         top_snps = results_df_sign[['top_snp']]
         # as more rounds of conditional analysis are performed, more snps will be added
         significant_snps_gene_dict: dict = {genes: top_snps}
+
+    for chromosome in chromosomes:
+
+        # genotype vcf files are one per chromosome
+        vcf_file_path = (f'{genotype_files_prefix}/{chromosome}_common_variants.vcf.bgz')
+
+        # read in vcf file once per chromosome
+        vcf_group = get_batch().read_input_group(vcf=vcf_file_path, index=f'{vcf_file_path}.csi')
+
+        # cis window and group files are split by gene but organised by chromosome also
+        cis_window_or_group_files_path_chrom = f'{cis_window_or_group_files_path}/{chromosome}'
+
+
 
 
 if __name__ == '__main__':
