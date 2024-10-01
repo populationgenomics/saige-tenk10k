@@ -69,12 +69,12 @@ def count_variants(
     mt = hl.variant_qc(mt)
 
     # select common, low-frequency and rare variants
-    cv_mt = mt.filter_rows(mt.variant_qc.AF[1] >= cv_maf_threshold)
+    cv_mt = mt.filter_rows(hl.min(mt.variant_qc.AF) >= cv_maf_threshold)
     lf_mt = mt.filter_rows(
-        (mt.variant_qc.AF[1] >= rv_maf_threshold)
-        & (mt.variant_qc.AF[1] < cv_maf_threshold)
+        (hl.min(mt.variant_qc.AF) >= rv_maf_threshold)
+        & (hl.min(mt.variant_qc.AF) < cv_maf_threshold)
     )
-    rv_mt = mt.filter_rows(mt.variant_qc.AF[1] < rv_maf_threshold)
+    rv_mt = mt.filter_rows(hl.min(mt.variant_qc.AF) < rv_maf_threshold)
 
     # count up both donors and variants
     n_common_vars, n_donors = cv_mt.count()
