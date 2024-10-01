@@ -6,11 +6,13 @@ This script will run a conditional analysis
 """
 
 import click
+import json
 import pandas as pd
 
 import hailtop.batch as hb
 
-from cpg_utils.config import get_config, image_path
+from cpg_utils import to_path
+from cpg_utils.config import get_config, image_path, output_path
 from cpg_utils.hail_batch import get_batch
 
 # Run single variant or set-based association (step 2)
@@ -27,8 +29,8 @@ def build_run_single_variant_test_command(
     common_or_rare: str = 'common',
 ):
     """
-    Build SAIGE command for running single variant test
-    This will run a single variant test using a score test
+    Build SAIGE command for running either a single variant test
+    or a set-based test depending on the common_or_rare flag
 
     Input:
     - job: job to load this command into
@@ -166,6 +168,10 @@ def conditional_analysis(
         top_snps = results_df_sign[['top_snp']]
         # as more rounds of conditional analysis are performed, more snps will be added
         significant_snps_gene_dict: dict = {genes: top_snps}
+        # temporarily write this out?
+        significant_genes_dict_path = output_path(f'conditional_analysis/{celltype}/round1_significant_genes.json')
+        with to_path(significant_genes_dict_path).open('wt') as out_handle:
+            json.dump(significant_genes_dict_path, fp=out_handle, indent=4)
 
     for chromosome in chromosomes:
 
@@ -177,6 +183,9 @@ def conditional_analysis(
 
         # cis window and group files are split by gene but organised by chromosome also
         cis_window_or_group_files_path_chrom = f'{cis_window_or_group_files_path}/{chromosome}'
+
+        for celltype in celltypes:
+            # extract significant genes from json
 
 
 
