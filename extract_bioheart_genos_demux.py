@@ -22,7 +22,7 @@ analysis-runner \
     --dataset "bioheart" \
     --access-level "standard" \
     --output-dir "saige-qtl/demux_files/" \
-    python3 helper/extract_bioheart_genos_demux.py
+    python3 extract_bioheart_genos_demux.py
 
 """
 
