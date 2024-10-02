@@ -175,6 +175,21 @@ def create_second_job(vcf_path: str) -> hb.batch.job.Job:
     second_job.image(image_path('saige-qtl'))
     return second_job
 
+def conditional_analysis_until_significant_round(
+        gene_dict,
+        significance_fdr_threshold=0.05,
+    ):
+    """
+    Run conditional analysis for a gene + celltype combo
+    continue to add SNPs to conditional analysis
+    while there is a significant signal
+    """
+    # run step2
+    # run step3
+    # run fdr (how?)
+    # check fdr<threshold
+    # if any snp is significant, take top snp add to condition
+    # repeat
 
 @click.command()
 @click.option('--celltypes')
