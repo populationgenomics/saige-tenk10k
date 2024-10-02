@@ -158,6 +158,11 @@ def conditional_analysis(
 ):
     batch = get_batch('SAIGE-QTL conditional pipeline')
 
+    # for every cell type, have a dictionary that contains all genes with a significant eQTL
+    # and info on the top SNP
+    # this will get updated by progressive rounds of conditional analysis
+    # so every gene will get (or not) one more SNP added
+    # should this be a table instead with columns round 1, round 2 etc?
     for celltype in celltypes.split(','):
         # open the summary results from round 1 of running SAIGE-QTL (common variant analysis)
         celltype_results_path = f'{round1_results_path}/summary_stats/{celltype}_common_top_snp_cis_raw_pvalues.tsv'
@@ -173,6 +178,15 @@ def conditional_analysis(
         with to_path(significant_genes_dict_path).open('wt') as out_handle:
             json.dump(significant_genes_dict_path, fp=out_handle, indent=4)
 
+    # next, for every chromosome (because the VCF are saved chromosome-wise) and cell type
+    # get the genes with at least a significant SNP from the dicts above
+    # look up the intermediate files from step 1 of SAIGE-QTL (fit null)
+    # run step 2 with the top SNP as condition
+
+    # Q1: how do I do this iteratively for consequent conditional rounds?
+    # Q2: how do I separate from the ability to just run a conditional analysis in a more ad hoc way?
+    # for example, a) conditioning on common eQTLs when running rare variant test
+    # b) conditioning on top eQTL from cell type A when running cell type B, to assess cell type specificity
     for chromosome in chromosomes:
 
         # genotype vcf files are one per chromosome
