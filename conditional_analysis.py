@@ -9,6 +9,7 @@ import click
 import json
 import pandas as pd
 
+from google.cloud import storage
 import hailtop.batch as hb
 
 from cpg_utils import to_path
@@ -16,7 +17,8 @@ from cpg_utils.config import get_config, image_path, output_path
 from cpg_utils.hail_batch import get_batch
 
 # Run single variant or set-based association (step 2)
-def build_run_single_variant_test_command(
+# with condition
+def build_run_conditional_analysis_command(
     job: hb.batch.job.Job,
     test_key: str,
     test_output_path: str,
@@ -102,6 +104,7 @@ def build_run_single_variant_test_command(
     elif common_or_rare == 'rare':
         get_batch().write_output(job[rare_key_writeable], test_output_path)
 
+
 # Combine single variant associations at gene level (step 3)
 def build_obtain_gene_level_pvals_command(
     gene_name: str,
@@ -131,6 +134,48 @@ def build_obtain_gene_level_pvals_command(
     get_batch().write_output(saige_job.output, saige_gene_pval_output_file)
     return saige_job
 
+
+def apply_job_settings(job: hb.batch.job.Job, job_name: str):
+    """
+    Apply settings to a job based on the name
+
+    Args:
+        job (hb.batch.job): job to apply settings to
+        job_name (str): name used to find settings
+    """
+    # if this job has a section in config
+    if job_settings := get_config()['saige']['job_specs'].get(job_name):
+        # if memory setting in config - apply it
+        if memory := job_settings.get('memory'):
+            job.memory(memory)
+        # if storage setting in config - apply it
+        if storage := job_settings.get('storage'):
+            job.storage(storage)
+        # if cpu setting in config - apply it
+        if cpu := job_settings.get('cpu'):
+            job.cpu(cpu)
+
+
+def create_second_job(vcf_path: str) -> hb.batch.job.Job:
+    """
+    Create a second job to run the single variant test
+    """
+    # get the size of the vcf file
+    storage_client = storage.Client()
+    bucket, filepath = vcf_path.removeprefix('gs://').split('/', 1)
+    blob = storage_client.bucket(bucket).blob(filepath)
+    blob.reload()  # refresh the blob to get the metadata
+    size = blob.size // (1024**3)  # bytes to GB
+
+    second_job = get_batch().new_job(name="saige-qtl part 2")
+    apply_job_settings(second_job, 'sv_test')
+
+    # VCF size, plus a 5GB buffer
+    second_job.storage(f'{size + 5 }Gi')
+    second_job.image(image_path('saige-qtl'))
+    return second_job
+
+
 @click.command()
 @click.option('--celltypes')
 @click.option('--chromosomes')
@@ -140,6 +185,8 @@ def build_obtain_gene_level_pvals_command(
 @click.option('--cis-window-or-group-files-path', required=True)
 @click.option('--qv-significance-threshold', default=0.05)
 @click.option('--common-or-rare', default='common', help='type of analysis to perform')
+@click.option('--cis-window-size', default=100000)
+@click.option('--group-file-specs', default='_dTSS')
 @click.command()
 def conditional_analysis(
     celltypes: str,
@@ -155,6 +202,8 @@ def conditional_analysis(
     # significance threshold
     qv_significance_threshold: float,
     common_or_rare: str,
+    cis_window_size: int,
+    group_file_specs: str,
 ):
     batch = get_batch('SAIGE-QTL conditional pipeline')
 
@@ -174,7 +223,9 @@ def conditional_analysis(
         # as more rounds of conditional analysis are performed, more snps will be added
         significant_snps_gene_dict: dict = {genes: top_snps}
         # temporarily write this out?
-        significant_genes_dict_path = output_path(f'conditional_analysis/{celltype}/round1_significant_genes.json')
+        significant_genes_dict_path = output_path(
+            f'conditional_analysis/{celltype}/round1_significant_genes.json'
+        )
         with to_path(significant_genes_dict_path).open('wt') as out_handle:
             json.dump(significant_genes_dict_path, fp=out_handle, indent=4)
 
@@ -190,18 +241,50 @@ def conditional_analysis(
     for chromosome in chromosomes:
 
         # genotype vcf files are one per chromosome
-        vcf_file_path = (f'{genotype_files_prefix}/{chromosome}_common_variants.vcf.bgz')
+        vcf_file_path = f'{genotype_files_prefix}/{chromosome}_common_variants.vcf.bgz'
 
         # read in vcf file once per chromosome
-        vcf_group = get_batch().read_input_group(vcf=vcf_file_path, index=f'{vcf_file_path}.csi')
+        vcf_group = get_batch().read_input_group(
+            vcf=vcf_file_path, index=f'{vcf_file_path}.csi'
+        )
 
         # cis window and group files are split by gene but organised by chromosome also
-        cis_window_or_group_files_path_chrom = f'{cis_window_or_group_files_path}/{chromosome}'
+        cis_window_or_group_files_path_chrom = (
+            f'{cis_window_or_group_files_path}/{chromosome}'
+        )
+
+        step2_job = create_second_job(vcf_file_path)
+        # jobs_in_vm = 0
 
         for celltype in celltypes:
             # extract significant genes from json
+            for gene in genes:
+                # define gene-specific key
+                test_key = f'{celltype}_{chromosome}_{celltype}_{gene}_conditional_round{conditional_round_number}'
+                # define output
+                test_output_path = 'xxx'
+                # define gene-specific null output (rda + varianceRatio)
+                null_path = (
+                    f'{fit_null_files_path}/{celltype}/{chromosome}/{celltype}_{gene}'
+                )
+                # define gene-specific cis window or group file
+                if common_or_rare == 'common':
+                    cis_window_or_group_file = f'{cis_window_or_group_files_path_chrom}/{gene}_{cis_window_size}bp.tsv'
+                elif common_or_rare == 'rare':
+                    cis_window_or_group_file = f'{cis_window_or_group_files_path_chrom}/{gene}_{cis_window_size}bp{group_file_specs}.tsv'
+                # build command
+                # add to job
 
-
+                build_run_conditional_analysis_command(
+                    job=step2_job,
+                    test_key=test_key,
+                    rare_output_path=test_output_path,
+                    vcf_group=vcf_group,
+                    chrom=(chromosome[3:]),
+                    cis_window_or_group_file=cis_window_or_group_file,
+                    gmmat_model_path=f'{null_path}.rda',
+                    variance_ratio_path=f'{null_path}.varianceRatio.txt',
+                )
 
 
 if __name__ == '__main__':
