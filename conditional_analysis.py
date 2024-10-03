@@ -3,10 +3,22 @@
 
 """
 This script will run a conditional analysis
+... or will it
+
+Process:
+    - naively run step 2 (unconditioned)
+    - run step 3 to summarise the step 2 results
+    - evaluate the step 3 results
+        - if the step 3 results reveal a new, run step 2 again, but with a condition
+        - loop as required
+        - write results each time, including the condition used
+    - repeat until no significant results are found
+
 """
 
 import click
 import json
+import logging
 import pandas as pd
 
 from google.cloud import storage
@@ -16,123 +28,258 @@ from cpg_utils import to_path
 from cpg_utils.config import get_config, image_path, output_path
 from cpg_utils.hail_batch import get_batch
 
-# Run single variant or set-based association (step 2)
-# with condition
-def build_run_conditional_analysis_command(
-    job: hb.batch.job.Job,
-    test_key: str,
-    test_output_path: str,
-    vcf_group: hb.ResourceGroup,
-    chrom: str,
-    cis_window_or_group_file: str,
-    gmmat_model_path: str,
-    variance_ratio_path: str,
-    conditional_string: str,
-    common_or_rare: str = 'common',
+
+def ooh_its_a_common_conditional_analysis_loop(
+        vcf_group: hb.ResourceGroup,
+        output_filepath: str,
+        gene_name: str,
+        cis_window_file: str,
+        chrom: str,
+        gmmat_model_path: str,
+        variance_ratio_path: str,
+        conditions: list[str] | None = None,
 ):
     """
-    Build SAIGE command for running either a single variant test
-    or a set-based test depending on the common_or_rare flag
-
-    Input:
-    - job: job to load this command into
-    - test_key: unique key for this test
-    - vcf_group: ResourceGroup with vcf and index
-    - test output path: path to output saige file
-    - chrom: chromosome to run this on
-    - either / or
-      - cis window: file with chrom | start | end to specify window
-      - group: file with variants to test + weights + annotations
-    - GMMAT model file: null model fit from previous step (.rda)
-    - Variance Ratio file: as estimated from previous step (.txt)
-    - SNPs to condition on (provided as a single comma-separated string)
-
-    Output:
-    Rscript command (str) ready to run
+    Run a conditional analysis loop
+        - do step 2 (unconditioned, initially?)
+        - do step 3 (summarise results)
+        - if there are further significant results, add a condition to the list and repeat
+        - if we run out of conditions, we're done. push the results to a 'final' file
     """
-    if common_or_rare == 'common':
-        cis_window_file = get_batch().read_input(cis_window_or_group_file)
-        variants_to_include_arg = f'--rangestoIncludeFile={cis_window_file}'
-        args_from_config = ' '.join(
-            [
-                f'--{key}={value}'
-                for key, value in get_config()['saige']['sv_test'].items()
-            ]
-        )
-        # declare a uniquely named resource group for this single variant test
-        job.declare_resource_group(**{test_key: {'output': f'{test_key}.output'}})
-        output_arg = f'--SAIGEOutputFile={job[test_key].output}'
-    elif common_or_rare == 'rare':
-        group_file = get_batch().read_input(cis_window_or_group_file)
-        variants_to_include_arg = f'--groupFile={group_file}'
-        args_from_config = ' '.join(
-            [
-                f'--{key}={value}'
-                for key, value in get_config()['saige']['set_test'].items()
-            ]
-        )
-        # declare a uniquely named resource group for this set-based test
-        rare_key_writeable = test_key.replace('/', '_')
-        job.declare_resource_group(
-            **{
-                rare_key_writeable: {
-                    'set': '{root}.set',
-                    'singleAssoc.txt': '{root}.singleAssoc.txt',
-                }
-            }
-        )
-        output_arg = f'--SAIGEOutputFile={job[rare_key_writeable]}'
 
-    job.command(
-        f"""
-        Rscript /usr/local/bin/step2_tests_qtl.R \
-        --vcfFile={vcf_group.vcf} \
-        --vcfFileIndex={vcf_group.index} \
-        --chrom={chrom} \
-        --GMMATmodelFile={gmmat_model_path} \
-        --varianceRatioFile={variance_ratio_path} \
-        --condition={conditional_string} \
-        {variants_to_include_arg} \
-        {output_arg} \
-        {args_from_config}
-    """
-    )
-    if common_or_rare == 'common':
-        # write the output
-        get_batch().write_output(job[test_key].output, test_output_path)
-        return job[test_key].output
-    elif common_or_rare == 'rare':
-        get_batch().write_output(job[rare_key_writeable], test_output_path)
+    from os.path import join as path_join
+    from subprocess import check_call
+
+    import pandas as pd
+
+    from cpg_utils import to_path
+
+    # keep this as a list of Strings
+    args_from_config = [
+        f'--{key}={value}'
+        for key, value in get_config()['saige']['sv_test'].items()
+    ]
+
+    # allow for no initial conditions
+    if conditions is None:
+        conditions = []
+
+    final_output_path = path_join(output_filepath, 'conditional_analysis_final')
+    final_conditions_path = path_join(output_filepath, 'conditional_analysis_conditions.txt')
+    final_pval_path = path_join(output_filepath, 'conditional_analysis_pval.txt')
+
+    # get the most identifying part of the output path
+    # we might run multiple genes in this image, and we don't want filename clashes
+    genes_and_stuff = output_path.split('/')[-1]
+
+    # start with round 1
+    round: int = 1
+
+    # iterate until we're done
+    while True:
+
+        # alter this with each round so that we don't overwrite files
+        round_name = f'{genes_and_stuff}_round{round}'
+
+        command_elements = [
+            'Rscript',
+            '/usr/local/bin/step2_tests_qtl.R',
+            f'--vcfFile={vcf_group.vcf}',
+            f'--vcfFileIndex={vcf_group.index}',
+            f'--chrom={chrom}',
+            f'--GMMATmodelFile={gmmat_model_path}',
+            f'--varianceRatioFile={variance_ratio_path}',
+            f'--rangestoIncludeFile={cis_window_file}',
+            f'--SAIGEOutputFile={round_name}',
+            *args_from_config,
+        ]
+        if conditions:
+            command_elements.append(f'--condition={",".join(conditions)}')
+
+        # try it, see what happens
+        result = check_call(command_elements)
+        # check for a successful return code
+        if result != 0:
+            raise ValueError(
+                f'Failed to run step 2 for {genes_and_stuff}, round {round_name}. conditions: {conditions}'
+            )
+
+        # write these results to gcp...?
+        output_name = path_join(output_filepath, round_name)
+        with to_path(output_name).open('wt') as out_handle:
+            with open(round_name, 'rt') as read_handle:
+                out_handle.write(read_handle.read())
+        if conditions:
+            output_conditions = path_join(output_filepath, f'{round_name}_conditions.txt')
+            with to_path(output_conditions).open('wt') as out_handle:
+                for condition in conditions:
+                    out_handle.write(condition + '\n')
+
+        # now what? Run step 3 on the results?
+        command_elements = [
+            'Rscript',
+            '/usr/local/bin/step3_gene_pvalue_qtl.R',
+            f'--assocFile={round_name}',
+            f'--geneName={gene_name}',
+            f'--genePval_outputFile={round_name}_gene_pval',
+        ]
+        result = check_call(command_elements)
+        if result != 0:
+            raise ValueError(
+                f'Failed to run step 3 for {genes_and_stuff}, round {round_name}. conditions: {conditions}'
+            )
+        # write these results to gcp...?
+        output_name = path_join(output_filepath, f'{round_name}_gene_pval')
+        with to_path(output_name).open('wt') as out_handle:
+            with open(round_name, 'rt') as read_handle:
+                out_handle.write(read_handle.read())
+
+        # TODO I DON'T KNOW HOW THIS PART WORKS
+        # check if there are any significant results
+        df = pd.read_csv(output_name, index_col=0)
+
+        # if there are no significant results, we're done
+        # write all the final round_N results to a final path for the gene/celltype
+        if df.empty:
+            # write the results to a final path
+            with to_path(final_output_path).open('wt') as out_handle:
+                with open(round_name, 'rt') as read_handle:
+                    out_handle.write(read_handle.read())
+            if conditions:
+                with to_path(final_conditions_path).open('wt') as out_handle:
+                    for condition in conditions:
+                        out_handle.write(condition + '\n')
+            with to_path(final_pval_path).open('wt') as out_handle:
+                with open(f'{round_name}_gene_pval', 'rt') as read_handle:
+                    out_handle.write(read_handle.read())
+            # return here - we should be able to read a returned path from a pyjob.call
+            return final_output_path
+
+        # if there are significant results, we need to run step 2 again, but with a condition
+        # read the DF contents, and add the most significant gene to the list of conditions
+        conditions.append(df.index[0])
+        round += 1
+
+        # go round again!
 
 
-# Combine single variant associations at gene level (step 3)
-def build_obtain_gene_level_pvals_command(
-    gene_name: str,
-    saige_sv_output_file: str,
-    saige_gene_pval_output_file: str,
-):
-    """
-    Build SAIGE command to obtain gene-level pvals
-    Only for single-variant tests (Step3)
-    combines single-variant p-values to obtain one gene
-    level p-value
-
-    Input:
-    - output of previous step, association file (txt)
-    - gene we need to aggregate results for (across SNPs)
-    - path for output file
-    """
-    saige_job = get_batch().new_job(name="saige-qtl part 3")
-    saige_command_step3 = f"""
-        Rscript /usr/local/bin/step3_gene_pvalue_qtl.R \
-        --assocFile={saige_sv_output_file} \
-        --geneName={gene_name} \
-        --genePval_outputFile={saige_job.output}
-    """
-    saige_job.image(image_path('saige-qtl'))
-    saige_job.command(saige_command_step3)
-    get_batch().write_output(saige_job.output, saige_gene_pval_output_file)
-    return saige_job
+# # Run single variant or set-based association (step 2)
+# # with condition
+# def build_run_conditional_analysis_command(
+#     job: hb.batch.job.Job,
+#     test_key: str,
+#     test_output_path: str,
+#     vcf_group: hb.ResourceGroup,
+#     chrom: str,
+#     cis_window_or_group_file: str,
+#     gmmat_model_path: str,
+#     variance_ratio_path: str,
+#     conditional_string: str | None = None,
+#     common_or_rare: str = 'common',
+# ):
+#     """
+#     Build SAIGE command for running either a single variant test
+#     or a set-based test depending on the common_or_rare flag
+#
+#     Input:
+#     - job: job to load this command into
+#     - test_key: unique key for this test
+#     - vcf_group: ResourceGroup with vcf and index
+#     - test output path: path to output saige file
+#     - chrom: chromosome to run this on
+#     - either / or
+#       - cis window: file with chrom | start | end to specify window
+#       - group: file with variants to test + weights + annotations
+#     - GMMAT model file: null model fit from previous step (.rda)
+#     - Variance Ratio file: as estimated from previous step (.txt)
+#     - SNPs to condition on (provided as a single comma-separated string)
+#
+#     Output:
+#     Rscript command (str) ready to run
+#     """
+#     if common_or_rare == 'common':
+#         cis_window_file = get_batch().read_input(cis_window_or_group_file)
+#         variants_to_include_arg = f'--rangestoIncludeFile={cis_window_file}'
+#         args_from_config = ' '.join(
+#             [
+#                 f'--{key}={value}'
+#                 for key, value in get_config()['saige']['sv_test'].items()
+#             ]
+#         )
+#         # declare a uniquely named resource group for this single variant test
+#         job.declare_resource_group(**{test_key: {'output': f'{test_key}.output'}})
+#         output_arg = f'--SAIGEOutputFile={job[test_key].output}'
+#     elif common_or_rare == 'rare':
+#         group_file = get_batch().read_input(cis_window_or_group_file)
+#         variants_to_include_arg = f'--groupFile={group_file}'
+#         args_from_config = ' '.join(
+#             [
+#                 f'--{key}={value}'
+#                 for key, value in get_config()['saige']['set_test'].items()
+#             ]
+#         )
+#         # declare a uniquely named resource group for this set-based test
+#         rare_key_writeable = test_key.replace('/', '_')
+#         job.declare_resource_group(
+#             **{
+#                 rare_key_writeable: {
+#                     'set': '{root}.set',
+#                     'singleAssoc.txt': '{root}.singleAssoc.txt',
+#                 }
+#             }
+#         )
+#         output_arg = f'--SAIGEOutputFile={job[rare_key_writeable]}'
+#
+#     job.command(
+#         f"""
+#         Rscript /usr/local/bin/step2_tests_qtl.R \
+#         --vcfFile={vcf_group.vcf} \
+#         --vcfFileIndex={vcf_group.index} \
+#         --chrom={chrom} \
+#         --GMMATmodelFile={gmmat_model_path} \
+#         --varianceRatioFile={variance_ratio_path} \
+#         --condition={conditional_string} \
+#         {variants_to_include_arg} \
+#         {output_arg} \
+#         {args_from_config}
+#     """
+#     )
+#     if common_or_rare == 'common':
+#         # write the output
+#         get_batch().write_output(job[test_key].output, test_output_path)
+#         return job[test_key].output
+#     elif common_or_rare == 'rare':
+#         get_batch().write_output(job[rare_key_writeable], test_output_path)
+#
+#
+# # Combine single variant associations at gene level (step 3)
+# def build_obtain_gene_level_pvals_command(
+#     gene_name: str,
+#     saige_sv_output_file: str,
+#     saige_gene_pval_output_file: str,
+# ):
+#     """
+#     Build SAIGE command to obtain gene-level pvals
+#     Only for single-variant tests (Step3)
+#     combines single-variant p-values to obtain one gene
+#     level p-value
+#
+#     Input:
+#     - output of previous step, association file (txt)
+#     - gene we need to aggregate results for (across SNPs)
+#     - path for output file
+#     """
+#     saige_job = get_batch().new_job(name="saige-qtl part 3")
+#     saige_command_step3 = f"""
+#         Rscript /usr/local/bin/step3_gene_pvalue_qtl.R \
+#         --assocFile={saige_sv_output_file} \
+#         --geneName={gene_name} \
+#         --genePval_outputFile={saige_job.output}
+#     """
+#     saige_job.image(image_path('saige-qtl'))
+#     saige_job.command(saige_command_step3)
+#     get_batch().write_output(saige_job.output, saige_gene_pval_output_file)
+#     return saige_job
 
 
 def apply_job_settings(job: hb.batch.job.Job, job_name: str):
@@ -156,9 +303,10 @@ def apply_job_settings(job: hb.batch.job.Job, job_name: str):
             job.cpu(cpu)
 
 
-def create_second_job(vcf_path: str) -> hb.batch.job.Job:
+def create_second_job(vcf_path: str) -> hb.batch.job.PythonJob:
     """
     Create a second job to run the single variant test
+    This is a Python job!
     """
     # get the size of the vcf file
     storage_client = storage.Client()
@@ -167,11 +315,11 @@ def create_second_job(vcf_path: str) -> hb.batch.job.Job:
     blob.reload()  # refresh the blob to get the metadata
     size = blob.size // (1024**3)  # bytes to GB
 
-    second_job = get_batch().new_job(name="saige-qtl part 2")
+    second_job = get_batch().new_python_job(name="saige-qtl part 2")
     apply_job_settings(second_job, 'sv_test')
 
     # VCF size, plus a 5GB buffer
-    second_job.storage(f'{size + 5 }Gi')
+    second_job.storage(f'{size + 10 }Gi')
     second_job.image(image_path('saige-qtl'))
     return second_job
 
@@ -220,7 +368,6 @@ def conditional_analysis(
     cis_window_size: int,
     group_file_specs: str,
 ):
-    batch = get_batch('SAIGE-QTL conditional pipeline')
 
     # for every cell type, have a dictionary that contains all genes with a significant eQTL
     # and info on the top SNP
@@ -274,33 +421,40 @@ def conditional_analysis(
         for celltype in celltypes:
             # extract significant genes from json
             for gene in genes:
-                # define gene-specific key
-                test_key = f'{celltype}_{chromosome}_{celltype}_{gene}_conditional_round{conditional_round_number}'
-                # define output
-                test_output_path = 'xxx'
+
                 # define gene-specific null output (rda + varianceRatio)
                 null_path = (
                     f'{fit_null_files_path}/{celltype}/{chromosome}/{celltype}_{gene}'
                 )
+
+                if to_path(f'{null_path}/conditional_analysis_final').exists():
+                    logging.info(f'Skipping conditional analysis for {gene}:{celltype} as it has already been run')
+                    continue
+
+                # asssume we're starting with no conditions
+                conditions: list[str] = []
+
                 # define gene-specific cis window or group file
                 if common_or_rare == 'common':
                     cis_window_or_group_file = f'{cis_window_or_group_files_path_chrom}/{gene}_{cis_window_size}bp.tsv'
                 elif common_or_rare == 'rare':
                     cis_window_or_group_file = f'{cis_window_or_group_files_path_chrom}/{gene}_{cis_window_size}bp{group_file_specs}.tsv'
-                # build command
-                # add to job
+                else:
+                    raise ValueError('common_or_rare must be either "common" or "rare"')
 
-                build_run_conditional_analysis_command(
-                    job=step2_job,
-                    test_key=test_key,
-                    rare_output_path=test_output_path,
+                result = step2_job.call(
+                    ooh_its_a_common_conditional_analysis_loop,
                     vcf_group=vcf_group,
-                    chrom=(chromosome[3:]),
-                    cis_window_or_group_file=cis_window_or_group_file,
-                    gmmat_model_path=f'{null_path}.rda',
-                    variance_ratio_path=f'{null_path}.varianceRatio.txt',
+                    output_filepath=null_path,
+                    gene_name=gene,
+                    cis_window_file=cis_window_or_group_file,
+                    chrom=chromosome,
+                    gmmat_model_path=null_path + '.rda',
+                    variance_ratio_path=null_path + '.varianceRatio.txt',
+                    conditions=conditions
                 )
 
 
 if __name__ == '__main__':
+    logging.basicConfig(level=logging.INFO)
     conditional_analysis()
