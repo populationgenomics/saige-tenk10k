@@ -6,7 +6,7 @@ Arguments:
     --vds-path: str. Path to the VDS in GCS. Does not need the project. e.g cpg-bioheart-test/vds/bioheart1-0.vds should be entered as vds/bioheart1-0.vds
     --n-samples: int, optional. The number of samples to subset the VDS down to.
     --intervals: str, optional. A (comma separated) string in the format 'chr:start-end' of the interval to subset to, or the path to a file in gcs with one interval per line.
-    --output-format: str. A space separated string of output formats to generate. Only formats in [vcf, bed, vds] can be chosen.
+    --output-formats: str. A space separated string of output formats to generate. Only formats in [vcf, bed, vds] can be chosen.
     --random-seed: int, optional. An int to control the random number generator (default: 19700101)
 
 Raises:
@@ -19,10 +19,10 @@ Example usage:
 
 analysis-runner --dataset bioheart \
     --access-level test \
-    --output test-subset \
+    --output-dir test-subset \
     --description 'Test VDS subsetting script' \
     python3 subset_vds.py --vds-path vds/bioheart1-0.vds \
-    --output-format vcf bed \
+    --output-formats vcf bed \
     --intervals chr22,chr1:50000-100000 \
     --n-samples 2
 """
@@ -245,7 +245,7 @@ def write_outputs(
         FileExistsError: throws an error if any of the proposed output paths exist, as it will not overwrite them
     """
     if "vds" in output_formats:
-        subset_vds.write(output_path(f"{infile_name}_subset", category="analysis"))
+        subset_vds.write(output_path(f"{infile_name}_subset.vds", category="analysis"))
 
     subset_dense_mt: MatrixTable | Table | Any = to_dense_mt(subset_vds)
     subset_dense_mt = split_multi_hts(subset_dense_mt)
