@@ -328,7 +328,7 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--output-formats",
-        help="Comma separated string indicating what output formats you would like. One of [vcf, bed, vds]",
+        help="Space separated string indicating what output formats you would like. One of [vcf, bed, vds]",
         required=True,
         nargs="+",
         choices=["vcf", "bed", "vds"],
