@@ -3,26 +3,26 @@
 This script subsets a given VDS by either a number of samples, a region or set of regions, or both.
 
 Arguments:
-    --vds-path: str. Path to the VDS in GCS. Does not need the project. e.g cpg-bioheart-test/vds/bioheart1-0.vds should be entered as vds/bioheart1-0.vds
+    --vds-path: str. Path to the VDS in GCS. Does not need the project. e.g cpg-bioheart-test/vds/bioheart1-0.vds should be entered as vds/bioheart1-0.vds.
     --n-samples: int, optional. The number of samples to subset the VDS down to.
     --intervals: str, optional. A (comma separated) string in the format 'chr:start-end' of the interval to subset to, or the path to a file in gcs with one interval per line.
-    --output-format: str. A space separated string of output formats to generate. Only formats in [vcf, bed, vds] can be chosen.
-    --random-seed: int, optional. An int to control the random number generator (default: 19700101)
+    --output-formats: str. A space separated string of output formats to generate. Only formats in [vcf, bed, vds] can be chosen.
+    --random-seed: int, optional. An int to control the random number generator (default: 19700101).
 
 Raises:
-    ValueError: only supports values of n-samples that are less than the total number of sampels in the input VDS.
+    ValueError: only supports values of n-samples that are less than the total number of samples in the input VDS.
     FileExistsError: Will not overwrite existing files.
     AttributeError: Unrecognised arguments.
-    AttributeError: The user must provide one of n-samples or intervals, optherwise the script will not do any subsetting.
+    AttributeError: The user must provide one of n-samples or intervals, otherwise the script will not do any subsetting.
 
 Example usage:
 
 analysis-runner --dataset bioheart \
     --access-level test \
-    --output test-subset \
+    --output-dir test-subset \
     --description 'Test VDS subsetting script' \
     python3 subset_vds.py --vds-path vds/bioheart1-0.vds \
-    --output-format vcf bed \
+    --output-formats vcf bed \
     --intervals chr22,chr1:50000-100000 \
     --n-samples 2
 """
@@ -66,7 +66,7 @@ def check_output_already_exists(output_format: list[str], infile_name: str) -> N
             if to_path(
                 output_path(f"{infile_name}_subset", category="analysis")
             ).exists():
-                output_errors += f"The output VDS {infile_name}_subset already exists. Refusing to overwrite it.\n"
+                output_errors += f"The output VDS {infile_name}_subset.vds already exists. Refusing to overwrite it.\n"
                 files_exist_errors = True
             if to_path(
                 output_path("subset_samples_file.txt", category="analysis")
@@ -192,7 +192,7 @@ def subset_by_samples(
 
     Args:
         input_vds (VariantDataset): the input vds to filter on
-        subset_sample_list (list[str]): the list of sampels to retain in the vds
+        subset_sample_list (list[str]): the list of samples to retain in the vds
 
     Returns:
         VariantDataset: the subset vds
@@ -245,7 +245,7 @@ def write_outputs(
         FileExistsError: throws an error if any of the proposed output paths exist, as it will not overwrite them
     """
     if "vds" in output_formats:
-        subset_vds.write(output_path(f"{infile_name}_subset", category="analysis"))
+        subset_vds.write(output_path(f"{infile_name}_subset.vds", category="analysis"))
 
     subset_dense_mt: MatrixTable | Table | Any = to_dense_mt(subset_vds)
     subset_dense_mt = split_multi_hts(subset_dense_mt)
@@ -328,7 +328,7 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--output-formats",
-        help="Comma separated string indicating what output formats you would like. One of [vcf, bed, vds]",
+        help="Space separated string indicating what output formats you would like. One of [vcf, bed, vds]",
         required=True,
         nargs="+",
         choices=["vcf", "bed", "vds"],
