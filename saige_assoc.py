@@ -372,9 +372,11 @@ def main(
         'pheno_cov_files_path_used': pheno_cov_files_path,
         'cis_window_files_path_used': cis_window_files_path,
         'saige_fit_null_params': get_config()['saige'],
-        'saige_single_variant_test_params': get_config()['saige.sv_test'],
-        'saige_fit_null_job_specs': get_config()['saige.job_specs.fit_null'],
-        'saige_single_variant_test_job_specs': get_config()['saige.job_specs.sv_test'],
+        'saige_single_variant_test_params': get_config()['saige']['sv_test'],
+        'saige_fit_null_job_specs': get_config()['saige']['job_specs']['fit_null'],
+        'saige_single_variant_test_job_specs': get_config()['saige']['job_specs'][
+            'sv_test'
+        ],
         'runtime_config': getenv('CPG_CONFIG_PATH'),
     }
 
