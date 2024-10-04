@@ -328,7 +328,7 @@ def main(
 
         # since pruning is very costly, subset first a bit
         random.seed(0)
-        if n_ac_vars > {vre_n_markers * 100}:
+        if n_ac_vars > {vre_n_markers} * 100:
             vre_mt = vre_mt.sample_rows(p=0.01)
             logging.info('subset completed')
 
