@@ -423,7 +423,7 @@ def main(
 
                 # if the output exists, do nothing
                 if to_path(f'{rare_output_path}.set').exists():
-                    print(f'{str(to_path(f'{rare_output_path}.set'))} exists!')
+                    print(f"{str(to_path(f'{rare_output_path}.set'))} exists!")
                     continue
 
                 # instruct an additional command to run inside this VM
