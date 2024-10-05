@@ -130,11 +130,10 @@ def build_run_set_based_test_command(
 
     # declare a uniquely named resource group for this set-based test
     rare_key_writeable = rare_key.replace('/', '_')
-    print(f'rare_key_writeable: {rare_key_writeable}')
     job.declare_resource_group(
         **{
             rare_key_writeable: {
-                'set': '{root}.set',
+                'set': '{root}',
                 'singleAssoc.txt': '{root}.singleAssoc.txt',
             }
         }
@@ -155,7 +154,7 @@ def build_run_set_based_test_command(
     )
 
     # write the output
-    get_batch().write_output(job[rare_key_writeable].output, rare_output_path)
+    get_batch().write_output(job[rare_key_writeable], rare_output_path)
 
 
 def apply_job_settings(job: hb.batch.job.Job, job_name: str):
@@ -417,13 +416,11 @@ def main(
                 # step 2 (cis eQTL set-based test)
                 # unique key for this set-based test
                 rare_key = f'{celltype}/{chromosome}/{celltype}_{gene}_cis_rare'
-                print(f'rare key: {rare_key}')
                 # unique output path for this set-based test
                 rare_output_path = output_path(rare_key, 'analysis')
 
                 # if the output exists, do nothing
                 if to_path(f'{rare_output_path}.set').exists():
-                    print(f"{str(to_path(f'{rare_output_path}.set'))} exists!")
                     continue
 
                 # instruct an additional command to run inside this VM
