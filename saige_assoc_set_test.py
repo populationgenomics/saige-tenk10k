@@ -155,7 +155,7 @@ def build_run_set_based_test_command(
     )
 
     # write the output
-    get_batch().write_output(job[rare_key_writeable], rare_output_path)
+    get_batch().write_output(job[rare_key_writeable].output, rare_output_path)
 
 
 def apply_job_settings(job: hb.batch.job.Job, job_name: str):
