@@ -133,7 +133,7 @@ def build_run_set_based_test_command(
     job.declare_resource_group(
         **{
             rare_key_writeable: {
-                'set': '{root}.set',
+                'set': '{root}',
                 'singleAssoc.txt': '{root}.singleAssoc.txt',
             }
         }
