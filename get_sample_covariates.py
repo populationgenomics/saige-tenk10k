@@ -19,10 +19,9 @@ analysis-runner \
    --description "get sample covariates" \
    --dataset "bioheart" \
    --access-level "standard" \
-   --output-dir "saige-qtl/input_files/240920/covariates" \
-    	python3 get_sample_covariates.py --tob-sex-file-path  'gs://cpg-tob-wgs-main-analysis/large_cohort/tob-wgs1-0/sample_qc.ht' \
-               --bioheart-sex-file-path 'gs://cpg-bioheart-main-analysis/large_cohort/bioheart1-0/sample_qc.ht' \
-               --project-names 'tob-wgs,bioheart' --vds-version tenk10k1-0
+   --output-dir "saige-qtl/bioheart_n787_and_tob_n960/241008_ashg/input_files/covariates" \
+    	python3 get_sample_covariates.py --tenk10k-sampleqc-file-path  'gs://cpg-bioheart-main/large_cohort/tenk10k1-1/sample_qc.ht' \
+               --project-names 'tob-wgs,bioheart' --vds-version tenk10k1-1-eur-nbm
 
 """
 
@@ -55,12 +54,8 @@ GET_PARTICIPANT_META_QUERY = gql(
 
 
 @click.option(
-    '--tob-sampleqc-file-path',
-    help='this file should contain sample id and inferred sex info for the tob cohort',
-)
-@click.option(
-    '--bioheart-sampleqc-file-path',
-    help='this file should contain sample id and inferred sex info for the bioheart cohort',
+    '--tenk10k-sampleqc-file-path',
+    help='this file should contain sample id and inferred sex info for the tenk10k cohort (tob + bioheart)',
 )
 @click.option('--vds-version', help=' e.g. tenk10k1-0,bioheart1-0 ')
 @click.option('--project-names', default='tob-wgs,bioheart')
@@ -69,8 +64,7 @@ GET_PARTICIPANT_META_QUERY = gql(
 @click.option('--fill-in-age', default=False)
 @click.command()
 def main(
-    tob_sampleqc_file_path: str,
-    bioheart_sampleqc_file_path: str,
+    tenk10k_sampleqc_file_path: str,
     vds_version: str,
     project_names: str,
     number_of_sample_perms: int,
@@ -85,35 +79,39 @@ def main(
 
     # sex
     # option 1: separate files
-    # tob
-    tob_sample_qc_ht = hl.read_table(tob_sampleqc_file_path)
-    # convert to pandas
-    tob_sample_qc_df = tob_sample_qc_ht.to_pandas()
-    # extract info and reformat to table
-    tob_sample_qc_df['sample_id'] = [str(s) for s in tob_sample_qc_df['s']]
-    # only retain relevant columns
-    tob_sex_df = tob_sample_qc_df[['sample_id', 'sex']]
-    # bioheart
-    bioheart_sample_qc_ht = hl.read_table(bioheart_sampleqc_file_path)
-    # convert to pandas
-    bioheart_sample_qc_df = bioheart_sample_qc_ht.to_pandas()
-    # extract info and reformat to table
-    bioheart_sample_qc_df['sample_id'] = [str(s) for s in bioheart_sample_qc_df['s']]
-    # only retain relevant columns
-    bioheart_sex_df = bioheart_sample_qc_df[['sample_id', 'sex']]
-    # combine_info
-    sex_df = pd.concat([tob_sex_df, bioheart_sex_df], axis=0)
+    # # tob
+    # tob_sample_qc_ht = hl.read_table(tob_sampleqc_file_path)
+    # # convert to pandas
+    # tob_sample_qc_df = tob_sample_qc_ht.to_pandas()
+    # # extract info and reformat to table
+    # tob_sample_qc_df['sample_id'] = [str(s) for s in tob_sample_qc_df['s']]
+    # # only retain relevant columns
+    # tob_sex_df = tob_sample_qc_df[['sample_id', 'sex']]
+    # # bioheart
+    # bioheart_sample_qc_ht = hl.read_table(bioheart_sampleqc_file_path)
+    # # convert to pandas
+    # bioheart_sample_qc_df = bioheart_sample_qc_ht.to_pandas()
+    # # extract info and reformat to table
+    # bioheart_sample_qc_df['sample_id'] = [str(s) for s in bioheart_sample_qc_df['s']]
+    # # only retain relevant columns
+    # bioheart_sex_df = bioheart_sample_qc_df[['sample_id', 'sex']]
+    # # combine_info
+    # sex_df = pd.concat([tob_sex_df, bioheart_sex_df], axis=0)
 
     # # option 2: combined file
     # at the moment this is not up to date, but ideally this would be what we'd run instead
     # sample_qc_ht_path = dataset_path(f'large_cohort/{vds_version}/sample_qc.ht')
-    # sample_qc_ht = hl.read_table(sample_qc_ht_path)
-    # # convert to pandas
-    # sample_qc_df = sample_qc_ht.to_pandas()
-    # # extract info and reformat to table
-    # sample_qc_df['sample_id'] = [str(s) for s in sample_qc_df['s']]
-    # # only retain relevant columns
-    # sex_df = sample_qc_df[['sample_id', 'sex']]
+    sample_qc_ht = hl.read_table(tenk10k_sampleqc_file_path)
+    # convert to pandas
+    sample_qc_df = sample_qc_ht.to_pandas()
+    # extract info and reformat to table
+    sample_qc_df['sample_id'] = [str(s) for s in sample_qc_df['s']]
+    # go from sex karyotype (XX, XY) to sex numeric coding (2,1)
+    sample_qc_df['sex'] = (
+        sample_qc_df['sex_karyotype'].map({"XY": 1, "XX": 2, "X": 0}).astype(int)
+    )
+    # only retain relevant columns
+    sex_df = sample_qc_df[['sample_id', 'sex']]
 
     # add sex as unknown (0) if missing
     if fill_in_sex:
