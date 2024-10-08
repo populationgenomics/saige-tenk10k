@@ -70,31 +70,33 @@ def check_output_already_exists(output_format: list[str], infile_name: str) -> N
     files_exist_errors: bool = False
     for format in output_format:
         if format == "vds":
-            if to_path(
+            if vds_path := to_path(
                 output_path(f"{infile_name}_subset", category="analysis")
             ).exists():
-                output_errors += f"The output VDS {to_path(output_path(infile_name, category='analysis'))}_subset.vds already exists. Refusing to overwrite it.\n"
+                output_errors += f"The output VDS {vds_path}_subset.vds already exists. Refusing to overwrite it.\n"
                 files_exist_errors = True
-            if to_path(
+            if samples_file := to_path(
                 output_path("subset_samples_file.txt", category="analysis")
             ).exists():
-                output_errors += f"The file {to_path(output_path('subset_samples_file.txt', category='analysis'))} exists. Refusing to overwrite it."
+                output_errors += (
+                    f"The file {samples_file} exists. Refusing to overwrite it."
+                )
                 files_exist_errors = True
         if (
-            format == "bed"
-            and to_path(
+            plink_files := to_path(
                 output_path(f"{infile_name}_subset.bed", category="analysis")
             ).exists()
+            and format == "bed"
         ):
-            output_errors += f"The output {to_path(output_path(infile_name, category='analysis'))}_subset.bed fileset exists. Refusing to overwrite it.\n"
+            output_errors += f"The output {plink_files}_subset.bed fileset exists. Refusing to overwrite it.\n"
             files_exist_errors = True
         if (
-            format == "vcf"
-            and to_path(
+            vcf_files := to_path(
                 output_path(f"{infile_name}_subset.vcf.bgz", category="analysis")
             ).exists()
+            and format == "vcf"
         ):
-            output_errors += f"The output file {to_path(output_path(infile_name, category='analysis'))}_subset.vcf.bgz exists. Refusing to overwrite it.\n"
+            output_errors += f"The output file {vcf_files}_subset.vcf.bgz exists. Refusing to overwrite it.\n"
             files_exist_errors = True
     if files_exist_errors:
         raise FileExistsError(f"{output_errors}")
@@ -180,7 +182,7 @@ def get_subset_sample_list(input_vds: VariantDataset, n_samples: int) -> list[st
     """
     starting_samples: list[str] = input_vds.variant_data.s.collect()
     n_total_samples: int = len(starting_samples)
-    if n_samples == 0:
+    if n_samples <= 0:
         raise ValueError(
             "Subsetting to 0 samples will result in an empty MatrixTable, so not doing that."
         )
