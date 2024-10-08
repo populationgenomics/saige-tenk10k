@@ -73,12 +73,12 @@ def check_output_already_exists(output_format: list[str], infile_name: str) -> N
             if to_path(
                 output_path(f"{infile_name}_subset", category="analysis")
             ).exists():
-                output_errors += f"The output VDS {infile_name}_subset.vds already exists. Refusing to overwrite it.\n"
+                output_errors += f"The output VDS {to_path(output_path(infile_name, category='analysis'))}_subset.vds already exists. Refusing to overwrite it.\n"
                 files_exist_errors = True
             if to_path(
                 output_path("subset_samples_file.txt", category="analysis")
             ).exists():
-                output_errors += f"The file {to_path(output_path('subset_samples_file.txt'))} exists. Refusing to overwrite it."
+                output_errors += f"The file {to_path(output_path('subset_samples_file.txt', category='analysis'))} exists. Refusing to overwrite it."
                 files_exist_errors = True
         if (
             format == "bed"
@@ -86,7 +86,7 @@ def check_output_already_exists(output_format: list[str], infile_name: str) -> N
                 output_path(f"{infile_name}_subset.bed", category="analysis")
             ).exists()
         ):
-            output_errors += f"The output {to_path(output_path(infile_name))}_subset.bed fileset exists. Refusing to overwrite it.\n"
+            output_errors += f"The output {to_path(output_path(infile_name, category='analysis'))}_subset.bed fileset exists. Refusing to overwrite it.\n"
             files_exist_errors = True
         if (
             format == "vcf"
@@ -94,7 +94,7 @@ def check_output_already_exists(output_format: list[str], infile_name: str) -> N
                 output_path(f"{infile_name}_subset.vcf.bgz", category="analysis")
             ).exists()
         ):
-            output_errors += f"The output file {to_path(output_path(infile_name))}_subset.vcf.bgz exists. Refusing to overwrite it.\n"
+            output_errors += f"The output file {to_path(output_path(infile_name, category='analysis'))}_subset.vcf.bgz exists. Refusing to overwrite it.\n"
             files_exist_errors = True
     if files_exist_errors:
         raise FileExistsError(f"{output_errors}")
