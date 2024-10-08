@@ -332,21 +332,6 @@ def main(
         else:
             subset_vds = subset_by_samples(input_vds, subset_sample_list)
 
-    # if n_samples:
-    #     subset_sample_list = get_subset_sample_list(input_vds, n_samples)
-    #     if intervals:
-    #         parsed_intervals = parse_intervals(intervals)
-    #         parsed_locus = convert_intervals_to_locus(parsed_intervals)
-    #         subset_vds = subset_by_samples(
-    #             subset_by_locus(parsed_locus, input_vds), subset_sample_list
-    #         )
-    #     else:
-    #         subset_vds = subset_by_samples(input_vds, subset_sample_list)
-    # elif intervals:
-    #     parsed_intervals = parse_intervals(intervals)
-    #     parsed_locus = convert_intervals_to_locus(parsed_intervals)
-    #     subset_vds = subset_by_locus(parsed_locus, input_vds)
-
     write_outputs(output_formats, subset_vds, subset_sample_list, infile_name)
 
 
