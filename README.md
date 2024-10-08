@@ -258,6 +258,7 @@ TenK10K is matched single-cell RNA-seq (scRNA-seq) and whole-genome sequencing (
 
 ## Abbreviations
 
+* ACAT: Aggregated Cauchy Association Test (PMID: 30849328)
 * AIM: Australia IBD Microbiome study
 * CPG: centre for population genomics, the centre at which this work is being done
 * GCP: Google Cloud Platform
