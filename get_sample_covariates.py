@@ -106,12 +106,14 @@ def main(
     sample_qc_df = sample_qc_ht.to_pandas()
     # extract info and reformat to table
     sample_qc_df['sample_id'] = [str(s) for s in sample_qc_df['s']]
+    # go from sex karyotype (XX, XY) to sex numeric coding (2,1)
+    sample_qc_df['sex'] = sample_qc_df['sex_karyotype'].map({"XY": 1, "XX": 2})
     # only retain relevant columns
-    sex_df = sample_qc_df[['sample_id', 'sex_karyotype']]
+    sex_df = sample_qc_df[['sample_id', 'sex']]
 
     # add sex as unknown (0) if missing
     if fill_in_sex:
-        sex_df['sex_karyotype'] = sex_df['sex_karyotype'].fillna(0)
+        sex_df['sex'] = sex_df['sex'].fillna(0)
 
     # age
     # create a list from dictionary to populate
