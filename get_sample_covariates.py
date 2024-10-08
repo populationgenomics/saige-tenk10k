@@ -107,7 +107,9 @@ def main(
     # extract info and reformat to table
     sample_qc_df['sample_id'] = [str(s) for s in sample_qc_df['s']]
     # go from sex karyotype (XX, XY) to sex numeric coding (2,1)
-    sample_qc_df['sex'] = sample_qc_df['sex_karyotype'].map({"XY": 1, "XX": 2})
+    sample_qc_df['sex'] = (
+        sample_qc_df['sex_karyotype'].map({"XY": 1, "XX": 2}).fillna(0).astype(int)
+    )
     # only retain relevant columns
     sex_df = sample_qc_df[['sample_id', 'sex']]
 
