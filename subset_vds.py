@@ -70,31 +70,39 @@ def check_output_already_exists(output_format: list[str], infile_name: str) -> N
     files_exist_errors: bool = False
     for format in output_format:
         if format == "vds":
-            if vds_path := to_path(
-                output_path(f"{infile_name}_subset", category="analysis")
+            if (
+                vds_path := to_path(
+                    output_path(f"{infile_name}_subset", category="analysis")
+                )
             ).exists():
                 output_errors += f"The output VDS {vds_path}_subset.vds already exists. Refusing to overwrite it.\n"
                 files_exist_errors = True
-            if samples_file := to_path(
-                output_path("subset_samples_file.txt", category="analysis")
+            if (
+                samples_file := to_path(
+                    output_path("subset_samples_file.txt", category="analysis")
+                )
             ).exists():
                 output_errors += (
                     f"The file {samples_file} exists. Refusing to overwrite it."
                 )
                 files_exist_errors = True
         if (
-            plink_files := to_path(
-                output_path(f"{infile_name}_subset.bed", category="analysis")
+            format == "bed"
+            and (
+                plink_files := to_path(
+                    output_path(f"{infile_name}_subset.bed", category="analysis")
+                )
             ).exists()
-            and format == "bed"
         ):
             output_errors += f"The output {plink_files}_subset.bed fileset exists. Refusing to overwrite it.\n"
             files_exist_errors = True
         if (
-            vcf_files := to_path(
-                output_path(f"{infile_name}_subset.vcf.bgz", category="analysis")
+            format == "vcf"
+            and (
+                vcf_files := to_path(
+                    output_path(f"{infile_name}_subset.vcf.bgz", category="analysis")
+                )
             ).exists()
-            and format == "vcf"
         ):
             output_errors += f"The output file {vcf_files}_subset.vcf.bgz exists. Refusing to overwrite it.\n"
             files_exist_errors = True
