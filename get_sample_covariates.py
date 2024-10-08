@@ -19,7 +19,7 @@ analysis-runner \
    --description "get sample covariates" \
    --dataset "bioheart" \
    --access-level "standard" \
-   --output-dir "saige-qtl/input_files/240920/covariates" \
+   --output-dir "saige-qtl/bioheart_n787_and_tob_n960/241008_ashg/input_files/covariates" \
     	python3 get_sample_covariates.py --tenk10k-sampleqc-file-path  'gs://cpg-bioheart-main/large_cohort/tenk10k1-1/sample_qc.ht' \
                --project-names 'tob-wgs,bioheart' --vds-version tenk10k1-1-eur-nbm
 
