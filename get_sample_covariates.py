@@ -171,6 +171,8 @@ def main(
 
     # combine sex, age and geno PC info
     combined_sex_age_pcs = pd.concat([sex_df, age_df, pcs_df], axis=1)
+    # drop NAs
+    combined_sex_age_pcs.dropna(inplace=True)
 
     # add permuted sample ids for calibration analysis
     samples = combined_sex_age_pcs.index
