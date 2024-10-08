@@ -42,10 +42,17 @@ from hail import (
     export_vcf,
     get_reference,
     parse_locus_interval,
+    read_table,
     split_multi_hts,
 )
 from hail.utils.java import FatalError
-from hail.vds import filter_intervals, filter_samples, read_vds, to_dense_mt
+from hail.vds import (
+    filter_intervals,
+    filter_samples,
+    filter_variants,
+    read_vds,
+    to_dense_mt,
+)
 from hail.vds.variant_dataset import VariantDataset
 
 
@@ -63,31 +70,41 @@ def check_output_already_exists(output_format: list[str], infile_name: str) -> N
     files_exist_errors: bool = False
     for format in output_format:
         if format == "vds":
-            if to_path(
-                output_path(f"{infile_name}_subset", category="analysis")
+            if (
+                vds_path := to_path(
+                    output_path(f"{infile_name}_subset", category="analysis")
+                )
             ).exists():
-                output_errors += f"The output VDS {infile_name}_subset.vds already exists. Refusing to overwrite it.\n"
+                output_errors += f"The output VDS {vds_path}_subset.vds already exists. Refusing to overwrite it.\n"
                 files_exist_errors = True
-            if to_path(
-                output_path("subset_samples_file.txt", category="analysis")
+            if (
+                samples_file := to_path(
+                    output_path("subset_samples_file.txt", category="analysis")
+                )
             ).exists():
-                output_errors += f"The file {to_path(output_path('subset_samples_file.txt'))} exists. Refusing to overwrite it."
+                output_errors += (
+                    f"The file {samples_file} exists. Refusing to overwrite it."
+                )
                 files_exist_errors = True
         if (
             format == "bed"
-            and to_path(
-                output_path(f"{infile_name}_subset.bed", category="analysis")
+            and (
+                plink_files := to_path(
+                    output_path(f"{infile_name}_subset.bed", category="analysis")
+                )
             ).exists()
         ):
-            output_errors += f"The output {to_path(output_path(infile_name))}_subset.bed fileset exists. Refusing to overwrite it.\n"
+            output_errors += f"The output {plink_files}_subset.bed fileset exists. Refusing to overwrite it.\n"
             files_exist_errors = True
         if (
             format == "vcf"
-            and to_path(
-                output_path(f"{infile_name}_subset.vcf.bgz", category="analysis")
+            and (
+                vcf_files := to_path(
+                    output_path(f"{infile_name}_subset.vcf.bgz", category="analysis")
+                )
             ).exists()
         ):
-            output_errors += f"The output file {to_path(output_path(infile_name))}_subset.vcf.bgz exists. Refusing to overwrite it.\n"
+            output_errors += f"The output file {vcf_files}_subset.vcf.bgz exists. Refusing to overwrite it.\n"
             files_exist_errors = True
     if files_exist_errors:
         raise FileExistsError(f"{output_errors}")
@@ -173,7 +190,7 @@ def get_subset_sample_list(input_vds: VariantDataset, n_samples: int) -> list[st
     """
     starting_samples: list[str] = input_vds.variant_data.s.collect()
     n_total_samples: int = len(starting_samples)
-    if n_samples == 0:
+    if n_samples <= 0:
         raise ValueError(
             "Subsetting to 0 samples will result in an empty MatrixTable, so not doing that."
         )
@@ -197,8 +214,7 @@ def subset_by_samples(
     Returns:
         VariantDataset: the subset vds
     """
-    subset_vds: VariantDataset
-    subset_vds = filter_samples(input_vds, subset_sample_list)
+    subset_vds: VariantDataset = filter_samples(input_vds, subset_sample_list)
     return subset_vds
 
 
@@ -217,12 +233,22 @@ def subset_by_locus(
     Returns:
         VariantDataset: the subset vds
     """
-    subset_vds: VariantDataset
-    subset_vds = filter_intervals(input_vds, parsed_locus)
+    subset_vds: VariantDataset = filter_intervals(input_vds, parsed_locus)
     if subset_vds.variant_data.count_rows() == 0:
         raise ValueError(
             f"No rows remain after applying the following locus filters: {parsed_locus}"
         )
+    return subset_vds
+
+
+def subset_by_variants(
+    variant_table: Table, keep_variants: bool, input_vds: VariantDataset
+) -> VariantDataset:
+    subset_vds: VariantDataset = filter_variants(
+        input_vds, variant_table, keep_variants
+    )
+    if subset_vds.variant_data.count_rows() == 0:
+        raise ValueError("No rows remain after filtering on the provided variants.")
     return subset_vds
 
 
@@ -278,6 +304,8 @@ def main(
     vds_path: str,
     n_samples: int | None,
     intervals: str | None,
+    variant_table: str | None,
+    keep_variants: bool,
     output_formats: list[str],
     random_seed: int,
 ) -> None:
@@ -294,20 +322,25 @@ def main(
 
     # Always subset by interval first, if possible
     # https://discuss.hail.is/t/filtering-samples-from-vds-in-google-cloud/3718/6
-    if n_samples:
-        subset_sample_list = get_subset_sample_list(input_vds, n_samples)
-        if intervals:
-            parsed_intervals = parse_intervals(intervals)
-            parsed_locus = convert_intervals_to_locus(parsed_intervals)
-            subset_vds = subset_by_samples(
-                subset_by_locus(parsed_locus, input_vds), subset_sample_list
-            )
-        else:
-            subset_vds = subset_by_samples(input_vds, subset_sample_list)
-    elif intervals:
+
+    if intervals:
         parsed_intervals = parse_intervals(intervals)
         parsed_locus = convert_intervals_to_locus(parsed_intervals)
         subset_vds = subset_by_locus(parsed_locus, input_vds)
+
+    if variant_table:
+        input_variants: Table = read_table(dataset_path(variant_table))
+        if subset_vds:
+            subset_vds = subset_by_variants(input_variants, keep_variants, subset_vds)
+        else:
+            subset_vds = subset_by_variants(input_variants, keep_variants, input_vds)
+
+    if n_samples:
+        subset_sample_list = get_subset_sample_list(input_vds, n_samples)
+        if subset_vds:
+            subset_vds = subset_by_samples(subset_vds, subset_sample_list)
+        else:
+            subset_vds = subset_by_samples(input_vds, subset_sample_list)
 
     write_outputs(output_formats, subset_vds, subset_sample_list, infile_name)
 
@@ -325,6 +358,17 @@ if __name__ == "__main__":
         "--intervals",
         help="Interval(s) provided either on the command line in the format chr:start-end or in a text file, one per line to keep in the VDS.",
         required=False,
+    )
+    parser.add_argument(
+        "--variant-table",
+        help="Hail table of variants to keep when subsetting the VDS",
+        required=False,
+    )
+    parser.add_argument(
+        "--keep-variants",
+        help="Flag indicating whether to keep or discard the variants identified in the variant-table argument. Default True (keep)",
+        default=True,
+        type=bool,
     )
     parser.add_argument(
         "--output-formats",
@@ -349,6 +393,8 @@ if __name__ == "__main__":
         vds_path=args.vds_path,
         n_samples=args.n_samples,
         intervals=args.intervals,
+        variant_table=args.variant_table,
+        keep_variants=args.keep_variants,
         output_formats=args.output_formats,
         random_seed=args.random_seed,
     )
