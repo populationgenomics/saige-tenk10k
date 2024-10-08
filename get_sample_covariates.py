@@ -107,11 +107,11 @@ def main(
     # extract info and reformat to table
     sample_qc_df['sample_id'] = [str(s) for s in sample_qc_df['s']]
     # only retain relevant columns
-    sex_df = sample_qc_df[['sample_id', 'sex']]
+    sex_df = sample_qc_df[['sample_id', 'sex_karyotype']]
 
     # add sex as unknown (0) if missing
     if fill_in_sex:
-        sex_df['sex'] = sex_df['sex'].fillna(0)
+        sex_df['sex_karyotype'] = sex_df['sex_karyotype'].fillna(0)
 
     # age
     # create a list from dictionary to populate
