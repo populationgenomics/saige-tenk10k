@@ -11,6 +11,37 @@ This script will run a conditional analysis
     * path to step1 results,
     * all step2 inputs as in the main pipeline (RV / CV)
     * one more file specifying gene-specific conditional strings
+
+To run (common variant test):
+
+analysis-runner \
+   --config saige_assoc_test.toml \
+   --description "SAIGE-QTL CV conditional analysis" \
+   --memory='32G' \
+   --storage='50G' \
+   --dataset "bioheart" \
+   --access-level "full" \
+   --output-dir "saige-qtl/bioheart_n990_and_tob_n1055/output_files/240920" \
+    python3 conditional_analysis.py --fit-null-files-path=gs://cpg-bioheart-main/saige-qtl/bioheart_n990_and_tob_n1055/240920/output_files \
+       --cis-window-files-path=gs://cpg-bioheart-main/saige-qtl/bioheart_n990_and_tob_n1055/240920/input_files/cis_window_files \
+       --genotype-files-prefix=gs://cpg-bioheart-main/saige-qtl/bioheart_n990_and_tob_n1055/240920/input_files/genotypes/vds-tenk10k1-0 \
+       --conditional-files-prefix=gs://cpg-bioheart-main/saige-qtl/bioheart_n990_and_tob_n1055/240920/input_files/conditional_files
+
+To run (rare variant test):
+
+analysis-runner \
+   --config saige_assoc_test.toml \
+   --description "SAIGE-QTL RV conditional analysis" \
+   --memory='32G' \
+   --storage='50G' \
+   --dataset "bioheart" \
+   --access-level "full" \
+   --output-dir "saige-qtl/bioheart_n990_and_tob_n1055/output_files/240920" \
+    python3 conditional_analysis.py --fit-null-files-path=gs://cpg-bioheart-main/saige-qtl/bioheart_n990_and_tob_n1055/240920/output_files \
+       --group-files-path=gs://cpg-bioheart-main/saige-qtl/bioheart_n990_and_tob_n1055/240920/input_files/group_files \
+       --genotype-files-prefix=gs://cpg-bioheart-main/saige-qtl/bioheart_n990_and_tob_n1055/240920/input_files/genotypes/vds-tenk10k1-0 \
+       --conditional-files-prefix=gs://cpg-bioheart-main/saige-qtl/bioheart_n990_and_tob_n1055/240920/input_files/conditional_files
+
 """
 
 import click
