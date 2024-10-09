@@ -261,7 +261,7 @@ def main(
 
             if not cv_vcf_existence_outcome:
                 # common variants only
-                cv_mt = mt.filter_rows(mt.variant_qc.AF[1] >= cv_maf_threshold)
+                cv_mt = mt.filter_rows(hl.min(mt.variant_qc.AF) >= cv_maf_threshold)
 
                 # remove fields not in the VCF
                 cv_mt = cv_mt.drop('gvcf_info')
@@ -271,7 +271,7 @@ def main(
 
             if not rv_vcf_existence_outcome:
                 # common variants only
-                rv_mt = mt.filter_rows(mt.variant_qc.AF[1] < rv_maf_threshold)
+                rv_mt = mt.filter_rows(hl.min(mt.variant_qc.AF) < rv_maf_threshold)
 
                 # remove fields not in the VCF
                 rv_mt = rv_mt.drop('gvcf_info')
@@ -320,7 +320,7 @@ def main(
         mt = hl.variant_qc(mt)
 
         # minor allele count (MAC) > {vre_mac_threshold}
-        vre_mt = mt.filter_rows(mt.variant_qc.AC[1] > vre_mac_threshold)
+        vre_mt = mt.filter_rows(hl.min(mt.variant_qc.AC) > vre_mac_threshold)
 
         if (n_ac_vars := vre_mt.count_rows()) == 0:
             raise ValueError('No variants left, exiting!')
@@ -328,7 +328,7 @@ def main(
 
         # since pruning is very costly, subset first a bit
         random.seed(0)
-        if n_ac_vars > {vre_n_markers * 100}:
+        if n_ac_vars > (vre_n_markers * 100):
             vre_mt = vre_mt.sample_rows(p=0.01)
             logging.info('subset completed')
 
