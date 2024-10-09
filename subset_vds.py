@@ -247,7 +247,7 @@ def subset_by_variants(
     variant_table: Table, keep_variants: bool, input_vds: VariantDataset
 ) -> VariantDataset:
     subset_vds: VariantDataset = filter_variants(
-        input_vds, variant_table, keep_variants
+        input_vds, variant_table, keep=keep_variants
     )
     if subset_vds.variant_data.count_rows() == 0:
         raise ValueError("No rows remain after filtering on the provided variants.")
