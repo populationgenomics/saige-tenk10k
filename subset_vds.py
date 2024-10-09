@@ -303,6 +303,7 @@ def write_outputs(
 def main(
     vds_path: str,
     n_samples: int | None,
+    sample_list: list[str] | None,
     intervals: str | None,
     variant_table: str | None,
     keep_variants: bool,
@@ -335,8 +336,8 @@ def main(
         else:
             subset_vds = subset_by_variants(input_variants, keep_variants, input_vds)
 
-    if n_samples:
-        subset_sample_list = get_subset_sample_list(input_vds, n_samples)
+    if n_samples or sample_list:
+        subset_sample_list = sample_list or get_subset_sample_list(input_vds, n_samples)
         if subset_vds:
             subset_vds = subset_by_samples(subset_vds, subset_sample_list)
         else:
@@ -353,6 +354,13 @@ if __name__ == "__main__":
         help="Number of samples to subset the VDS down to.",
         required=False,
         type=int,
+    )
+    parser.add_argument(
+        "--sample-list",
+        help="A list of samples to subset the VDS down to, as space separated strings.",
+        required=False,
+        nargs="+",
+        type=str,
     )
     parser.add_argument(
         "--intervals",
@@ -385,13 +393,21 @@ if __name__ == "__main__":
         type=int,
     )
     args: Namespace = parser.parse_args()
-    if not args.n_samples and not args.intervals:
+    if (
+        not args.n_samples
+        and not args.sample_list
+        and not args.intervals
+        and not args.variant_table
+    ):
         raise AttributeError(
-            "If neither a number of samples or intervals are provided, this script will not do any subsetting!"
+            "If no filtering fields (n_samples, sample_list, intervals and/or variant_table) are provided, this script will not do any subsetting!"
         )
+    if args.n_samples and args.sample_list:
+        raise AttributeError("You can only provide one of n_samples or sample_list.")
     main(
         vds_path=args.vds_path,
         n_samples=args.n_samples,
+        sample_list=args.sample_list,
         intervals=args.intervals,
         variant_table=args.variant_table,
         keep_variants=args.keep_variants,
