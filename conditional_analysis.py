@@ -3,6 +3,14 @@
 
 """
 This script will run a conditional analysis
+
+* Assumes a first complete run of SAIGE-QTL (common variants) has already run
+    i.e., step1 (fit null), step2 (run association) and step3 (summarise)
+* Runs step2 and step3 again, with the `condition` flag on
+* requires
+    * path to step1 results,
+    * all step2 inputs as in the main pipeline (RV / CV)
+    * one more file specifying gene-specific conditional strings
 """
 
 import click
