@@ -12,6 +12,10 @@ This script will run a conditional analysis
     * all step2 inputs as in the main pipeline (RV / CV)
     * one more file specifying gene-specific conditional strings
 
+For multiple rounds of conditional analysis, this scripts will need to be re-run,
+with an intermediate step that generates new conditional strings
+This intermediate step is still TBD
+
 To run (common variant test):
 
 analysis-runner \
