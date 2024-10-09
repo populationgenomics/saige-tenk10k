@@ -176,6 +176,24 @@ def convert_intervals_to_locus(interval_list: list[str]) -> list[IntervalExpress
     return locus_list
 
 
+def parse_samples_list(samples: str) -> list[str]:
+    """read samples from either the command line or a file
+
+    Args:
+        samples (str): a string of either comma separated samples, or a path to a file of samples (one per line) in gcs
+
+    Returns:
+        list[str]: a list of strings representing samples
+    """
+    sample_list: list[str] = []
+    if to_path(samples).exists():
+        with open(to_path(samples), "rt") as samples_file:
+            sample_list = samples_file.readlines()
+    else:
+        sample_list = samples.split(",")
+    return sample_list
+
+
 def get_subset_sample_list(input_vds: VariantDataset, n_samples: int) -> list[str]:
     """generates a list of samples from the input vds to use for subsetting
 
@@ -306,7 +324,7 @@ def write_outputs(
 def main(
     vds_path: str,
     n_samples: int | None,
-    sample_list: list[str] | None,
+    sample_list: str | None,
     intervals: str | None,
     variant_table: str | None,
     keep_variants: bool,
@@ -341,7 +359,10 @@ def main(
             subset_vds = subset_by_variants(input_variants, keep_variants, input_vds)
 
     if n_samples or sample_list:
-        subset_sample_list = sample_list or get_subset_sample_list(input_vds, n_samples)
+        if sample_list:
+            subset_sample_list = parse_samples_list(sample_list)
+        else:
+            subset_sample_list = get_subset_sample_list(input_vds, n_samples)
         if subset_vds:
             subset_vds = subset_by_samples(subset_vds, subset_sample_list)
         else:
@@ -361,10 +382,8 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--sample-list",
-        help="A list of samples to subset the VDS down to, as space separated strings.",
+        help="Samples(s) to keep in the VDS provided either on the command line as a comma-separated list of IDs, or in a text file with one per line.",
         required=False,
-        nargs="+",
-        type=str,
     )
     parser.add_argument(
         "--intervals",
