@@ -16,12 +16,12 @@ Additionally, two helper scripts are also part of this pipeline:
 
 ## Genotypes preprocessing
 
-Script: `get_genotype_vcf.py`
+Script: [`get_genotype_vcf.py`](get_genotype_vcf.py)
 
 Variant selection for VCF files:
 
 * variants that are: i) QC-passing, ii) not ref-ref variants, and iii) not indels or multi-allelic SNPs (when run with `--exclude-indels` and `--exclude-multiallelic`).
-* separately, variants that are common or rare at a set threshold (MAF > T, MAF <= T, respectively) in our population (by default, T=0.01)
+* separately, variants that are common or rare at a set threshold (MAF >= T, MAF < T, respectively) in our population (by default, T=0.01)
 * two per chromosome (one for common, one for rare variants)
 
 Variant selection for PLINK files for variance ratio estimation (VRE):
@@ -39,27 +39,27 @@ Outputs:
 
 * VCF files containing all retained common variants (one per chromosome) + corresponding index files (`.csi`)
 * VCF files containing all retained rare variants (one per chromosome) + corresponding index files (`.csi`)
-* plink object for only 2,000 variants (minor allele count > 20), after LD pruning - this is for the estimation of the variance ratio (VRE plink files)
+* plink objects (`.bed`, `.bim`, `.fam`) for only 2,000 variants (minor allele count > 20), after LD pruning - this is for the estimation of the variance ratio (VRE plink files)
 
 ### Notes (get_genotype_vcf.py)
 
-SAIGE-QTL allows numeric chromosomes only, so both the .bim and the VCF files are modified in this script to remove the 'chr' notation (so that e.g., 'chr1' becomes '1').
+SAIGE-QTL allows numeric chromosomes only, so both the `.bim` and the VCF files are modified in this script to remove the 'chr' notation (so that e.g., 'chr1' becomes '1').
 
 For the VRE estimation, we need to select 2,000 (this number can be customised) variables at random, except we need them to be common enough (MAC>20, also customisable), and we want them to be somewhat independent, to be more representative of the entire cohort.
-We also subset to only variants on autosome chromosomes.
+We also subset to only variants on autosome (1-22) chromosomes.
 To achieve this, we perform LD pruning of the variables so that variants in strong LD get pruned to one in each LD block.
 Because the LD pruning operation is very costly, we downsample the variants first (to 1% by default).
 The LD pruning parameters can be user-adjusted, with default values as described in the [methods's documentation](https://hail.is/docs/0.2/guides/genetics.html#pruning-variants-in-linkage-disequilibrium).
 
 ## Get sample covariates
 
-Script: `get_sample_covariates.py`
+Script: [`get_sample_covariates.py`](get_sample_covariates.py)
 
 Inputs:
 
 * sex info for the cohort(s) of interest
 * genotype principal components for the cohort(s) of interest
-* (information from metamist, mainly age atm)
+* (information from metamist, at the moment just age)
 
 Outputs:
 
@@ -72,7 +72,7 @@ Additionally, add a user-specified (default: 10) number of permuted IDs, where t
 
 ## Gene expression preprocessing
 
-Script: `get_anndata.py`
+Script: [`get_anndata.py`](get_anndata.py)
 
 Inputs:
 
@@ -94,7 +94,7 @@ A note that the `filter_lowly_expressed_genes` method will remove lowly-expresse
 
 ## Make group file
 
-Script: `make_group_file.py`
+Script: [`make_group_file.py`](make_group_file.py)
 
 Inputs:
 
@@ -111,10 +111,9 @@ Option to include no weights or to compute weights that reflect the distance of 
 Using one of the flags below it is possible to additionally test using equal weights.
 We use no annotations for now (set to `null`).
 
+## SAIGE-QTL common variant association pipeline
 
-## SAIGE-QTL association pipeline
-
-Script: `saige_assoc.py`
+Script: [`saige_assoc.py`](saige_assoc.py)
 
 Run this for single-variant tests (typically for common variants).
 
@@ -130,9 +129,9 @@ Outputs:
 * single-variant raw p-values (one per gene, cell type)
 * association summary statistics (ACAT gene-corrected p-values summarised, one per cell type)
 
-## SAIGE-QTL RV association pipeline
+## SAIGE-QTL rare variant association pipeline
 
-Script: `saige_assoc_set_test.py`
+Script: [`saige_assoc_set_test.py`](saige_assoc_set_test.py)
 
 Run this for set-based tests (typically for rare variants).
 
@@ -154,7 +153,7 @@ Outputs:
 Clarifying the reasoning behind the parameters / flags used to run SAIGE-QTL.
 Most of these are (or will be) included in the official [documentation](https://weizhou0.github.io/SAIGE-QTL-doc/).
 
-Note: some of these are provided as arguments in the scripts (`saige_assoc.py`, `saige_assoc_set_test.py`), but most are provided as a separate config file (`saige_assoc_test.toml`). TO DO: update styling of flags to reflect this below.
+Note: some of these are provided as arguments in the scripts (`saige_assoc.py`, `saige_assoc_set_test.py`), but most are provided as a separate config file (`saige_assoc_test.toml`).
 
 Fit null model ([step 1](https://weizhou0.github.io/SAIGE-QTL-doc/docs/step1.html)).
 
@@ -216,7 +215,7 @@ In script (`saige_assoc_set_test.py`):
 * `set_output_path`: path to output file (if kept the same as single-variant test, step 1 only needs to be run once)
 * `chrom`: chromosome to test.
 * `group_file`: path to file specifying variants to test (generated in the `make_group_file.py` script).
-* `gmmat_model_path`: path to estimated null model (.rda) generated in step 1.
+* `gmmat_model_path`: path to estimated null model (`.rda`) generated in step 1.
 * `variance_ratio_path`: path to variance ratio txt file generated in step 1.
 
 In config (under `[saige.set_test]` in `saige_assoc_test.toml`):
@@ -247,7 +246,7 @@ Briefly, if one wanted to run both common and rare variant pipelines, the order 
 TenK10K is matched single-cell RNA-seq (scRNA-seq) and whole-genome sequencing (WGS) data from up to 10,000 individuals:
 
 * Phase 0: OneK1K data only (~1,000 individuals) - already generated (both WGS and scRNA-seq, though with an older technology)
-* Phase 1: OneK1K + BioHEART (~2,000 individuals) - WGS done, scRNA-seq in progress (almost done)
+* Phase 1: OneK1K + BioHEART (~2,000 individuals) - freeze 1 generated (~1,700 individuals), freeze 2 ongoing
 * Phase 2/final: aim is ~ 10,000 individuals from the (extended) TOB/OneK1K, BioHEART, ADAPT, LBIO and AIM cohorts (nothing generated besides current stage of Phase 1)
 
 ## Additional resources
@@ -256,3 +255,22 @@ TenK10K is matched single-cell RNA-seq (scRNA-seq) and whole-genome sequencing (
 * [OneK1K paper](https://www.science.org/doi/10.1126/science.abf3041)
 * [SAIGE-QTL pipeline flowchart GSlides](https://docs.google.com/presentation/d/1OhNiA6DaP9ZGlAbh8uZuZWzvrrr_QwvJwJ_lVPBZoic/edit#slide=id.g25daf727307_0_102)
 * [SAIGE-QTL pipeline notes GDoc](https://docs.google.com/document/d/1t11VafeU1THA4X58keHd5oPVglTYiY3DKC7P05GHCzw/edit)
+
+## Abbreviations
+
+* ACAT: Aggregated Cauchy Association Test (PMID: 30849328)
+* AIM: Australia IBD Microbiome study
+* CPG: centre for population genomics, the centre at which this work is being done
+* GCP: Google Cloud Platform
+* HPC: high performance computing
+* LBIO: liquid biopsies, a cancer cohort
+* LD: linkage disequilibrium
+* MAC: minor allele count
+* MAF: minor allele frequency
+* scRNA-seq: single-cell RNA sequencing
+* SNP: single-nucleotide polymorphism
+* TOB: Tasmanian Ophtalmic Biobank
+* TSV: tab-separated file
+* VCF: Variant Call Format
+* VRE: variant ration estimate
+* WGS: whole-genome sequencing
