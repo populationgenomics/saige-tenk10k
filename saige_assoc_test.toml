@@ -47,7 +47,7 @@ vcfField = 'GT'
 maxMAF_in_groupTest = 0.1
 minMAF_in_groupTest_Exclude = 0
 annotation_in_groupTest = 'null,test'
-MACCutoff_to_CollapseUltraRare = 10
+MACCutoff_to_CollapseUltraRare = 1
 is_single_in_groupTest = 'TRUE'
 is_equal_weight_in_groupTest = 'TRUE'
 # leave one chromosome out
