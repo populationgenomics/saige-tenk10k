@@ -56,7 +56,9 @@ from hail.vds import (
 from hail.vds.variant_dataset import VariantDataset
 
 
-def check_output_already_exists(output_format: list[str], infile_name: str) -> None:
+def check_output_already_exists(
+    output_format: list[str], infile_name: str, suffix: str
+) -> None:
     """Check for existence of output files
 
     Args:
@@ -72,10 +74,10 @@ def check_output_already_exists(output_format: list[str], infile_name: str) -> N
         if format == "vds":
             if (
                 vds_path := to_path(
-                    output_path(f"{infile_name}_subset", category="default")
+                    output_path(f"{infile_name}_{suffix}", category="default")
                 )
             ).exists():
-                output_errors += f"The output VDS {vds_path}_subset.vds already exists. Refusing to overwrite it.\n"
+                output_errors += f"The output VDS {vds_path}_{suffix}.vds already exists. Refusing to overwrite it.\n"
                 files_exist_errors = True
             if (
                 samples_file := to_path(
@@ -90,21 +92,21 @@ def check_output_already_exists(output_format: list[str], infile_name: str) -> N
             format == "bed"
             and (
                 plink_files := to_path(
-                    output_path(f"{infile_name}_subset.bed", category="default")
+                    output_path(f"{infile_name}_{suffix}.bed", category="default")
                 )
             ).exists()
         ):
-            output_errors += f"The output {plink_files}_subset.bed fileset exists. Refusing to overwrite it.\n"
+            output_errors += f"The output {plink_files}_{suffix}.bed fileset exists. Refusing to overwrite it.\n"
             files_exist_errors = True
         if (
             format == "vcf"
             and (
                 vcf_files := to_path(
-                    output_path(f"{infile_name}_subset.vcf.bgz", category="default")
+                    output_path(f"{infile_name}_{suffix}.vcf.bgz", category="default")
                 )
             ).exists()
         ):
-            output_errors += f"The output file {vcf_files}_subset.vcf.bgz exists. Refusing to overwrite it.\n"
+            output_errors += f"The output file {vcf_files}_{suffix}.vcf.bgz exists. Refusing to overwrite it.\n"
             files_exist_errors = True
     if files_exist_errors:
         raise FileExistsError(f"{output_errors}")
@@ -257,6 +259,7 @@ def write_outputs(
     subset_vds: VariantDataset | None,
     subset_sample_list: list[str] | None,
     infile_name: str,
+    suffix: str,
 ) -> None:
     """Writes the vds out in the specified formats
 
@@ -271,7 +274,7 @@ def write_outputs(
         FileExistsError: throws an error if any of the proposed output paths exist, as it will not overwrite them
     """
     if "vds" in output_formats:
-        subset_vds.write(output_path(f"{infile_name}_subset.vds", category="default"))
+        subset_vds.write(output_path(f"{infile_name}_{suffix}.vds", category="default"))
 
     subset_dense_mt: MatrixTable | Table | Any = to_dense_mt(subset_vds)
     subset_dense_mt = split_multi_hts(subset_dense_mt)
@@ -280,7 +283,7 @@ def write_outputs(
         if format == "bed":
             export_plink(
                 subset_dense_mt,
-                output_path(f"{infile_name}_subset", category="default"),
+                output_path(f"{infile_name}_{suffix}", category="default"),
                 call=subset_dense_mt.LGT,
                 ind_id=subset_dense_mt.s,
             )
@@ -289,7 +292,7 @@ def write_outputs(
                 subset_dense_mt = subset_dense_mt.drop("gvcf_info")
             export_vcf(
                 subset_dense_mt,
-                output_path(f"{infile_name}_subset.vcf.bgz", category="default"),
+                output_path(f"{infile_name}_{suffix}.vcf.bgz", category="default"),
                 tabix=True,
             )
 
@@ -308,6 +311,7 @@ def main(
     variant_table: str | None,
     keep_variants: bool,
     output_formats: list[str],
+    suffix: str,
     random_seed: int,
 ) -> None:
     seed(random_seed)
@@ -319,7 +323,7 @@ def main(
     parsed_intervals: list[str]
     parsed_locus: list[IntervalExpression]
 
-    check_output_already_exists(output_formats, infile_name)
+    check_output_already_exists(output_formats, infile_name, suffix)
 
     # Always subset by interval first, if possible
     # https://discuss.hail.is/t/filtering-samples-from-vds-in-google-cloud/3718/6
@@ -343,7 +347,7 @@ def main(
         else:
             subset_vds = subset_by_samples(input_vds, subset_sample_list)
 
-    write_outputs(output_formats, subset_vds, subset_sample_list, infile_name)
+    write_outputs(output_formats, subset_vds, subset_sample_list, infile_name, suffix)
 
 
 if __name__ == "__main__":
@@ -386,6 +390,12 @@ if __name__ == "__main__":
         choices=["vcf", "bed", "vds"],
     )
     parser.add_argument(
+        "--suffix",
+        help="A suffix to be appended to the output files to distinguish them. Default is 'subset'",
+        required=False,
+        default="subset",
+    )
+    parser.add_argument(
         "--random-seed",
         help="Seed for the random number generator when subsetting by samples",
         required=False,
@@ -412,5 +422,6 @@ if __name__ == "__main__":
         variant_table=args.variant_table,
         keep_variants=args.keep_variants,
         output_formats=args.output_formats,
+        suffix=args.suffix,
         random_seed=args.random_seed,
     )
