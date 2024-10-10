@@ -49,7 +49,7 @@ analysis-runner \
 """
 
 import click
-import json
+import logging
 import pandas as pd
 
 from google.cloud import storage
@@ -60,7 +60,7 @@ from cpg_utils.config import get_config, image_path, output_path
 from cpg_utils.hail_batch import get_batch
 
 # Run single variant or set-based association (step 2)
-# with condition
+# with the `condition` flag
 def build_run_conditional_analysis_command(
     job: hb.batch.job.Job,
     test_key: str,
@@ -218,84 +218,38 @@ def create_second_job(vcf_path: str) -> hb.batch.job.Job:
     second_job.image(image_path('saige-qtl'))
     return second_job
 
-def conditional_analysis_until_significant_round(
-        gene_dict,
-        significance_fdr_threshold=0.05,
-    ):
-    """
-    Run conditional analysis for a gene + celltype combo
-    continue to add SNPs to conditional analysis
-    while there is a significant signal
-    """
-    # run step2
-    # run step3
-    # run fdr (how?)
-    # check fdr<threshold
-    # if any snp is significant, take top snp add to condition
-    # repeat
 
 @click.command()
 @click.option('--celltypes')
 @click.option('--chromosomes')
-@click.option('--round1-results-path', required=True)
+@click.option('--conditional-files-path', required=True)
 @click.option('--fit-null-files-path', required=True)
 @click.option('--genotype-files-prefix', required=True)
 @click.option('--cis-window-or-group-files-path', required=True)
-@click.option('--qv-significance-threshold', default=0.05)
 @click.option('--common-or-rare', default='common', help='type of analysis to perform')
 @click.option('--cis-window-size', default=100000)
-@click.option('--group-file-specs', default='_dTSS')
+@click.option('--group-file-specs', default='')
 @click.command()
 def conditional_analysis(
     celltypes: str,
     chromosomes: str,
-    # results from running saige-qtl main pipeline
-    round1_results_path: str,
+    # conditional string per gene
+    conditional_files_path: str,
     # outputs from step 1 of saige
     fit_null_files_path: str,
     # cis window for common, group for rare
     cis_window_or_group_files_path: str,
     # outputs from get_genotype_vcf.py
     genotype_files_prefix: str,
-    # significance threshold
-    qv_significance_threshold: float,
+    # whether to run a single-variant (for 'common' variants)
+    # or set-based (for 'rare' variants) test
     common_or_rare: str,
+    # both cis window and group files are define by the cis window used
     cis_window_size: int,
     group_file_specs: str,
 ):
     batch = get_batch('SAIGE-QTL conditional pipeline')
 
-    # for every cell type, have a dictionary that contains all genes with a significant eQTL
-    # and info on the top SNP
-    # this will get updated by progressive rounds of conditional analysis
-    # so every gene will get (or not) one more SNP added
-    # should this be a table instead with columns round 1, round 2 etc?
-    for celltype in celltypes.split(','):
-        # open the summary results from round 1 of running SAIGE-QTL (common variant analysis)
-        celltype_results_path = f'{round1_results_path}/summary_stats/{celltype}_common_top_snp_cis_raw_pvalues.tsv'
-        results_df = pd.read_csv(celltype_results_path)
-        # extract significant results
-        results_df_sign = results_df[results_df['qv'] < qv_significance_threshold]
-        genes = results_df_sign[['gene']]
-        top_snps = results_df_sign[['top_snp']]
-        # as more rounds of conditional analysis are performed, more snps will be added
-        significant_snps_gene_dict: dict = {genes: top_snps}
-        # temporarily write this out?
-        significant_genes_dict_path = output_path(
-            f'conditional_analysis/{celltype}/round1_significant_genes.json'
-        )
-        with to_path(significant_genes_dict_path).open('wt') as out_handle:
-            json.dump(significant_genes_dict_path, fp=out_handle, indent=4)
-
-    # next, for every chromosome (because the VCF are saved chromosome-wise) and cell type
-    # get the genes with at least a significant SNP from the dicts above
-    # look up the intermediate files from step 1 of SAIGE-QTL (fit null)
-    # run step 2 with the top SNP as condition
-
-    # Q1: how do I do this iteratively for consequent conditional rounds?
-    # Q2: how do I separate from the ability to just run a conditional analysis in a more ad hoc way?
-    # for example, a) conditioning on common eQTLs when running rare variant test
-    # b) conditioning on top eQTL from cell type A when running cell type B, to assess cell type specificity
     for chromosome in chromosomes:
 
         # genotype vcf files are one per chromosome
@@ -315,8 +269,35 @@ def conditional_analysis(
         # jobs_in_vm = 0
 
         for celltype in celltypes:
-            # extract significant genes from json
+            # extract gene list based on genes for which we have conditional files
+            conditional_files_path_ct_chrom = (
+                f'{conditional_files_path}/{celltype}/{chromosome}'
+            )
+            logging.info(f'globbing {conditional_files_path_ct_chrom}')
+
+            # do a glob, then pull out all file names as Strings
+            files = [
+                file.name
+                for file in to_path(conditional_files_path_ct_chrom).glob(
+                    f'*_{celltype}_condition.tsv'
+                )
+            ]
+            logging.info(f'I found these files: {", ".join(files)}')
+
+            genes = [f.replace(f'_{celltype}_condition.tsv', '') for f in files]
+            logging.info(f'I found these genes: {", ".join(genes)}')
+
+            # extract relevant gene-related files
             for gene in genes:
+                conditional_path = (
+                    f'{conditional_files_path_ct_chrom}/{gene}_{celltype}_condition.tsv'
+                )
+                conditional_file = pd.read_csv(conditional_path, sep='\t')
+
+                if common_or_rare == 'common':
+                    cis_window_path = (
+                        f'{cis_window_or_group_files_path_chrom}/{gene}_{cis_window_size}bp.tsv'
+                    )
                 # define gene-specific key
                 test_key = f'{celltype}_{chromosome}_{celltype}_{gene}_conditional_round{conditional_round_number}'
                 # define output
@@ -342,6 +323,8 @@ def conditional_analysis(
                     cis_window_or_group_file=cis_window_or_group_file,
                     gmmat_model_path=f'{null_path}.rda',
                     variance_ratio_path=f'{null_path}.varianceRatio.txt',
+                    common_or_rare=common_or_rare,
+                    conditional_string=conditional_string,
                 )
 
 
