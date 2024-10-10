@@ -357,8 +357,11 @@ def conditional_analysis(
                     celltype_jobs.setdefault(celltype, []).append(job3)
 
             if jobs_in_vm >= jobs_per_vm:
-                single_var_test_job = create_second_job(vcf_file_path)
+                step2_job = create_second_job(vcf_file_path)
                 jobs_in_vm = 0
+
+    # set jobs running
+    batch.run(wait=False)
 
 
 if __name__ == '__main__':

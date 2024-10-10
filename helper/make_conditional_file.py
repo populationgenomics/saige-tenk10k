@@ -19,7 +19,6 @@ analysis-runner \
 """
 
 import click
-import hail as hl
 
 import numpy as np
 import pandas as pd
