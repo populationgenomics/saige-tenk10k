@@ -124,7 +124,7 @@ def parse_intervals(intervals: str) -> list[str]:
     interval_list: list[str] = []
     if to_path(intervals).exists():
         with open(to_path(intervals), "rt") as interval_file:
-            interval_list = interval_file.readlines()
+            interval_list = interval_file.read().splitlines()
     else:
         interval_list = intervals.split(",")
     return interval_list
@@ -188,7 +188,7 @@ def parse_samples_list(samples: str) -> list[str]:
     sample_list: list[str] = []
     if to_path(samples).exists():
         with open(to_path(samples), "rt") as samples_file:
-            sample_list = samples_file.readlines()
+            sample_list = samples_file.read().splitlines()
     else:
         sample_list = samples.split(",")
     return sample_list
