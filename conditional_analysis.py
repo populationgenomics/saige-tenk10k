@@ -46,7 +46,7 @@ analysis-runner \
        --group-files-path=gs://cpg-bioheart-main/saige-qtl/bioheart_n990_and_tob_n1055/240920/input_files/group_files \
        --genotype-files-prefix=gs://cpg-bioheart-main/saige-qtl/bioheart_n990_and_tob_n1055/240920/input_files/genotypes/vds-tenk10k1-0 \
        --conditional-files-prefix=gs://cpg-bioheart-main/saige-qtl/bioheart_n990_and_tob_n1055/240920/input_files/conditional_files \
-       --common-or-rare='rare'
+       --common-or-rare='rare' --group-file-specs _dTSS_weights
 
 """
 
@@ -227,7 +227,8 @@ def create_second_job(vcf_path: str) -> hb.batch.job.Job:
 @click.option('--genotype-files-prefix', required=True)
 @click.option('--cis-window-or-group-files-path', required=True)
 @click.option('--common-or-rare', default='common', help='type of analysis to perform')
-@click.option('--group-file-specs', default='')
+@click.option('--group-file-specs', default='', help=' e.g. _dTSS_weights')
+@click.option('--jobs-per-vm', type=int, default=25)
 @click.command()
 def conditional_analysis(
     # file path containing what snps to condition on for each gene
@@ -241,7 +242,10 @@ def conditional_analysis(
     # whether to run a single-variant (for 'common' variants)
     # or set-based (for 'rare' variants) test
     common_or_rare: str,
+    # if running rare test, weight types
     group_file_specs: str,
+    # jobs to run per virtual machine
+    jobs_per_vm: int,
 ):
     batch = get_batch('SAIGE-QTL conditional pipeline')
     jobs: list[hb.batch.job.Job] = []
@@ -269,6 +273,8 @@ def conditional_analysis(
         vcf_group = get_batch().read_input_group(
             vcf=vcf_file_path, index=f'{vcf_file_path}.csi'
         )
+        step2_job = create_second_job(vcf_file_path)
+        jobs_in_vm = 0
 
         # cis window and group files are split by gene but organised by chromosome also
         cis_window_or_group_files_path_chrom = (
@@ -346,7 +352,7 @@ def conditional_analysis(
                             f'{celltype}/{chromosome}/{celltype}_{gene}_cis_gene_pval'
                         ),
                     )
-                    job3.depends_on(single_var_test_job)
+                    job3.depends_on(step2_job)
                     # add this job to the list of jobs for this cell type
                     celltype_jobs.setdefault(celltype, []).append(job3)
 
