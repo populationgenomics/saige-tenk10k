@@ -326,7 +326,7 @@ def conditional_analysis(
                 elif common_or_rare == 'rare':
                     cis_window_or_group_file = f'{cis_window_or_group_files_path_chrom}/{gene}_{cis_window_size}bp{group_file_specs}.tsv'
 
-                build_run_conditional_analysis_command(
+                step2_output = build_run_conditional_analysis_command(
                     job=step2_job,
                     test_key=test_key,
                     test_output_path=test_output_path,
