@@ -10,7 +10,7 @@ analysis-runner \
     --description "make conditional files" \
     --dataset "bioheart" \
     --access-level "test" \
-    --image 'australia-southeast1-docker.pkg.dev/cpg-common/images/multipy:0.16' \
+    --image 'australia-southeast1-docker.pkg.dev/cpg-common/images/multipy:0.16_rebuild' \
     --output-dir "saige-qtl/" \
     python3 helper/make_conditional_file.py \
         --celltypes='B_naive' \
@@ -25,71 +25,6 @@ import pandas as pd
 from cpg_utils.hail_batch import init_batch
 
 from multipy.fdr import qvalue
-
-# if image doesn't work, copy function from github
-# https://github.com/puolival/multipy/blob/master/multipy/fdr.py
-from scipy.interpolate import UnivariateSpline
-
-
-# def qvalue(pvals, threshold=0.05, verbose=True):
-#     """Function for estimating q-values from p-values using the Storey-
-#     Tibshirani q-value method (2003).
-
-#     Input arguments:
-#     ================
-#     pvals       - P-values corresponding to a family of hypotheses.
-#     threshold   - Threshold for deciding which q-values are significant.
-
-#     Output arguments:
-#     =================
-#     significant - An array of flags indicating which p-values are significant.
-#     qvals       - Q-values corresponding to the p-values.
-#     """
-
-#     """Count the p-values. Find indices for sorting the p-values into
-#     ascending order and for reversing the order back to original."""
-#     m, pvals = len(pvals), np.asarray(pvals)
-#     ind = np.argsort(pvals)
-#     rev_ind = np.argsort(ind)
-#     pvals = pvals[ind]
-
-#     # Estimate proportion of features that are truly null.
-#     kappa = np.arange(0, 0.96, 0.01)
-#     pik = [sum(pvals > k) / (m * (1 - k)) for k in kappa]
-#     cs = UnivariateSpline(kappa, pik, k=3, s=None, ext=0)
-#     pi0 = float(cs(1.0))
-#     if verbose:
-#         print('The estimated proportion of truly null features is %.3f' % pi0)
-
-#     """The smoothing step can sometimes converge outside the interval [0, 1].
-#     This was noted in the published literature at least by Reiss and
-#     colleagues [4]. There are at least two approaches one could use to
-#     attempt to fix the issue:
-#     (1) Set the estimate to 1 if it is outside the interval, which is the
-#         assumption in the classic FDR method.
-#     (2) Assume that if pi0 > 1, it was overestimated, and if pi0 < 0, it
-#         was underestimated. Set to 0 or 1 depending on which case occurs.
-
-#     Here we have chosen the first option, since it is the more conservative
-#     one of the two.
-#     """
-#     if pi0 < 0 or pi0 > 1:
-#         pi0 = 1
-#         print('Smoothing estimator did not converge in [0, 1]')
-
-#     # Compute the q-values.
-#     qvals = np.zeros(np.shape(pvals))
-#     qvals[-1] = pi0 * pvals[-1]
-#     for i in np.arange(m - 2, -1, -1):
-#         qvals[i] = min(pi0 * m * pvals[i] / float(i + 1), qvals[i + 1])
-
-#     # Test which p-values are significant.
-#     significant = np.zeros(np.shape(pvals), dtype='bool')
-#     significant[ind] = qvals < threshold
-
-#     """Order the q-values according to the original order of the p-values."""
-#     qvals = qvals[rev_ind]
-#     return significant, qvals
 
 
 @click.command()
