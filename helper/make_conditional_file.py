@@ -12,10 +12,10 @@ analysis-runner \
     --access-level "test" \
     --image 'australia-southeast1-docker.pkg.dev/cpg-common/images/multipy:0.16' \
     --output-dir "saige-qtl/" \
-    python3 plotter/summarise_and_qq_plotter.py \
-        --celltype='B_naive' \
-        --results-path=gs://cpg-bioheart-main-analysis/saige-qtl/bioheart_n990_and_tob_n1055/output_files/sample_perm0/output_files/ \
-        --title='shuffled'
+    python3 helper/make_conditional_file.py \
+        --celltypes='B_naive' \
+        --results-path='gs://cpg-bioheart-test-analysis/saige-qtl/bioheart_n990_and_tob_n1055/241004_n100/output_files' \
+        --conditional-files-output-path='gs://cpg-bioheart-test-analysis/saige-qtl/bioheart_n990_and_tob_n1055/241004_n100/output_files/conditioning_on_top_one_variant_from_cv_test_round1'
 """
 
 import click
@@ -28,13 +28,14 @@ from cpg_utils import to_path
 from cpg_utils.hail_batch import init_batch, output_path
 
 from multipy.fdr import qvalue
+
 # if image doesn't work, copy function from github
 # https://github.com/puolival/multipy/blob/master/multipy/fdr.py
 
 
 @click.command()
 @click.option('--celltypes', required=True, help='separated by comma')
-@click.option('--qtl-results-path', required=True)
+@click.option('--results-path', required=True)
 @click.option('--conditional-files-output-path', required=True)
 @click.option('--add-to-existing-file', default='nope')
 @click.option('--qv-significance-threshold', default=0.05)
@@ -70,20 +71,22 @@ def make_condition_file(
             old_conditional_df = pd.read_csv(add_to_existing_file, sep='\t')
             # subset to genes in current significant_gene_df
             conditional_df = old_conditional_df[
-                old_conditional_df['gene'] in significant_gene_df['gene']
+                old_conditional_df['gene'].isin(significant_gene_df['gene'])
             ]
             # add top marker from current significant_gene_df to the condition in those
             for gene in old_conditional_df['gene']:
-                old_condition = conditional_df[conditional_df['gene'] == gene][
-                    'condition'
+                condition = conditional_df[conditional_df['gene'] == gene][
+                    'variants_to_condition_on'
                 ].split(',')
                 new_top_variant = conditional_df[conditional_df['gene'] == gene][
                     'top_MarkerID'
                 ]
                 # add and reorder by genomic coordinates
-                new_condition = old_condition.append(new_top_variant).sort()
-                conditional_df[conditional_df['gene'] == gene]['condition'] = ','.join(
-                    new_condition
+                condition.append(new_top_variant)
+                conditional_df.update(
+                    pd.Series(
+                        [','.join(sorted(condition))], name='variants_to_condition_on'
+                    )
                 )
         # write conditional_df to file
         conditional_file = (
