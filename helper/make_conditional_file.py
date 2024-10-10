@@ -30,6 +30,8 @@ from cpg_utils.hail_batch import init_batch
 # if image doesn't work, copy function from github
 # https://github.com/puolival/multipy/blob/master/multipy/fdr.py
 from scipy.interpolate import UnivariateSpline
+
+
 def qvalue(pvals, threshold=0.05, verbose=True):
     """Function for estimating q-values from p-values using the Storey-
     Tibshirani q-value method (2003).
@@ -54,10 +56,10 @@ def qvalue(pvals, threshold=0.05, verbose=True):
 
     # Estimate proportion of features that are truly null.
     kappa = np.arange(0, 0.96, 0.01)
-    pik = [sum(pvals > k) / (m*(1-k)) for k in kappa]
+    pik = [sum(pvals > k) / (m * (1 - k)) for k in kappa]
     cs = UnivariateSpline(kappa, pik, k=3, s=None, ext=0)
-    pi0 = float(cs(1.))
-    if (verbose):
+    pi0 = float(cs(1.0))
+    if verbose:
         print('The estimated proportion of truly null features is %.3f' % pi0)
 
     """The smoothing step can sometimes converge outside the interval [0, 1].
@@ -72,23 +74,24 @@ def qvalue(pvals, threshold=0.05, verbose=True):
     Here we have chosen the first option, since it is the more conservative
     one of the two.
     """
-    if (pi0 < 0 or pi0 > 1):
+    if pi0 < 0 or pi0 > 1:
         pi0 = 1
         print('Smoothing estimator did not converge in [0, 1]')
 
     # Compute the q-values.
     qvals = np.zeros(np.shape(pvals))
-    qvals[-1] = pi0*pvals[-1]
-    for i in np.arange(m-2, -1, -1):
-        qvals[i] = min(pi0*m*pvals[i]/float(i+1), qvals[i+1])
+    qvals[-1] = pi0 * pvals[-1]
+    for i in np.arange(m - 2, -1, -1):
+        qvals[i] = min(pi0 * m * pvals[i] / float(i + 1), qvals[i + 1])
 
     # Test which p-values are significant.
     significant = np.zeros(np.shape(pvals), dtype='bool')
-    significant[ind] = qvals<threshold
+    significant[ind] = qvals < threshold
 
     """Order the q-values according to the original order of the p-values."""
     qvals = qvals[rev_ind]
     return significant, qvals
+
 
 @click.command()
 @click.option('--celltypes', required=True, help='separated by comma')
