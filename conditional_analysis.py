@@ -29,7 +29,8 @@ analysis-runner \
     python3 conditional_analysis.py --fit-null-files-path=gs://cpg-bioheart-main/saige-qtl/bioheart_n990_and_tob_n1055/240920/output_files \
        --cis-window-files-path=gs://cpg-bioheart-main/saige-qtl/bioheart_n990_and_tob_n1055/240920/input_files/cis_window_files \
        --genotype-files-prefix=gs://cpg-bioheart-main/saige-qtl/bioheart_n990_and_tob_n1055/240920/input_files/genotypes/vds-tenk10k1-0 \
-       --conditional-files-prefix=gs://cpg-bioheart-main/saige-qtl/bioheart_n990_and_tob_n1055/240920/input_files/conditional_files
+       --conditional-files-prefix=gs://cpg-bioheart-main/saige-qtl/bioheart_n990_and_tob_n1055/240920/input_files/conditional_files \
+       --common-or-rare='common'
 
 To run (rare variant test):
 
@@ -44,7 +45,8 @@ analysis-runner \
     python3 conditional_analysis.py --fit-null-files-path=gs://cpg-bioheart-main/saige-qtl/bioheart_n990_and_tob_n1055/240920/output_files \
        --group-files-path=gs://cpg-bioheart-main/saige-qtl/bioheart_n990_and_tob_n1055/240920/input_files/group_files \
        --genotype-files-prefix=gs://cpg-bioheart-main/saige-qtl/bioheart_n990_and_tob_n1055/240920/input_files/genotypes/vds-tenk10k1-0 \
-       --conditional-files-prefix=gs://cpg-bioheart-main/saige-qtl/bioheart_n990_and_tob_n1055/240920/input_files/conditional_files
+       --conditional-files-prefix=gs://cpg-bioheart-main/saige-qtl/bioheart_n990_and_tob_n1055/240920/input_files/conditional_files \
+       --common-or-rare='rare'
 
 """
 
@@ -233,7 +235,7 @@ def create_second_job(vcf_path: str) -> hb.batch.job.Job:
 def conditional_analysis(
     celltypes: str,
     chromosomes: str,
-    # conditional string per gene
+    # file path containing what snps to condition on for each gene
     conditional_files_path: str,
     # outputs from step 1 of saige
     fit_null_files_path: str,
@@ -270,34 +272,24 @@ def conditional_analysis(
 
         for celltype in celltypes:
             # extract gene list based on genes for which we have conditional files
-            conditional_files_path_ct_chrom = (
-                f'{conditional_files_path}/{celltype}/{chromosome}'
+            conditional_files_path_ct_file = (
+                f'{conditional_files_path}/{celltype}_conditional_analysis.tsv'
             )
-            logging.info(f'globbing {conditional_files_path_ct_chrom}')
+            conditional_df = pd.read_csv(conditional_files_path_ct_file, sep='\t')
 
-            # do a glob, then pull out all file names as Strings
-            files = [
-                file.name
-                for file in to_path(conditional_files_path_ct_chrom).glob(
-                    f'*_{celltype}_condition.tsv'
-                )
-            ]
-            logging.info(f'I found these files: {", ".join(files)}')
-
-            genes = [f.replace(f'_{celltype}_condition.tsv', '') for f in files]
-            logging.info(f'I found these genes: {", ".join(genes)}')
+            genes = conditional_df['gene']
+            logging.info(
+                f'Preparing to run conditional analysis for these genes: {", ".join(genes)}'
+            )
 
             # extract relevant gene-related files
             for gene in genes:
-                conditional_path = (
-                    f'{conditional_files_path_ct_chrom}/{gene}_{celltype}_condition.tsv'
-                )
-                conditional_file = pd.read_csv(conditional_path, sep='\t')
 
+                conditional_string = conditional_df[conditional_df['gene'] == gene][
+                    'variants_to_condition_on'
+                ]
                 if common_or_rare == 'common':
-                    cis_window_path = (
-                        f'{cis_window_or_group_files_path_chrom}/{gene}_{cis_window_size}bp.tsv'
-                    )
+                    cis_window_path = f'{cis_window_or_group_files_path_chrom}/{gene}_{cis_window_size}bp.tsv'
                 # define gene-specific key
                 test_key = f'{celltype}_{chromosome}_{celltype}_{gene}_conditional_round{conditional_round_number}'
                 # define output
