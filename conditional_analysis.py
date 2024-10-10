@@ -222,19 +222,14 @@ def create_second_job(vcf_path: str) -> hb.batch.job.Job:
 
 
 @click.command()
-@click.option('--celltypes')
-@click.option('--chromosomes')
 @click.option('--conditional-files-path', required=True)
 @click.option('--fit-null-files-path', required=True)
 @click.option('--genotype-files-prefix', required=True)
 @click.option('--cis-window-or-group-files-path', required=True)
 @click.option('--common-or-rare', default='common', help='type of analysis to perform')
-@click.option('--cis-window-size', default=100000)
 @click.option('--group-file-specs', default='')
 @click.command()
 def conditional_analysis(
-    celltypes: str,
-    chromosomes: str,
     # file path containing what snps to condition on for each gene
     conditional_files_path: str,
     # outputs from step 1 of saige
@@ -246,8 +241,6 @@ def conditional_analysis(
     # whether to run a single-variant (for 'common' variants)
     # or set-based (for 'rare' variants) test
     common_or_rare: str,
-    # both cis window and group files are define by the cis window used
-    cis_window_size: int,
     group_file_specs: str,
 ):
     batch = get_batch('SAIGE-QTL conditional pipeline')
@@ -265,6 +258,7 @@ def conditional_analysis(
     chromosomes: list[str] = get_config()['saige']['chromosomes']
     celltypes: list[str] = get_config()['saige']['celltypes']
     celltype_jobs: dict[str, list] = dict()
+    cis_window_size = get_config()['saige']['cis_window_size']
 
     for chromosome in chromosomes:
 
