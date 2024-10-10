@@ -23,13 +23,16 @@ analysis-runner \
 """
 
 import logging
-import random
+
+# import random
 
 import click
 import pandas as pd
 
 import hail as hl
-from hail.methods import export_plink, export_vcf
+
+# from hail.methods import export_plink, export_vcf
+from hail.methods import export_vcf
 
 from cpg_utils import to_path
 from cpg_utils.config import get_config, output_path
@@ -144,7 +147,7 @@ def add_remove_chr_and_index_job(vcf_path):
         bcftools index -c {bcftools_job.output['vcf.bgz']}
     """
     )
-    logging.info('CV VCF rename/index jobs scheduled!')
+    logging.info('VCF rename/index jobs scheduled!')
 
     # save both output files
     get_batch().write_output(bcftools_job.output, vcf_path.removesuffix('.vcf.bgz'))
@@ -190,13 +193,13 @@ def remove_chr_from_bim(input_bim: str, output_bim: str, bim_renamed: str):
 )
 @click.option('--cv-maf-threshold', default=0.01)
 @click.option('--rv-maf-threshold', default=0.01)
-@click.option('--vre-mac-threshold', default=20)
-@click.option('--vre-n-markers', default=2000)
+# @click.option('--vre-mac-threshold', default=20)
+# @click.option('--vre-n-markers', default=2000)
 @click.option('--exclude-multiallelic', is_flag=False)
 @click.option('--exclude-indels', is_flag=False)
-@click.option('--plink-job-storage', default='1G')
-@click.option('--ld-prune-r2', default=0.2)
-@click.option('--ld-prune-bp-window-size', default=500000)
+# @click.option('--plink-job-storage', default='1G')
+# @click.option('--ld-prune-r2', default=0.2)
+# @click.option('--ld-prune-bp-window-size', default=500000)
 @click.command()
 def main(
     vds_path: str,
@@ -204,13 +207,13 @@ def main(
     relateds_to_drop_path: str,
     cv_maf_threshold: float,
     rv_maf_threshold: float,
-    vre_mac_threshold: int,
-    vre_n_markers: int,
+    # vre_mac_threshold: int,
+    # vre_n_markers: int,
     exclude_multiallelic: bool,
     exclude_indels: bool,
-    plink_job_storage: str,
-    ld_prune_r2: float,
-    ld_prune_bp_window_size: int,
+    # plink_job_storage: str,
+    # ld_prune_r2: float,
+    # ld_prune_bp_window_size: int,
 ):
     """
     Write genotypes as VCF
@@ -291,88 +294,88 @@ def main(
         if not rv_index_file_existence_outcome:
             add_remove_chr_and_index_job(rv_vcf_path)
 
-    # subset variants for variance ratio estimation
-    vre_plink_path = output_path(f'vds-{vds_name}/vre_plink_2000_variants')
-    vre_bim_path = f'{vre_plink_path}.bim'
-    plink_existence_outcome = can_reuse(vre_bim_path)
-    logging.info(f'Does {vre_bim_path} exist? {plink_existence_outcome}')
-    if not plink_existence_outcome:
-        # keep autosome chromosomes only
-        vds = hl.vds.filter_chromosomes(vds, keep_autosomes=True)
-        # split multiallelic loci pre densifying to mt
-        vds = hl.vds.split_multi(vds, filter_changed_loci=True)
-        # densify to mt
-        mt = hl.vds.to_dense_mt(vds)
+    # # subset variants for variance ratio estimation
+    # vre_plink_path = output_path(f'vds-{vds_name}/vre_plink_2000_variants')
+    # vre_bim_path = f'{vre_plink_path}.bim'
+    # plink_existence_outcome = can_reuse(vre_bim_path)
+    # logging.info(f'Does {vre_bim_path} exist? {plink_existence_outcome}')
+    # if not plink_existence_outcome:
+    #     # keep autosome chromosomes only
+    #     vds = hl.vds.filter_chromosomes(vds, keep_autosomes=True)
+    #     # split multiallelic loci pre densifying to mt
+    #     vds = hl.vds.split_multi(vds, filter_changed_loci=True)
+    #     # densify to mt
+    #     mt = hl.vds.to_dense_mt(vds)
 
-        # filter out related samples from vre too
-        # this will get dropped as the vds file will already be clean
-        related_ht = hl.read_table(relateds_to_drop_path)
-        related_samples = related_ht.s.collect()
-        related_samples = hl.literal(related_samples)
-        mt = mt.filter_cols(~related_samples.contains(mt['s']))
+    #     # filter out related samples from vre too
+    #     # this will get dropped as the vds file will already be clean
+    #     related_ht = hl.read_table(relateds_to_drop_path)
+    #     related_samples = related_ht.s.collect()
+    #     related_samples = hl.literal(related_samples)
+    #     mt = mt.filter_cols(~related_samples.contains(mt['s']))
 
-        # again filter for biallelic SNPs
-        mt = mt.filter_rows(
-            ~(mt.was_split)  # biallelic (exclude multiallelic)
-            & (hl.len(mt.alleles) == 2)  # remove hom-ref
-            & (hl.is_snp(mt.alleles[0], mt.alleles[1]))  # SNPs (exclude indels)
-        )
-        mt = hl.variant_qc(mt)
+    #     # again filter for biallelic SNPs
+    #     mt = mt.filter_rows(
+    #         ~(mt.was_split)  # biallelic (exclude multiallelic)
+    #         & (hl.len(mt.alleles) == 2)  # remove hom-ref
+    #         & (hl.is_snp(mt.alleles[0], mt.alleles[1]))  # SNPs (exclude indels)
+    #     )
+    #     mt = hl.variant_qc(mt)
 
-        # minor allele count (MAC) > {vre_mac_threshold}
-        vre_mt = mt.filter_rows(hl.min(mt.variant_qc.AC) > vre_mac_threshold)
+    #     # minor allele count (MAC) > {vre_mac_threshold}
+    #     vre_mt = mt.filter_rows(hl.min(mt.variant_qc.AC) > vre_mac_threshold)
 
-        if (n_ac_vars := vre_mt.count_rows()) == 0:
-            raise ValueError('No variants left, exiting!')
-        logging.info(f'MT filtered to common enough variants, {n_ac_vars} left')
+    #     if (n_ac_vars := vre_mt.count_rows()) == 0:
+    #         raise ValueError('No variants left, exiting!')
+    #     logging.info(f'MT filtered to common enough variants, {n_ac_vars} left')
 
-        # since pruning is very costly, subset first a bit
-        random.seed(0)
-        if n_ac_vars > (vre_n_markers * 100):
-            vre_mt = vre_mt.sample_rows(p=0.01)
-            logging.info('subset completed')
+    #     # since pruning is very costly, subset first a bit
+    #     random.seed(0)
+    #     if n_ac_vars > (vre_n_markers * 100):
+    #         vre_mt = vre_mt.sample_rows(p=0.01)
+    #         logging.info('subset completed')
 
-        # set a checkpoint, and either re-use or write
-        post_downsampling_checkpoint = output_path(
-            'common_subset_checkpoint.mt', category='tmp'
-        )
-        vre_mt = checkpoint_mt(vre_mt, post_downsampling_checkpoint, force=True)
+    #     # set a checkpoint, and either re-use or write
+    #     post_downsampling_checkpoint = output_path(
+    #         'common_subset_checkpoint.mt', category='tmp'
+    #     )
+    #     vre_mt = checkpoint_mt(vre_mt, post_downsampling_checkpoint, force=True)
 
-        # perform LD pruning
-        pruned_variant_table = hl.ld_prune(
-            vre_mt.GT, r2=ld_prune_r2, bp_window_size=ld_prune_bp_window_size
-        )
-        vre_mt = vre_mt.filter_rows(hl.is_defined(pruned_variant_table[vre_mt.row_key]))
+    #     # perform LD pruning
+    #     pruned_variant_table = hl.ld_prune(
+    #         vre_mt.GT, r2=ld_prune_r2, bp_window_size=ld_prune_bp_window_size
+    #     )
+    #     vre_mt = vre_mt.filter_rows(hl.is_defined(pruned_variant_table[vre_mt.row_key]))
 
-        logging.info(f'pruning completed, {vre_mt.count_rows()} variants left')
-        # randomly sample {vre_n_markers} variants
-        random.seed(0)
-        vre_mt = vre_mt.sample_rows((vre_n_markers * 1.1) / vre_mt.count_rows())
-        vre_mt = vre_mt.head(vre_n_markers)
-        logging.info(f'sampling completed, {vre_mt.count()} variants left')
+    #     logging.info(f'pruning completed, {vre_mt.count_rows()} variants left')
+    #     # randomly sample {vre_n_markers} variants
+    #     random.seed(0)
+    #     vre_mt = vre_mt.sample_rows((vre_n_markers * 1.1) / vre_mt.count_rows())
+    #     vre_mt = vre_mt.head(vre_n_markers)
+    #     logging.info(f'sampling completed, {vre_mt.count()} variants left')
 
-        # export to plink common variants only for sparse GRM
-        export_plink(vre_mt, vre_plink_path, ind_id=vre_mt.s)
-        logging.info('plink export completed')
+    #     # export to plink common variants only for sparse GRM
+    #     export_plink(vre_mt, vre_plink_path, ind_id=vre_mt.s)
+    #     logging.info('plink export completed')
 
-    # success file for chr renaming in bim file
-    bim_renamed_path = output_path(f'vds-{vds_name}/bim_renamed.txt')
-    bim_renamed_existence_outcome = can_reuse(bim_renamed_path)
-    logging.info(
-        f'Have the chr been renamed in the bim file? {bim_renamed_existence_outcome}'
-    )
-    if not bim_renamed_existence_outcome:
-        # saige requires numerical values for chromosomes, so
-        # removing "chr" from the bim file
-        plink_input_bim = get_batch().read_input(vre_bim_path)
-        remove_chr_job = get_batch().new_python_job(name='remove chr from plink bim')
-        remove_chr_job.cpu(1)
-        remove_chr_job.storage(plink_job_storage)
-        # remove chr, then write direct to the BIM source location
-        remove_chr_job.call(
-            remove_chr_from_bim, plink_input_bim, vre_bim_path, bim_renamed_path
-        )
-        logging.info('chr removed from bim')
+    # # success file for chr renaming in bim file
+    # bim_renamed_path = output_path(f'vds-{vds_name}/bim_renamed.txt')
+    # bim_renamed_existence_outcome = can_reuse(bim_renamed_path)
+    # logging.info(
+    #     f'Have the chr been renamed in the bim file? {bim_renamed_existence_outcome}'
+    # )
+    # if not bim_renamed_existence_outcome:
+    #     # saige requires numerical values for chromosomes, so
+    #     # removing "chr" from the bim file
+    #     plink_input_bim = get_batch().read_input(vre_bim_path)
+    #     remove_chr_job = get_batch().new_python_job(name='remove chr from plink bim')
+    #     remove_chr_job.cpu(1)
+    #     remove_chr_job.storage(plink_job_storage)
+    #     # remove chr, then write direct to the BIM source location
+    #     remove_chr_job.call(
+    #         remove_chr_from_bim, plink_input_bim, vre_bim_path, bim_renamed_path
+    #     )
+    #     logging.info('chr removed from bim')
 
     get_batch().run(wait=False)
 
