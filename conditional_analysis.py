@@ -251,6 +251,20 @@ def conditional_analysis(
     group_file_specs: str,
 ):
     batch = get_batch('SAIGE-QTL conditional pipeline')
+    jobs: list[hb.batch.job.Job] = []
+
+    def manage_concurrency_for_job(job: hb.batch.job.Job):
+        """
+        To avoid having too many jobs running at once, we have to limit concurrency.
+        """
+        if len(jobs) >= get_config()['saige']['max_parallel_jobs']:
+            job.depends_on(jobs[-get_config()['saige']['max_parallel_jobs']])
+        jobs.append(job)
+
+    # pull principal args from config
+    chromosomes: list[str] = get_config()['saige']['chromosomes']
+    celltypes: list[str] = get_config()['saige']['celltypes']
+    celltype_jobs: dict[str, list] = dict()
 
     for chromosome in chromosomes:
 
@@ -285,15 +299,23 @@ def conditional_analysis(
             # extract relevant gene-related files
             for gene in genes:
 
+                gene_dependency = get_batch().new_job(f'Always run job for {gene}')
+                gene_dependency.always_run()
+                manage_concurrency_for_job(gene_dependency)
+
                 conditional_string = conditional_df[conditional_df['gene'] == gene][
                     'variants_to_condition_on'
                 ]
-                if common_or_rare == 'common':
-                    cis_window_path = f'{cis_window_or_group_files_path_chrom}/{gene}_{cis_window_size}bp.tsv'
                 # define gene-specific key
-                test_key = f'{celltype}_{chromosome}_{celltype}_{gene}_conditional_round{conditional_round_number}'
+                suffix = conditional_files_path.split('/')[-1]
+                test_key = f'{celltype}_{chromosome}_{gene}_{suffix}_{common_or_rare}'
                 # define output
-                test_output_path = 'xxx'
+                test_output_path = output_path(test_key, 'analysis')
+
+                # if the output exists, do nothing
+                if to_path(f'{test_output_path}.set').exists():
+                    continue
+
                 # define gene-specific null output (rda + varianceRatio)
                 null_path = (
                     f'{fit_null_files_path}/{celltype}/{chromosome}/{celltype}_{gene}'
@@ -303,13 +325,11 @@ def conditional_analysis(
                     cis_window_or_group_file = f'{cis_window_or_group_files_path_chrom}/{gene}_{cis_window_size}bp.tsv'
                 elif common_or_rare == 'rare':
                     cis_window_or_group_file = f'{cis_window_or_group_files_path_chrom}/{gene}_{cis_window_size}bp{group_file_specs}.tsv'
-                # build command
-                # add to job
 
                 build_run_conditional_analysis_command(
                     job=step2_job,
                     test_key=test_key,
-                    rare_output_path=test_output_path,
+                    test_output_path=test_output_path,
                     vcf_group=vcf_group,
                     chrom=(chromosome[3:]),
                     cis_window_or_group_file=cis_window_or_group_file,
@@ -318,6 +338,27 @@ def conditional_analysis(
                     common_or_rare=common_or_rare,
                     conditional_string=conditional_string,
                 )
+                jobs_in_vm += 1
+            if common_or_rare == 'common':
+                # step 3 (gene-level p-values)
+                saige_gene_pval_output_file = output_path(
+                    f'{celltype}/{chromosome}/{celltype}_{gene}_cis_gene_pval'
+                )
+                if not to_path(saige_gene_pval_output_file).exists():
+                    job3 = build_obtain_gene_level_pvals_command(
+                        gene_name=gene,
+                        saige_sv_output_file=step2_output,
+                        saige_gene_pval_output_file=output_path(
+                            f'{celltype}/{chromosome}/{celltype}_{gene}_cis_gene_pval'
+                        ),
+                    )
+                    job3.depends_on(single_var_test_job)
+                    # add this job to the list of jobs for this cell type
+                    celltype_jobs.setdefault(celltype, []).append(job3)
+
+            if jobs_in_vm >= jobs_per_vm:
+                single_var_test_job = create_second_job(vcf_file_path)
+                jobs_in_vm = 0
 
 
 if __name__ == '__main__':
