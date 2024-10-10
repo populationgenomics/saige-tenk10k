@@ -66,10 +66,23 @@ def make_condition_file(
             conditional_df['variants_to_condition_on'] = conditional_df['top_MarkerID']
         elif add_to_existing_file != 'nope':
             old_conditional_df = pd.read_csv(add_to_existing_file, sep='\t')
-            # open file (called 'add_to_existing_file')
             # subset to genes in current significant_gene_df
+            conditional_df = old_conditional_df[
+                old_conditional_df['gene'] in significant_gene_df['gene']
+            ]
             # add top marker from current significant_gene_df to the condition in those
-            # reorder by genomic coordinates
+            for gene in old_conditional_df['gene']:
+                old_condition = conditional_df[conditional_df['gene'] == gene][
+                    'condition'
+                ].split(',')
+                new_top_variant = conditional_df[conditional_df['gene'] == gene][
+                    'top_MarkerID'
+                ]
+                # add and reorder by genomic coordinates
+                new_condition = old_condition.append(new_top_variant).sort()
+                conditional_df[conditional_df['gene'] == gene]['condition'] = ','.join(
+                    new_condition
+                )
         # write conditional_df to file
         conditional_file = (
             f'{conditional_files_output_path}/{celltype}_conditional_file.tsv'
