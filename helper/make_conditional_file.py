@@ -28,6 +28,8 @@ from cpg_utils import to_path
 from cpg_utils.hail_batch import init_batch, output_path
 
 from multipy.fdr import qvalue
+# if image doesn't work, copy function from github
+# https://github.com/puolival/multipy/blob/master/multipy/fdr.py
 
 
 @click.command()
