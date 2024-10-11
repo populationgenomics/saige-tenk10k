@@ -328,7 +328,9 @@ def conditional_analysis(
                 f'{conditional_files_path}/{celltype}_conditional_file.tsv'
             )
 
-            logging.info(f'Starting conditional analysis for {celltype}, reading from {conditional_files_path_ct_file}')
+            logging.info(
+                f'Starting conditional analysis for {celltype}, reading from {conditional_files_path_ct_file}'
+            )
 
             conditional_df = pd.read_csv(conditional_files_path_ct_file, sep='\t')
 
@@ -346,7 +348,7 @@ def conditional_analysis(
 
                 conditional_string = conditional_df[conditional_df['gene'] == gene][
                     'variants_to_condition_on'
-                ]
+                ].values[0]
                 # define gene-specific key
                 suffix = conditional_files_path.split('/')[-1]
                 test_key = f'{celltype}_{chromosome}_{gene}_{suffix}_{common_or_rare}'
@@ -405,9 +407,7 @@ def conditional_analysis(
     # summarise results (per cell type)
     for celltype in celltypes:
         logging.info(f'start summarising results for {celltype}')
-        summary_output_path = (
-            f'{suffix}/summary_stats/{celltype}_all_cis_{common_or_rare}_gene_level_results.tsv'
-        )
+        summary_output_path = f'{suffix}/summary_stats/{celltype}_all_cis_{common_or_rare}_gene_level_results.tsv'
 
         summarise_job = get_batch().new_python_job(
             f'Summarise {common_or_rare} results for {celltype}'
