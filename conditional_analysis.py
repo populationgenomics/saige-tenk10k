@@ -363,6 +363,12 @@ def conditional_analysis(
                 null_path = (
                     f'{fit_null_files_path}/{celltype}/{chromosome}/{celltype}_{gene}'
                 )
+                null_path = get_batch().read_input_group(
+                    {
+                        'rda': f'{null_path}.rda',
+                        'varianceRatio.txt': f'{null_path}.varianceRatio.txt',
+                    }
+                )
                 # define gene-specific cis window or group file
                 if common_or_rare == 'common':
                     cis_window_or_group_file = f'{cis_window_or_group_files_path_chrom}/{gene}_{cis_window_size}bp.tsv'
@@ -376,8 +382,8 @@ def conditional_analysis(
                     vcf_group=vcf_group,
                     chrom=(chromosome[3:]),
                     cis_window_or_group_file=cis_window_or_group_file,
-                    gmmat_model_path=f'{null_path}.rda',
-                    variance_ratio_path=f'{null_path}.varianceRatio.txt',
+                    gmmat_model_path=null_path['rda'],
+                    variance_ratio_path=null_path['varianceRatio.txt'],
                     common_or_rare=common_or_rare,
                     conditional_string=conditional_string,
                 )
