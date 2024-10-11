@@ -341,22 +341,22 @@ def conditional_analysis(
                     conditional_string=conditional_string,
                 )
                 jobs_in_vm += 1
-            if common_or_rare == 'common':
-                # step 3 (gene-level p-values)
-                saige_gene_pval_output_file = output_path(
-                    f'{celltype}/{chromosome}/{celltype}_{gene}_cis_gene_pval'
-                )
-                if not to_path(saige_gene_pval_output_file).exists():
-                    job3 = build_obtain_gene_level_pvals_command(
-                        gene_name=gene,
-                        saige_sv_output_file=step2_output,
-                        saige_gene_pval_output_file=output_path(
-                            f'{celltype}/{chromosome}/{celltype}_{gene}_cis_gene_pval'
-                        ),
+                if common_or_rare == 'common':
+                    # step 3 (gene-level p-values)
+                    saige_gene_pval_output_file = output_path(
+                        f'{celltype}/{chromosome}/{celltype}_{gene}_cis_gene_pval'
                     )
-                    job3.depends_on(step2_job)
-                    # add this job to the list of jobs for this cell type
-                    celltype_jobs.setdefault(celltype, []).append(job3)
+                    if not to_path(saige_gene_pval_output_file).exists():
+                        job3 = build_obtain_gene_level_pvals_command(
+                            gene_name=gene,
+                            saige_sv_output_file=step2_output,
+                            saige_gene_pval_output_file=output_path(
+                                f'{celltype}/{chromosome}/{celltype}_{gene}_cis_gene_pval'
+                            ),
+                        )
+                        job3.depends_on(step2_job)
+                        # add this job to the list of jobs for this cell type
+                        celltype_jobs.setdefault(celltype, []).append(job3)
 
             if jobs_in_vm >= jobs_per_vm:
                 step2_job = create_second_job(vcf_file_path)
