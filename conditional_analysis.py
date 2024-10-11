@@ -319,9 +319,6 @@ def conditional_analysis(
             f'{cis_window_or_group_files_path}/{chromosome}'
         )
 
-        step2_job = create_second_job(vcf_file_path)
-        # jobs_in_vm = 0
-
         for celltype in celltypes:
             # extract gene list based on genes for which we have conditional files
             conditional_files_path_ct_file = (
@@ -384,6 +381,9 @@ def conditional_analysis(
                     common_or_rare=common_or_rare,
                     conditional_string=conditional_string,
                 )
+
+                step2_job.depends_on(gene_dependency)
+
                 jobs_in_vm += 1
                 if common_or_rare == 'common':
                     # step 3 (gene-level p-values)
