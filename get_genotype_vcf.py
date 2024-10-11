@@ -23,8 +23,6 @@ analysis-runner \
 
 import logging
 
-import random
-
 import click
 import pandas as pd
 
@@ -254,8 +252,7 @@ def main(
         # filter out related samples from vre too
         # this will get dropped as the vds file will already be clean
         related_ht = hl.read_table(relateds_to_drop_path)
-        related_samples = related_ht.s.collect()
-        related_samples = hl.literal(related_samples)
+        related_samples = hl.literal(related_ht.s.collect())
         mt = mt.filter_cols(~related_samples.contains(mt['s']))
 
         # again filter for biallelic SNPs
@@ -267,17 +264,29 @@ def main(
         mt = hl.variant_qc(mt)
 
         # minor allele count (MAC) > {vre_mac_threshold}
-        vre_mt = mt.filter_rows(hl.min(mt.variant_qc.AC) > vre_mac_threshold)
+        mt = mt.filter_rows(hl.min(mt.variant_qc.AC) > vre_mac_threshold)
 
-        if (n_ac_vars := vre_mt.count_rows()) == 0:
+        if (n_ac_vars := mt.count_rows()) == 0:
             raise ValueError('No variants left, exiting!')
         logging.info(f'MT filtered to common enough variants, {n_ac_vars} left')
 
+        # drop a checkpoint here
+        common_checkpoint = output_path('common_checkpoint.mt', category='tmp')
+
+        if (to_path(common_checkpoint) / '_SUCCESS').exists():
+            print(f'Reading existing checkpoint from {common_checkpoint}')
+            mt = hl.read_matrix_table(common_checkpoint)
+        else:
+            print(f'Writing new checkpoint to {common_checkpoint}')
+            mt = mt.checkpoint(common_checkpoint)
+
+        logging.info(f'common checkpoint written, MT size: {mt.count()}')
+        mt.describe()
+
         # since pruning is very costly, subset first a bit
-        random.seed(0)
         if n_ac_vars > (vre_n_markers * 100):
-            vre_mt = vre_mt.sample_rows(p=0.01)
             logging.info('subset completed')
+            mt = mt.sample_rows(p=0.01, seed=0)
 
         # set a checkpoint, and either re-use or write
         post_downsampling_checkpoint = output_path(
@@ -285,23 +294,22 @@ def main(
         )
 
         # overwrite=True to force re-write, requires full permissions
-        vre_mt = vre_mt.checkpoint(post_downsampling_checkpoint, overwrite=True)
+        mt = mt.checkpoint(post_downsampling_checkpoint, overwrite=True)
 
         # perform LD pruning
         pruned_variant_table = hl.ld_prune(
-            vre_mt.GT, r2=ld_prune_r2, bp_window_size=ld_prune_bp_window_size
+            mt.GT, r2=ld_prune_r2, bp_window_size=ld_prune_bp_window_size
         )
-        vre_mt = vre_mt.filter_rows(hl.is_defined(pruned_variant_table[vre_mt.row_key]))
+        mt = mt.filter_rows(hl.is_defined(pruned_variant_table[mt.row_key]))
 
-        logging.info(f'pruning completed, {vre_mt.count_rows()} variants left')
+        logging.info(f'pruning completed, {mt.count_rows()} variants left')
         # randomly sample {vre_n_markers} variants
-        random.seed(0)
-        vre_mt = vre_mt.sample_rows((vre_n_markers * 1.1) / vre_mt.count_rows())
-        vre_mt = vre_mt.head(vre_n_markers)
-        logging.info(f'sampling completed, {vre_mt.count()} variants left')
+        mt = mt.sample_rows((vre_n_markers * 1.1) / mt.count_rows(), seed=0)
+        mt = mt.head(vre_n_markers)
+        logging.info(f'sampling completed, {mt.count()} variants left')
 
         # export to plink common variants only for sparse GRM
-        export_plink(vre_mt, vre_plink_path, ind_id=vre_mt.s)
+        export_plink(mt, vre_plink_path, ind_id=mt.s)
         logging.info('plink export completed')
 
     # success file for chr renaming in bim file
