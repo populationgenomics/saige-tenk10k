@@ -299,7 +299,7 @@ def conditional_analysis(
     for chromosome in chromosomes:
 
         # genotype vcf files are one per chromosome
-        vcf_file_path = f'{genotype_files_path}/{chromosome}_common_variants.vcf.bgz'
+        vcf_file_path = f'{genotype_files_path}/{chromosome}_{common_or_rare}_variants.vcf.bgz'
 
         # read in vcf file once per chromosome
         vcf_group = get_batch().read_input_group(
