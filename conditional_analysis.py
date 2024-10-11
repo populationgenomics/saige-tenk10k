@@ -380,7 +380,7 @@ def conditional_analysis(
                     chrom=(chromosome[3:]),
                     cis_window_or_group_file=cis_window_or_group_file,
                     gmmat_model_path=null_path['rda'],
-                    variance_ratio_path=null_path['varianceRatio.txt'],
+                    variance_ratio_path=null_path['vre'],
                     common_or_rare=common_or_rare,
                     conditional_string=conditional_string,
                 )
