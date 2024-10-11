@@ -406,7 +406,8 @@ def conditional_analysis(
         summarise_job = get_batch().new_python_job(
             f'Summarise {common_or_rare} results for {celltype}'
         )
-        summarise_job.depends_on(*celltype_jobs[celltype])
+        if celltype in celltype_jobs:
+            summarise_job.depends_on(*celltype_jobs[celltype])
         summarise_job.call(
             summarise_cv_results,
             celltype=celltype,
