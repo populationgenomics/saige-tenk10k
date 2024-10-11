@@ -200,6 +200,40 @@ def apply_job_settings(job: hb.batch.job.Job, job_name: str):
         if cpu := job_settings.get('cpu'):
             job.cpu(cpu)
 
+def summarise_cv_results(
+    celltype: str,
+    gene_results_path: str,
+    summary_output_path: str,
+    common_or_rare: str,
+):
+    """
+    Summarise gene-specific results
+    """
+    import logging
+    import pandas as pd
+    from cpg_utils import to_path
+    from cpg_utils.hail_batch import output_path
+
+    if common_or_rare == 'common':
+        existing_assoc_results = [
+            str(file)
+            for file in to_path(gene_results_path).glob(f'*/{celltype}_*_cis_gene_pval')
+        ]
+    elif common_or_rare == 'rare':
+        existing_assoc_results = [
+            str(file)
+            for file in to_path(gene_results_path).glob(f'*/{celltype}_*_cis_rare.set')
+        ]
+    results_all_df = pd.concat(
+        [
+            pd.read_csv(to_path(pv_df), index_col=0)
+            for pv_df in existing_assoc_results
+        ]
+    )
+    result_all_filename = to_path(output_path(summary_output_path, category='analysis'))
+    logging.info(f'Write summary results to {result_all_filename}')
+    with result_all_filename.open('w') as rf:
+        results_all_df.to_csv(rf)
 
 def create_second_job(vcf_path: str) -> hb.batch.job.Job:
     """
@@ -361,6 +395,24 @@ def conditional_analysis(
             if jobs_in_vm >= jobs_per_vm:
                 step2_job = create_second_job(vcf_file_path)
                 jobs_in_vm = 0
+    # summarise results (per cell type)
+    for celltype in celltypes:
+        logging.info(f'start summarising results for {celltype}')
+        summary_output_path = (
+            f'summary_stats/{celltype}_all_cis_{common_or_rare}_gene_level_results.tsv'
+        )
+
+        summarise_job = get_batch().new_python_job(
+            f'Summarise {common_or_rare} results for {celltype}'
+        )
+        summarise_job.depends_on(*celltype_jobs[celltype])
+        summarise_job.call(
+            summarise_cv_results,
+            celltype=celltype,
+            gene_results_path=output_path(celltype),
+            summary_output_path=summary_output_path,
+            common_or_rare=common_or_rare,
+        )
 
     # set jobs running
     batch.run(wait=False)
