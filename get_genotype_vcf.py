@@ -252,8 +252,7 @@ def main(
         # filter out related samples from vre too
         # this will get dropped as the vds file will already be clean
         related_ht = hl.read_table(relateds_to_drop_path)
-        related_samples = related_ht.s.collect()
-        related_samples = hl.literal(related_samples)
+        related_samples = hl.literal(related_ht.s.collect())
         mt = mt.filter_cols(~related_samples.contains(mt['s']))
 
         # again filter for biallelic SNPs
@@ -272,9 +271,7 @@ def main(
         logging.info(f'MT filtered to common enough variants, {n_ac_vars} left')
 
         # drop a checkpoint here
-        common_checkpoint = output_path(
-            'common_checkpoint.mt', category='tmp'
-        )
+        common_checkpoint = output_path('common_checkpoint.mt', category='tmp')
 
         if (to_path(common_checkpoint) / '_SUCCESS').exists():
             print(f'Reading existing checkpoint from {common_checkpoint}')
