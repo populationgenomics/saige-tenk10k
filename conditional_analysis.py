@@ -214,7 +214,9 @@ def summarise_cv_results(
     import logging
     import pandas as pd
     from cpg_utils import to_path
-    from cpg_utils.hail_batch import output_path
+    from cpg_utils.config import output_path
+
+    logging.basicConfig(level=logging.INFO)
 
     if common_or_rare == 'common':
         existing_assoc_results = [
@@ -321,15 +323,14 @@ def conditional_analysis(
         # jobs_in_vm = 0
 
         for celltype in celltypes:
-            logging.info(f'Starting conditional analysis for {celltype}')
             # extract gene list based on genes for which we have conditional files
             conditional_files_path_ct_file = (
                 f'{conditional_files_path}/{celltype}_conditional_file.tsv'
             )
-            conditional_df = pd.read_csv(
-                conditional_files_path_ct_file,
-                sep='\t',
-            )
+
+            logging.info(f'Starting conditional analysis for {celltype}, reading from {conditional_files_path_ct_file}')
+
+            conditional_df = pd.read_csv(conditional_files_path_ct_file, sep='\t')
 
             genes = conditional_df['gene']
             logging.info(
