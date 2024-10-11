@@ -19,7 +19,6 @@ analysis-runner \
    --output-dir saige-qtl/bioheart_n990_and_tob_n1055/input_files/240920/genotypes/ \
     python3 get_genotype_vcf.py --vds-path=gs://cpg-bioheart-main/vds/tenk10k1-0.vds --chromosomes chr2 \
     --relateds-to-drop-path=gs://cpg-bioheart-main-analysis/large_cohort/bioheart1-0/relateds_to_drop.ht
-
 """
 
 import logging
@@ -39,71 +38,6 @@ from cpg_utils.hail_batch import get_batch, init_batch
 
 
 VARS_PER_PARTITION = 20000
-
-
-def checkpoint_mt(mt: hl.MatrixTable, checkpoint_path: str, force: bool = False):
-    """
-    Checkpoint a MatrixTable to a file.
-    If the checkpoint exists, read instead
-
-    inspired by this thread
-    https://discuss.hail.is/t/best-way-to-repartition-heavily-filtered-matrix-tables/2140
-
-    Args:
-      mt: MatrixTable to checkpoint.
-      checkpoint_path: Path to save the MatrixTable to.
-      force: Whether to overwrite an existing checkpoint
-    """
-
-    # if we generated the full checkpoint, read and return
-    if (
-        to_path(checkpoint_path).exists()
-        and (to_path(checkpoint_path) / '_SUCCESS').exists()
-    ):
-        logging.info(f'Reading non-temp checkpoint from {checkpoint_path}')
-        return hl.read_matrix_table(checkpoint_path)
-
-    # create a temp checkpoint path
-    temp_checkpoint_path = checkpoint_path.split('.')[0] + '_temp.mt'
-    logging.info(f'Checkpoint temp: {temp_checkpoint_path}')
-
-    # either force an overwrite, or write the first version
-    if force or not to_path(temp_checkpoint_path).exists():
-        logging.info(f'Writing new temp checkpoint to {temp_checkpoint_path}')
-        mt = mt.checkpoint(temp_checkpoint_path, overwrite=True)
-
-        if to_path(temp_checkpoint_path).exists():
-            logging.info(
-                f'Completed writing to temp checkpoint: {temp_checkpoint_path}'
-            )
-
-    # unless forced, if the data exists, read it
-    elif (
-        to_path(temp_checkpoint_path).exists()
-        and (to_path(temp_checkpoint_path) / '_SUCCESS').exists()
-    ):
-        logging.info(f'Reading existing temp checkpoint from {temp_checkpoint_path}')
-        mt = hl.read_matrix_table(temp_checkpoint_path)
-
-    else:
-        raise FileNotFoundError('Checkpoint exists but is incomplete, was not forced')
-
-    logging.info(
-        f'Dimensions of MT: {mt.count()}, across {mt.n_partitions()} partitions'
-    )
-
-    # repartition to a reasonable number of partitions, then re-write
-    num_rows = mt.count_rows()
-    mt = hl.read_matrix_table(
-        temp_checkpoint_path, _n_partitions=num_rows // VARS_PER_PARTITION or 1
-    )
-    mt.write(checkpoint_path)
-
-    # check the checkpoint_path exists
-    if to_path(checkpoint_path).exists():
-        logging.info(f'{checkpoint_path} exists')
-
-    return mt
 
 
 def can_reuse(path: str):
@@ -248,8 +182,7 @@ def main(
             # filter out related samples
             # this will get dropped as the vds file will already be clean
             related_ht = hl.read_table(relateds_to_drop_path)
-            related_samples = related_ht.s.collect()
-            related_samples = hl.literal(related_samples)
+            related_samples = hl.literal(related_ht.s.collect())
             mt = mt.filter_cols(~related_samples.contains(mt['s']))
 
             # filter out loci & variant QC
@@ -306,6 +239,18 @@ def main(
         # densify to mt
         mt = hl.vds.to_dense_mt(vds)
 
+        # drop a checkpoint here
+        dense_checkpoint = output_path(
+            'mt_from_dense_vds_checkpoint.mt', category='tmp'
+        )
+
+        if (to_path(dense_checkpoint) / '_SUCCESS').exists():
+            print(f'Reading existing checkpoint from {dense_checkpoint}')
+            mt = hl.read_matrix_table(dense_checkpoint)
+        else:
+            print(f'Writing new checkpoint to {dense_checkpoint}')
+            mt = mt.checkpoint(dense_checkpoint)
+
         # filter out related samples from vre too
         # this will get dropped as the vds file will already be clean
         related_ht = hl.read_table(relateds_to_drop_path)
@@ -338,7 +283,9 @@ def main(
         post_downsampling_checkpoint = output_path(
             'common_subset_checkpoint.mt', category='tmp'
         )
-        vre_mt = checkpoint_mt(vre_mt, post_downsampling_checkpoint, force=True)
+
+        # overwrite=True to force re-write, requires full permissions
+        vre_mt = vre_mt.checkpoint(post_downsampling_checkpoint, overwrite=True)
 
         # perform LD pruning
         pruned_variant_table = hl.ld_prune(
