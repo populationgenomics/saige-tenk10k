@@ -240,7 +240,9 @@ def main(
         mt = hl.vds.to_dense_mt(vds)
 
         # drop a checkpoint here
-        dense_checkpoint = output_path('mt_from_dense_vds_checkpoint.mt', category='tmp')
+        dense_checkpoint = output_path(
+            'mt_from_dense_vds_checkpoint.mt', category='tmp'
+        )
 
         if (to_path(dense_checkpoint) / '_SUCCESS').exists():
             print(f'Reading existing checkpoint from {dense_checkpoint}')
