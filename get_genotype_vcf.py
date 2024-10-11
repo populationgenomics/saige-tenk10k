@@ -271,10 +271,25 @@ def main(
             raise ValueError('No variants left, exiting!')
         logging.info(f'MT filtered to common enough variants, {n_ac_vars} left')
 
+        # drop a checkpoint here
+        common_checkpoint = output_path(
+            'common_checkpoint.mt', category='tmp'
+        )
+
+        if (to_path(common_checkpoint) / '_SUCCESS').exists():
+            print(f'Reading existing checkpoint from {common_checkpoint}')
+            vre_mt = hl.read_matrix_table(common_checkpoint)
+        else:
+            print(f'Writing new checkpoint to {common_checkpoint}')
+            vre_mt = vre_mt.checkpoint(common_checkpoint)
+
+        logging.info(f'common checkpoint written, MT size: {vre_mt.count()}')
+        vre_mt.describe()
+
         # since pruning is very costly, subset first a bit
         if n_ac_vars > (vre_n_markers * 100):
-            vre_mt = vre_mt.sample_rows(p=0.01, seed=0)
             logging.info('subset completed')
+            vre_mt = vre_mt.sample_rows(p=0.01, seed=0)
 
         # set a checkpoint, and either re-use or write
         post_downsampling_checkpoint = output_path(
