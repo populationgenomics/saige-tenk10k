@@ -59,7 +59,7 @@ import hailtop.batch as hb
 
 from cpg_utils import to_path
 from cpg_utils.config import get_config, image_path, output_path
-from cpg_utils.hail_batch import get_batch
+from cpg_utils.hail_batch import dataset_path, get_batch
 
 # Run single variant or set-based association (step 2)
 # with the `condition` flag
@@ -289,7 +289,7 @@ def conditional_analysis(
                 f'{conditional_files_path}/{celltype}_conditional_analysis.tsv'
             )
             conditional_df = pd.read_csv(
-                to_path(conditional_files_path_ct_file), sep='\t'
+                dataset_path(conditional_files_path_ct_file), sep='\t'
             )
 
             genes = conditional_df['gene']
