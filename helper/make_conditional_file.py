@@ -20,7 +20,6 @@ analysis-runner \
 
 import click
 
-import numpy as np
 import pandas as pd
 from cpg_utils.hail_batch import init_batch
 
