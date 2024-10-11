@@ -200,6 +200,7 @@ def apply_job_settings(job: hb.batch.job.Job, job_name: str):
         if cpu := job_settings.get('cpu'):
             job.cpu(cpu)
 
+
 def summarise_cv_results(
     celltype: str,
     gene_results_path: str,
@@ -225,15 +226,13 @@ def summarise_cv_results(
             for file in to_path(gene_results_path).glob(f'*/{celltype}_*_cis_rare.set')
         ]
     results_all_df = pd.concat(
-        [
-            pd.read_csv(to_path(pv_df), index_col=0)
-            for pv_df in existing_assoc_results
-        ]
+        [pd.read_csv(to_path(pv_df), index_col=0) for pv_df in existing_assoc_results]
     )
     result_all_filename = to_path(output_path(summary_output_path, category='analysis'))
     logging.info(f'Write summary results to {result_all_filename}')
     with result_all_filename.open('w') as rf:
         results_all_df.to_csv(rf)
+
 
 def create_second_job(vcf_path: str) -> hb.batch.job.Job:
     """
