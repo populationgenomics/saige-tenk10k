@@ -364,10 +364,7 @@ def conditional_analysis(
                     f'{fit_null_files_path}/{celltype}/{chromosome}/{celltype}_{gene}'
                 )
                 null_path = get_batch().read_input_group(
-                    {
-                        'rda': f'{null_path}.rda',
-                        'varianceRatio.txt': f'{null_path}.varianceRatio.txt',
-                    }
+                    rda=f'{null_path}.rda', vre=f'{null_path}.varianceRatio.txt'
                 )
                 # define gene-specific cis window or group file
                 if common_or_rare == 'common':
