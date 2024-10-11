@@ -383,7 +383,7 @@ def conditional_analysis(
                 if common_or_rare == 'common':
                     # step 3 (gene-level p-values)
                     saige_gene_pval_output_file = output_path(
-                        f'{celltype}/{chromosome}/{celltype}_{gene}_cis_gene_pval'
+                        f'{suffix}/{celltype}/{chromosome}/{celltype}_{gene}_cis_gene_pval'
                     )
                     if not to_path(saige_gene_pval_output_file).exists():
                         job3 = build_obtain_gene_level_pvals_command(
@@ -406,7 +406,7 @@ def conditional_analysis(
     for celltype in celltypes:
         logging.info(f'start summarising results for {celltype}')
         summary_output_path = (
-            f'summary_stats/{celltype}_all_cis_{common_or_rare}_gene_level_results.tsv'
+            f'{suffix}/summary_stats/{celltype}_all_cis_{common_or_rare}_gene_level_results.tsv'
         )
 
         summarise_job = get_batch().new_python_job(
