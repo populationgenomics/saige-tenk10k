@@ -1,6 +1,6 @@
 [saige]
 # principal arguments
-celltypes = ['CD4_TCM']
+celltypes = ['B_naive']
 chromosomes = ['chr21']
 drop_genes =[]
 
