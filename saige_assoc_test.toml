@@ -1,8 +1,8 @@
 [saige]
 # principal arguments
 celltypes = ['B_naive']
-chromosomes = ['chr2']
-drop_genes =['ENSG00000115355','ENSG00000197585','ENSG00000228262','ENSG00000231969','ENSG00000289474','ENSG00000291127']
+chromosomes = ['chr21']
+drop_genes =[]
 
 # secondary arguments
 max_parallel_jobs = 350

@@ -221,7 +221,6 @@ def create_second_job(vcf_path: str) -> hb.batch.job.Job:
     return second_job
 
 
-@click.command()
 @click.option('--conditional-files-path', required=True)
 @click.option('--fit-null-files-path', required=True)
 @click.option('--genotype-files-prefix', required=True)
