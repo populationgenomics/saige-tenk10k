@@ -223,7 +223,7 @@ def create_second_job(vcf_path: str) -> hb.batch.job.Job:
 
 @click.option('--conditional-files-path', required=True)
 @click.option('--fit-null-files-path', required=True)
-@click.option('--genotype-files-prefix', required=True)
+@click.option('--genotype-files-path', required=True)
 @click.option('--cis-window-or-group-files-path', required=True)
 @click.option('--common-or-rare', default='common', help='type of analysis to perform')
 @click.option('--group-file-specs', default='', help=' e.g. _dTSS_weights')
@@ -237,7 +237,7 @@ def conditional_analysis(
     # cis window for common, group for rare
     cis_window_or_group_files_path: str,
     # outputs from get_genotype_vcf.py
-    genotype_files_prefix: str,
+    genotype_files_path: str,
     # whether to run a single-variant (for 'common' variants)
     # or set-based (for 'rare' variants) test
     common_or_rare: str,
@@ -266,7 +266,7 @@ def conditional_analysis(
     for chromosome in chromosomes:
 
         # genotype vcf files are one per chromosome
-        vcf_file_path = f'{genotype_files_prefix}/{chromosome}_common_variants.vcf.bgz'
+        vcf_file_path = f'{genotype_files_path}/{chromosome}_common_variants.vcf.bgz'
 
         # read in vcf file once per chromosome
         vcf_group = get_batch().read_input_group(
