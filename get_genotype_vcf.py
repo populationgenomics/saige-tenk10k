@@ -300,6 +300,8 @@ def main(
         pruned_variant_table = hl.ld_prune(
             mt.GT, r2=ld_prune_r2, bp_window_size=ld_prune_bp_window_size
         )
+
+        # write the resulting table
         pruned_variant_table = pruned_variant_table.checkpoint(
             output_path('pruned_result.ht', category='tmp')
         )
