@@ -288,7 +288,9 @@ def conditional_analysis(
             conditional_files_path_ct_file = (
                 f'{conditional_files_path}/{celltype}_conditional_analysis.tsv'
             )
-            conditional_df = pd.read_csv(to_path(conditional_files_path_ct_file), sep='\t')
+            conditional_df = pd.read_csv(
+                to_path(conditional_files_path_ct_file), sep='\t'
+            )
 
             genes = conditional_df['gene']
             logging.info(
