@@ -19,16 +19,15 @@ analysis-runner \
    --output-dir saige-qtl/bioheart_n990_and_tob_n1055/input_files/240920/genotypes/ \
     python3 get_genotype_vcf.py --vds-path=gs://cpg-bioheart-main/vds/tenk10k1-0.vds --chromosomes chr2 \
     --relateds-to-drop-path=gs://cpg-bioheart-main-analysis/large_cohort/bioheart1-0/relateds_to_drop.ht
-
 """
 
 import logging
-import random
 
 import click
 import pandas as pd
 
 import hail as hl
+
 from hail.methods import export_plink, export_vcf
 
 from cpg_utils import to_path
@@ -37,71 +36,6 @@ from cpg_utils.hail_batch import get_batch, init_batch
 
 
 VARS_PER_PARTITION = 20000
-
-
-def checkpoint_mt(mt: hl.MatrixTable, checkpoint_path: str, force: bool = False):
-    """
-    Checkpoint a MatrixTable to a file.
-    If the checkpoint exists, read instead
-
-    inspired by this thread
-    https://discuss.hail.is/t/best-way-to-repartition-heavily-filtered-matrix-tables/2140
-
-    Args:
-      mt: MatrixTable to checkpoint.
-      checkpoint_path: Path to save the MatrixTable to.
-      force: Whether to overwrite an existing checkpoint
-    """
-
-    # if we generated the full checkpoint, read and return
-    if (
-        to_path(checkpoint_path).exists()
-        and (to_path(checkpoint_path) / '_SUCCESS').exists()
-    ):
-        logging.info(f'Reading non-temp checkpoint from {checkpoint_path}')
-        return hl.read_matrix_table(checkpoint_path)
-
-    # create a temp checkpoint path
-    temp_checkpoint_path = checkpoint_path.split('.')[0] + '_temp.mt'
-    logging.info(f'Checkpoint temp: {temp_checkpoint_path}')
-
-    # either force an overwrite, or write the first version
-    if force or not to_path(temp_checkpoint_path).exists():
-        logging.info(f'Writing new temp checkpoint to {temp_checkpoint_path}')
-        mt = mt.checkpoint(temp_checkpoint_path, overwrite=True)
-
-        if to_path(temp_checkpoint_path).exists():
-            logging.info(
-                f'Completed writing to temp checkpoint: {temp_checkpoint_path}'
-            )
-
-    # unless forced, if the data exists, read it
-    elif (
-        to_path(temp_checkpoint_path).exists()
-        and (to_path(temp_checkpoint_path) / '_SUCCESS').exists()
-    ):
-        logging.info(f'Reading existing temp checkpoint from {temp_checkpoint_path}')
-        mt = hl.read_matrix_table(temp_checkpoint_path)
-
-    else:
-        raise FileNotFoundError('Checkpoint exists but is incomplete, was not forced')
-
-    logging.info(
-        f'Dimensions of MT: {mt.count()}, across {mt.n_partitions()} partitions'
-    )
-
-    # repartition to a reasonable number of partitions, then re-write
-    num_rows = mt.count_rows()
-    mt = hl.read_matrix_table(
-        temp_checkpoint_path, _n_partitions=num_rows // VARS_PER_PARTITION or 1
-    )
-    mt.write(checkpoint_path)
-
-    # check the checkpoint_path exists
-    if to_path(checkpoint_path).exists():
-        logging.info(f'{checkpoint_path} exists')
-
-    return mt
 
 
 def can_reuse(path: str):
@@ -144,7 +78,7 @@ def add_remove_chr_and_index_job(vcf_path):
         bcftools index -c {bcftools_job.output['vcf.bgz']}
     """
     )
-    logging.info('CV VCF rename/index jobs scheduled!')
+    logging.info('VCF rename/index jobs scheduled!')
 
     # save both output files
     get_batch().write_output(bcftools_job.output, vcf_path.removesuffix('.vcf.bgz'))
@@ -246,8 +180,7 @@ def main(
             # filter out related samples
             # this will get dropped as the vds file will already be clean
             related_ht = hl.read_table(relateds_to_drop_path)
-            related_samples = related_ht.s.collect()
-            related_samples = hl.literal(related_samples)
+            related_samples = hl.literal(related_ht.s.collect())
             mt = mt.filter_cols(~related_samples.contains(mt['s']))
 
             # filter out loci & variant QC
@@ -304,11 +237,22 @@ def main(
         # densify to mt
         mt = hl.vds.to_dense_mt(vds)
 
+        # drop a checkpoint here
+        dense_checkpoint = output_path(
+            'mt_from_dense_vds_checkpoint.mt', category='tmp'
+        )
+
+        if (to_path(dense_checkpoint) / '_SUCCESS').exists():
+            print(f'Reading existing checkpoint from {dense_checkpoint}')
+            mt = hl.read_matrix_table(dense_checkpoint)
+        else:
+            print(f'Writing new checkpoint to {dense_checkpoint}')
+            mt = mt.checkpoint(dense_checkpoint)
+
         # filter out related samples from vre too
         # this will get dropped as the vds file will already be clean
         related_ht = hl.read_table(relateds_to_drop_path)
-        related_samples = related_ht.s.collect()
-        related_samples = hl.literal(related_samples)
+        related_samples = hl.literal(related_ht.s.collect())
         mt = mt.filter_cols(~related_samples.contains(mt['s']))
 
         # again filter for biallelic SNPs
@@ -320,39 +264,52 @@ def main(
         mt = hl.variant_qc(mt)
 
         # minor allele count (MAC) > {vre_mac_threshold}
-        vre_mt = mt.filter_rows(hl.min(mt.variant_qc.AC) > vre_mac_threshold)
+        mt = mt.filter_rows(hl.min(mt.variant_qc.AC) > vre_mac_threshold)
 
-        if (n_ac_vars := vre_mt.count_rows()) == 0:
+        if (n_ac_vars := mt.count_rows()) == 0:
             raise ValueError('No variants left, exiting!')
         logging.info(f'MT filtered to common enough variants, {n_ac_vars} left')
 
+        # drop a checkpoint here
+        common_checkpoint = output_path('common_checkpoint.mt', category='tmp')
+
+        if (to_path(common_checkpoint) / '_SUCCESS').exists():
+            print(f'Reading existing checkpoint from {common_checkpoint}')
+            mt = hl.read_matrix_table(common_checkpoint)
+        else:
+            print(f'Writing new checkpoint to {common_checkpoint}')
+            mt = mt.checkpoint(common_checkpoint)
+
+        logging.info(f'common checkpoint written, MT size: {mt.count()}')
+        mt.describe()
+
         # since pruning is very costly, subset first a bit
-        random.seed(0)
-        if n_ac_vars > {vre_n_markers * 100}:
-            vre_mt = vre_mt.sample_rows(p=0.01)
+        if n_ac_vars > (vre_n_markers * 100):
             logging.info('subset completed')
+            mt = mt.sample_rows(p=0.01, seed=0)
 
         # set a checkpoint, and either re-use or write
         post_downsampling_checkpoint = output_path(
             'common_subset_checkpoint.mt', category='tmp'
         )
-        vre_mt = checkpoint_mt(vre_mt, post_downsampling_checkpoint, force=True)
+
+        # overwrite=True to force re-write, requires full permissions
+        mt = mt.checkpoint(post_downsampling_checkpoint, overwrite=True)
 
         # perform LD pruning
         pruned_variant_table = hl.ld_prune(
-            vre_mt.GT, r2=ld_prune_r2, bp_window_size=ld_prune_bp_window_size
+            mt.GT, r2=ld_prune_r2, bp_window_size=ld_prune_bp_window_size
         )
-        vre_mt = vre_mt.filter_rows(hl.is_defined(pruned_variant_table[vre_mt.row_key]))
+        mt = mt.filter_rows(hl.is_defined(pruned_variant_table[mt.row_key]))
 
-        logging.info(f'pruning completed, {vre_mt.count_rows()} variants left')
+        logging.info(f'pruning completed, {mt.count_rows()} variants left')
         # randomly sample {vre_n_markers} variants
-        random.seed(0)
-        vre_mt = vre_mt.sample_rows((vre_n_markers * 1.1) / vre_mt.count_rows())
-        vre_mt = vre_mt.head(vre_n_markers)
-        logging.info(f'sampling completed, {vre_mt.count()} variants left')
+        mt = mt.sample_rows((vre_n_markers * 1.1) / mt.count_rows(), seed=0)
+        mt = mt.head(vre_n_markers)
+        logging.info(f'sampling completed, {mt.count()} variants left')
 
         # export to plink common variants only for sparse GRM
-        export_plink(vre_mt, vre_plink_path, ind_id=vre_mt.s)
+        export_plink(mt, vre_plink_path, ind_id=mt.s)
         logging.info('plink export completed')
 
     # success file for chr renaming in bim file

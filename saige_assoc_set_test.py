@@ -133,7 +133,7 @@ def build_run_set_based_test_command(
     job.declare_resource_group(
         **{
             rare_key_writeable: {
-                'set': '{root}.set',
+                'set': '{root}',
                 'singleAssoc.txt': '{root}.singleAssoc.txt',
             }
         }
@@ -343,10 +343,7 @@ def main(
         'vre_plink_files_prefix_used': vre_plink_path,
         'pheno_cov_files_path_used': pheno_cov_files_path,
         'group_files_path_used': group_files_path,
-        'saige_fit_null_params': get_config()['saige'],
-        'saige_set_test_params': get_config()['saige.set_test'],
-        'saige_fit_null_job_specs': get_config()['saige.job_specs.fit_null'],
-        'saige_set_test_job_specs': get_config()['saige.job_specs.set_test'],
+        'saige_params': get_config()['saige'],
         'runtime_config': getenv('CPG_CONFIG_PATH'),
     }
 
