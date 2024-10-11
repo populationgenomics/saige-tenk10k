@@ -61,6 +61,7 @@ from cpg_utils import to_path
 from cpg_utils.config import get_config, image_path, output_path
 from cpg_utils.hail_batch import get_batch
 
+
 # Run single variant or set-based association (step 2)
 # with the `condition` flag
 def build_run_conditional_analysis_command(
@@ -297,6 +298,7 @@ def conditional_analysis(
     cis_window_size = get_config()['saige']['cis_window_size']
 
     for chromosome in chromosomes:
+        logging.info(f'Starting chromosome {chromosome}')
 
         # genotype vcf files are one per chromosome
         vcf_file_path = (
@@ -319,6 +321,7 @@ def conditional_analysis(
         # jobs_in_vm = 0
 
         for celltype in celltypes:
+            logging.info(f'Starting conditional analysis for {celltype}')
             # extract gene list based on genes for which we have conditional files
             conditional_files_path_ct_file = (
                 f'{conditional_files_path}/{celltype}_conditional_file.tsv'
@@ -385,13 +388,15 @@ def conditional_analysis(
                         job3 = build_obtain_gene_level_pvals_command(
                             gene_name=gene,
                             saige_sv_output_file=step2_output,
-                            saige_gene_pval_output_file=output_path(
-                                f'{celltype}/{chromosome}/{celltype}_{gene}_cis_gene_pval'
-                            ),
+                            saige_gene_pval_output_file=saige_gene_pval_output_file,
                         )
                         job3.depends_on(step2_job)
                         # add this job to the list of jobs for this cell type
                         celltype_jobs.setdefault(celltype, []).append(job3)
+                    else:
+                        logging.info(
+                            f'Skipping job 3 for {gene} as {saige_gene_pval_output_file} already exists'
+                        )
 
             if jobs_in_vm >= jobs_per_vm:
                 step2_job = create_second_job(vcf_file_path)
@@ -421,4 +426,5 @@ def conditional_analysis(
 
 
 if __name__ == '__main__':
+    logging.basicConfig(level=logging.INFO)
     conditional_analysis()
