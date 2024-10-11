@@ -23,8 +23,6 @@ analysis-runner \
 
 import logging
 
-import random
-
 import click
 import pandas as pd
 
@@ -274,9 +272,8 @@ def main(
         logging.info(f'MT filtered to common enough variants, {n_ac_vars} left')
 
         # since pruning is very costly, subset first a bit
-        random.seed(0)
         if n_ac_vars > (vre_n_markers * 100):
-            vre_mt = vre_mt.sample_rows(p=0.01)
+            vre_mt = vre_mt.sample_rows(p=0.01, seed=0)
             logging.info('subset completed')
 
         # set a checkpoint, and either re-use or write
@@ -295,8 +292,7 @@ def main(
 
         logging.info(f'pruning completed, {vre_mt.count_rows()} variants left')
         # randomly sample {vre_n_markers} variants
-        random.seed(0)
-        vre_mt = vre_mt.sample_rows((vre_n_markers * 1.1) / vre_mt.count_rows())
+        vre_mt = vre_mt.sample_rows((vre_n_markers * 1.1) / vre_mt.count_rows(), seed=0)
         vre_mt = vre_mt.head(vre_n_markers)
         logging.info(f'sampling completed, {vre_mt.count()} variants left')
 
