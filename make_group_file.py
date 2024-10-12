@@ -35,7 +35,6 @@ from cpg_utils.hail_batch import get_batch, init_batch
 
 
 def make_group_file(
-    # vcf_path_chrom: str,
     vds_path: str,
     gene: str,
     chrom: str,
@@ -65,14 +64,9 @@ def make_group_file(
     window_end = gene_df.columns.values[2]
     gene_interval = f'{num_chrom}:{window_start}-{window_end}'
     # extract variants within interval
-    # ds = import_vcf(vcf_path_chrom, reference_genome=genome_reference)
     vds = hl.vds.read_vds(vds_path)
     chrom_vds = hl.vds.filter_chromosomes(vds, keep=chrom)
     chrom_mt = hl.vds.to_dense_mt(chrom_vds)
-    # ds_result = filter_intervals(
-    #     ds,
-    #     [parse_locus_interval(gene_interval, reference_genome=genome_reference)],
-    # )
     ds_result = filter_intervals(
         chrom_mt,
         [parse_locus_interval(gene_interval, reference_genome=genome_reference)],
@@ -139,7 +133,6 @@ def main(
     chromosomes: str,
     cis_window_files_path: str,
     group_files_path: str,
-    # vcf_path: str,
     vds_path,
     cis_window: int,
     gamma: str,
@@ -187,9 +180,6 @@ def main(
         ]
         logging.info(f'I found these genes: {", ".join(genes)}')
 
-        # # load rare variant vcf file for specific chromosome
-        # vcf_path_chrom = f'{vcf_path}/{chrom}_rare_variants.vcf.bgz'
-
         for gene in genes:
             print(f'gene: {gene}')
             if gamma != 'none':
@@ -206,7 +196,6 @@ def main(
                 )
                 gene_group_job.call(
                     make_group_file,
-                    # vcf_path_chrom=vcf_path_chrom,
                     vds_path=vds_path,
                     gene=gene,
                     chrom=chrom,
