@@ -44,9 +44,9 @@ markers_per_chunk = 10000
 SPAcutoff = 10000
 [saige.set_test]
 vcfField = 'GT'
-maxMAF_in_groupTest = 0.1
+maxMAF_in_groupTest = 0.01
 minMAF_in_groupTest_Exclude = 0
-annotation_in_groupTest = 'null,test'
+annotation_in_groupTest = 'null'
 MACCutoff_to_CollapseUltraRare = 1
 is_single_in_groupTest = 'TRUE'
 is_equal_weight_in_groupTest = 'TRUE'
