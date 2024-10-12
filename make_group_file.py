@@ -49,7 +49,6 @@ def make_group_file(
     """
     import math
 
-    # from hail import filter_intervals, import_vcf, parse_locus_interval
     from hail import filter_intervals, parse_locus_interval
     import pandas as pd
     from cpg_utils.hail_batch import init_batch
