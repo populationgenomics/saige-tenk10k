@@ -139,7 +139,8 @@ def main(
     chromosomes: str,
     cis_window_files_path: str,
     group_files_path: str,
-    vcf_path: str,
+    # vcf_path: str,
+    vds_path,
     cis_window: int,
     gamma: str,
     ngenes_to_test: str,
@@ -206,6 +207,7 @@ def main(
                 gene_group_job.call(
                     make_group_file,
                     # vcf_path_chrom=vcf_path_chrom,
+                    vds_path=vds_path,
                     gene=gene,
                     chrom=chrom,
                     cis_window_files_path=cis_window_files_path,
