@@ -84,7 +84,7 @@ def make_group_file(
         f'{allele[0]}:{allele[1]}' for allele in ds_result.alleles.collect()
     ]
     variants = [
-        f'{variants_chrom_pos[i]}:{variants_alleles[i]}'.replace('chr','')
+        f'{variants_chrom_pos[i]}:{variants_alleles[i]}'.replace('chr', '')
         for i in range(len(variants_chrom_pos))
     ]
 
