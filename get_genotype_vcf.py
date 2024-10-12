@@ -300,13 +300,22 @@ def main(
         pruned_variant_table = hl.ld_prune(
             mt.GT, r2=ld_prune_r2, bp_window_size=ld_prune_bp_window_size
         )
+
+        # write the resulting table
+        pruned_variant_table = pruned_variant_table.checkpoint(
+            output_path('pruned_result.ht', category='tmp')
+        )
+
+        # filter MT to only include pruned variants
         mt = mt.filter_rows(hl.is_defined(pruned_variant_table[mt.row_key]))
 
-        logging.info(f'pruning completed, {mt.count_rows()} variants left')
+        # only count once
+        remaining_variants = mt.count_rows()
+
+        logging.info(f'pruning completed, {remaining_variants} variants left')
         # randomly sample {vre_n_markers} variants
-        mt = mt.sample_rows((vre_n_markers * 1.1) / mt.count_rows(), seed=0)
+        mt = mt.sample_rows((vre_n_markers * 1.1) / remaining_variants, seed=0)
         mt = mt.head(vre_n_markers)
-        logging.info(f'sampling completed, {mt.count()} variants left')
 
         # export to plink common variants only for sparse GRM
         export_plink(mt, vre_plink_path, ind_id=mt.s)
