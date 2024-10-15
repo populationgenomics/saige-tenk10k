@@ -37,6 +37,7 @@ from cpg_utils.hail_batch import get_batch, init_batch
 def make_group_file(
     chrom_mt: hl.matrixtable,
     gene: str,
+    chrom: str,
     cis_window_files_path: str,
     group_file,
     cis_window: int,
@@ -210,6 +211,7 @@ def main(
                     make_group_file,
                     chrom_mt=chrom_mt,
                     gene=gene,
+                    chrom=chrom,
                     cis_window_files_path=cis_window_files_path,
                     group_file=to_path(group_file),
                     cis_window=cis_window,
