@@ -139,6 +139,14 @@ def make_group_file(
     default=3000,
     help='delay starting the jobs as they all access the same VDS which causes Hail issues',
 )
+@click.option(
+    '--gene-group-storage',
+    default='8G',
+)
+@click.option(
+    '--gene-group-memory',
+    default='8G',
+)
 def main(
     chromosomes: str,
     cis_window_files_path: str,
@@ -150,6 +158,8 @@ def main(
     genome_reference: str,
     concurrent_job_cap: int,
     max_delay: int,
+    gene_group_storage: str,
+    gene_group_memory: str,
 ):
     """
     Make group file for rare variant pipeline
@@ -205,6 +215,8 @@ def main(
                 gene_group_job = get_batch().new_python_job(
                     name=f'gene make group file: {gene}'
                 )
+                gene_group_job.storage(gene_group_storage)
+                gene_group_job.memory(gene_group_memory)
                 gene_group_job.call(
                     make_group_file,
                     vds_path=vds_path,
