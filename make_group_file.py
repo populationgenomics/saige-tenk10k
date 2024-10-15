@@ -35,9 +35,8 @@ from cpg_utils.hail_batch import get_batch, init_batch
 
 
 def make_group_file(
-    vds_path: str,
+    chrom_mt: hl.matrixtable,
     gene: str,
-    chrom: str,
     cis_window_files_path: str,
     group_file,
     cis_window: int,
@@ -68,9 +67,6 @@ def make_group_file(
     window_end = gene_df.columns.values[2]
     gene_interval = f'chr{num_chrom}:{window_start}-{window_end}'
     # extract variants within interval
-    vds = hl.vds.read_vds(vds_path)
-    chrom_vds = hl.vds.filter_chromosomes(vds, keep=chrom)
-    chrom_mt = hl.vds.to_dense_mt(chrom_vds)
     ds_result = filter_intervals(
         chrom_mt,
         [parse_locus_interval(gene_interval, reference_genome=genome_reference)],
@@ -169,6 +165,8 @@ def main(
             new_job.depends_on(all_jobs[-concurrent_job_cap])
         all_jobs.append(new_job)
 
+    vds = hl.vds.read_vds(vds_path)
+
     # loop over chromosomes
     for chrom in chromosomes.split(','):
         print(f'chrom: {chrom}')
@@ -191,6 +189,9 @@ def main(
         ]
         logging.info(f'I found these genes: {", ".join(genes)}')
 
+        chrom_vds = hl.vds.filter_chromosomes(vds, keep=chrom)
+        chrom_mt = hl.vds.to_dense_mt(chrom_vds)
+
         for gene in genes:
             print(f'gene: {gene}')
             if gamma != 'none':
@@ -207,9 +208,8 @@ def main(
                 )
                 gene_group_job.call(
                     make_group_file,
-                    vds_path=vds_path,
+                    chrom_mt=chrom_mt,
                     gene=gene,
-                    chrom=chrom,
                     cis_window_files_path=cis_window_files_path,
                     group_file=to_path(group_file),
                     cis_window=cis_window,

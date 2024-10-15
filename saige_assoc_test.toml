@@ -1,8 +1,8 @@
 [saige]
 # principal arguments
 celltypes = ['CD4_TCM']
-chromosomes = ['chr21']
-drop_genes =[]
+chromosomes = ['chr22']
+drop_genes =['ENSG00000211679']
 # secondary arguments
 max_parallel_jobs = 50
 cis_window_size = 100000
