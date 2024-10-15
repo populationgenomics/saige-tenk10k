@@ -26,7 +26,6 @@ analysis-runner \
 
 import click
 import logging
-from random import randint
 
 import hail as hl
 import hailtop.batch.job as hb_job
@@ -44,15 +43,20 @@ def make_group_file(
     cis_window: int,
     genome_reference: str,
     gamma: str,
+    max_delay: int,
 ):
     """
     Make group file
     """
     import math
+    import random
+    import time
 
     from hail import filter_intervals, parse_locus_interval
     import pandas as pd
     from cpg_utils.hail_batch import init_batch
+
+    time.sleep(random.randint(0, max_delay))
 
     init_batch()
 
@@ -201,7 +205,6 @@ def main(
                 gene_group_job = get_batch().new_python_job(
                     name=f'gene make group file: {gene}'
                 )
-                gene_group_job.command(f'sleep {randint(0, max_delay)}')
                 gene_group_job.call(
                     make_group_file,
                     vds_path=vds_path,
@@ -212,6 +215,7 @@ def main(
                     cis_window=cis_window,
                     genome_reference=genome_reference,
                     gamma=gamma,
+                    max_delay=max_delay,
                 )
                 manage_concurrency(gene_group_job)
                 logging.info(f'make group file job for {gene} scheduled')
