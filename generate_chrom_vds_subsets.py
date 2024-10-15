@@ -8,14 +8,14 @@ analysis-runner \
    --dataset "bioheart" \
    --access-level "standard" \
    --output-dir "generate_chr_subsets" \
-   python3 generate_chrom_vds_subset.py -i <VDS> -o gs://cpg-bucket/path/to/subsets --chroms chr2 chr3 chr4
+   python3 generate_chrom_vds_subsets.py -i <VDS> -o gs://cpg-bucket/path/to/subsets --chroms chr2 chr3 chr4
 """
 
 import logging
 from argparse import ArgumentParser
 from os.path import join
 
-import hl
+import hail as hl
 
 from cpg_utils import to_path
 from cpg_utils.hail_batch import get_batch, init_batch
