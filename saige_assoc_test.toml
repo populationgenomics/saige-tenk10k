@@ -1,18 +1,17 @@
 [saige]
 # principal arguments
-celltypes = ['B_naive']
+celltypes = ['CD4_TCM']
 chromosomes = ['chr21']
-drop_genes =[]
-
+drop_genes =['ENSG00000278996','ENSG00000241837']
 # secondary arguments
-max_parallel_jobs = 350
+max_parallel_jobs = 50
 cis_window_size = 100000
 # these args are applied directly to step1_fitNULLGLMM_qtl.R
 # as "--{key}={value} "
 [saige.build_fit_null]
 covarColList = 'sex,age,geno_PC1,geno_PC2,geno_PC3,geno_PC4,geno_PC5,harmony_PC1,harmony_PC2,harmony_PC3,harmony_PC4,harmony_PC5,BioHEART'
 sampleCovarColList = 'sex,age,geno_PC1,geno_PC2,geno_PC3,geno_PC4,geno_PC5'
-sampleIDColinphenoFile = 'individual'
+sampleIDColinphenoFile = 'sample_perm0'
 # Poisson, count_nb = Negative Binomial, quantitative = Normal
 traitType = 'count'
 
@@ -30,7 +29,7 @@ skipModelFitting = 'FALSE'
 # tolerance for convergence
 tol = 0.00001
 # max iterations (increase if it fails to converge)
-maxiterPCG = 5000
+maxiterPCG = 500
 IsOverwriteVarianceRatioFile = 'TRUE'
 [saige.sv_test]
 vcfField = 'GT'
@@ -63,3 +62,4 @@ storage = '25G'
 [saige.job_specs.set_test]
 cpu = 1
 storage = '30G'
+memory = "10G"

@@ -26,6 +26,7 @@ analysis-runner \
 
 import click
 import logging
+from random import randint
 
 import hail as hl
 import hailtop.batch.job as hb_job
@@ -128,6 +129,12 @@ def make_group_file(
         'risk jobs that are stuck (which are expensive)'
     ),
 )
+@click.option(
+    '--max-delay',
+    type=int,
+    default=3000,
+    help='delay starting the jobs as they all access the same VDS which causes Hail issues',
+)
 def main(
     chromosomes: str,
     cis_window_files_path: str,
@@ -138,6 +145,7 @@ def main(
     ngenes_to_test: str,
     genome_reference: str,
     concurrent_job_cap: int,
+    max_delay: int,
 ):
     """
     Make group file for rare variant pipeline
@@ -193,6 +201,7 @@ def main(
                 gene_group_job = get_batch().new_python_job(
                     name=f'gene make group file: {gene}'
                 )
+                gene_group_job.command(f'sleep {randint(0, max_delay)}')
                 gene_group_job.call(
                     make_group_file,
                     vds_path=vds_path,
