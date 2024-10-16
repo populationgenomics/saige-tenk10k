@@ -200,7 +200,7 @@ def main(
 
             mt = hl.variant_qc(mt)
 
-            if not rv_vcf_existence_outcome or rv_mt_existence_outcome:
+            if not rv_vcf_existence_outcome or not rv_mt_existence_outcome:
                 # rare variants only
                 rv_mt = mt.filter_rows(hl.min(mt.variant_qc.AF) < rv_maf_threshold)
 
