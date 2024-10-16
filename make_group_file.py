@@ -68,7 +68,7 @@ def make_group_file(
     window_end = gene_df.columns.values[2]
     gene_interval = f'chr{num_chrom}:{window_start}-{window_end}'
     # extract variants within interval
-    chrom_mt_filename = f'{mt_path}/{chrom}_rare_variants.mt'
+    chrom_mt_filename = dataset_path(f'{mt_path}/{chrom}_rare_variants.mt')
     chrom_mt = hl.read_matrix_table(chrom_mt_filename)
     ds_result = filter_intervals(
         chrom_mt,
@@ -178,7 +178,7 @@ def main(
             new_job.depends_on(all_jobs[-concurrent_job_cap])
         all_jobs.append(new_job)
 
-    mt_path = dataset_path(f'vds-{vds_name}')
+    mt_path = f'vds-{vds_name}'
 
     # loop over chromosomes
     for chrom in chromosomes.split(','):
