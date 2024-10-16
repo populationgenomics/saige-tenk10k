@@ -13,15 +13,14 @@ SAIGE-QTL association pipeline.
 To run:
 
 analysis-runner \
-   --description "make variant group input files" \
-   --dataset "bioheart" \
-   --access-level "standard" \
-   --output-dir "saige-qtl/bioheart_n990_and_tob_n1055/input_files/240920" \
-   python3 make_group_file.py --chromosomes chr2 \
-       --cis-window-files-path gs://cpg-bioheart-main/saige-qtl/bioheart_n990_and_tob_n1055/input_files/240920/cis_window_files/ \
-       --group-files-path gs://cpg-bioheart-main/saige-qtl/bioheart_n990_and_tob_n1055/input_files/240920/group_files/ \
-       --vcf-path gs://cpg-bioheart-main/saige-qtl/bioheart_n990_and_tob_n1055/input_files/240920/genotypes/vds-tenk10k1-0
-
+    --dataset "bioheart" \
+    --description "make variant group input files" \
+    --access-level "standard" \
+    --output-dir "saige-qtl/bioheart_n787_and_tob_n960/241008_ashg/input_files/" \
+    python3 make_group_file.py --chromosomes chr21 \
+        --cis-window-files-path=gs://cpg-bioheart-main/saige-qtl/bioheart_n787_and_tob_n960/241008_ashg/input_files/cis_window_files/ \
+        --group-files-path=gs://cpg-bioheart-main/saige-qtl/bioheart_n787_and_tob_n960/241008_ashg/input_files/group_files_mt/ \
+        --chrom-mt-files-path=gs://cpg-bioheart-main/saige-qtl/bioheart_n787_and_tob_n960/241008_ashg/input_files/genotypes/vds-tenk10k1-0_qc_pass
 """
 
 import click
