@@ -48,7 +48,6 @@ def make_group_file(
     """
     Make group file
     """
-    import math
     import random
     import time
 
@@ -79,7 +78,7 @@ def make_group_file(
     # strip the chr from chromosome, annotate as a new field
     # create a new text field with both alleles
     chrom_mt = chrom_mt.annotate_rows(
-        variant_string=hl.delimit(
+        var=hl.delimit(
             [
                 chrom_mt.locus.contig.replace('chr', ''),
                 hl.str(chrom_mt.locus.position),
@@ -105,25 +104,23 @@ def make_group_file(
         # Following the approach used by the APEX authors
         # doi: https://doi.org/10.1101/2020.12.18.423490
         chrom_mt = chrom_mt.annotate_rows(
-            **{'weight:dTSS': math.exp(-float(gamma) * chrom_mt.distance)}
+            **{'weight:dTSS': hl.exp(-float(gamma) * chrom_mt.distance)}
         )
 
         # re-key by variant string instead of locus/alleles
         # select the columns we want (dropping the rest)
         # keep only the rows
         chrom_mt = (
-            chrom_mt.key_rows_by(chrom_mt)
-            .select_rows('variant_string', 'gene', 'distance', 'weight:dTSS')
+            chrom_mt.key_rows_by(chrom_mt.var)
+            .select_rows('var', 'gene', 'weight:dTSS')
             .rows()
         )
 
     else:
         # we don't annotate weights/distances
-        chrom_mt = (
-            chrom_mt.key_rows_by(chrom_mt).select_rows('variant_string', 'gene').rows()
-        )
+        chrom_mt = chrom_mt.key_rows_by(chrom_mt.var).select_rows('var', 'gene').rows()
 
-    chrom_mt.export(group_file)
+    chrom_mt.export(group_file.replace('.tsv', '_tmp.tsv'))
 
 
 @click.command()
