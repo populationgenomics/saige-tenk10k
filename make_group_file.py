@@ -125,7 +125,7 @@ def make_group_file(
         # keep only the rows
         chrom_mt = (
             chrom_mt.key_rows_by(chrom_mt.var)
-            .select_rows('var', 'gene', 'weight:dTSS')
+            .select_rows('gene', 'weight:dTSS')
             .rows()
         )
         categories_data = {
@@ -135,7 +135,7 @@ def make_group_file(
 
     else:
         # we don't annotate weights/distances
-        chrom_mt = chrom_mt.key_rows_by(chrom_mt.var).select_rows('var', 'gene').rows()
+        chrom_mt = chrom_mt.key_rows_by(chrom_mt.var).select_rows('gene').rows()
         categories_data = {'gene': [gene, gene, gene], 'category': ['var', 'anno']}
 
     chrom_mt.export(group_file.replace('.tsv', '_tmp.tsv'))
