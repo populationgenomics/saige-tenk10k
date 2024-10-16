@@ -115,12 +115,28 @@ def make_group_file(
             .select_rows('var', 'gene', 'weight:dTSS')
             .rows()
         )
+        categories_data = {
+            'gene': [gene, gene, gene],
+            'category': ['var', 'anno', 'weight:dTSS'],
+        }
 
     else:
         # we don't annotate weights/distances
         chrom_mt = chrom_mt.key_rows_by(chrom_mt.var).select_rows('var', 'gene').rows()
+        categories_data = {'gene': [gene, gene, gene], 'category': ['var', 'anno']}
 
     chrom_mt.export(group_file.replace('.tsv', '_tmp.tsv'))
+    chrom_df = pd.read_csv(group_file.replace('.tsv', '_tmp.tsv'), sep='\t')
+    chrom_df['anno'] = 'null'
+    if gamma != 'none':
+        # annos before weights
+        chrom_df = chrom_df[['var', 'anno', 'weight:dTSS']]
+    vals_df = chrom_df.T
+    vals_df['category'] = vals_df.index
+    categories_df = pd.DataFrame(categories_data)
+    group_vals_df = pd.merge(categories_df, vals_df, on='category')
+    with group_file.open('w') as gdf:
+        group_vals_df.to_csv(gdf, index=False, header=False, sep=' ')
 
 
 @click.command()
