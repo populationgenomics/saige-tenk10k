@@ -167,7 +167,11 @@ def main(
         rv_vcf_existence_outcome = can_reuse(rv_vcf_path)
         logging.info(f'Does {rv_vcf_path} exist? {rv_vcf_existence_outcome}')
 
-        if not cv_vcf_existence_outcome or not rv_vcf_existence_outcome:
+        rv_mt_path = output_path(f'vds-{vds_name}/{chromosome}_rare_variants.mt')
+        rv_mt_existence_outcome = can_reuse(rv_mt_path)
+        logging.info(f'Does {rv_mt_path} exist? {rv_mt_existence_outcome}')
+
+        if not cv_vcf_existence_outcome or not rv_vcf_existence_outcome or not rv_mt_existence_outcome:
             # consider only relevant chromosome
             chrom_vds = hl.vds.filter_chromosomes(vds, keep=chromosome)
 
@@ -211,6 +215,10 @@ def main(
 
                 # export to vcf rare variants only
                 export_vcf(rv_mt, rv_vcf_path)
+
+            if not rv_mt_existence_outcome:
+                # save chrom + rare variant mt for group file script
+                rv_mt.write(rv_mt_path)
 
         # check existence of index file (CV) separately
         cv_index_file_existence_outcome = can_reuse(f'{cv_vcf_path}.csi')
