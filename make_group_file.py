@@ -12,15 +12,30 @@ SAIGE-QTL association pipeline.
 
 To run:
 
+In main:
+
 analysis-runner \
-    --dataset "bioheart" \
     --description "make variant group input files" \
+    --dataset "bioheart" \
     --access-level "standard" \
     --output-dir "saige-qtl/bioheart_n787_and_tob_n960/241008_ashg/input_files/" \
     python3 make_group_file.py --chromosomes chr21 \
         --cis-window-files-path=gs://cpg-bioheart-main/saige-qtl/bioheart_n787_and_tob_n960/241008_ashg/input_files/cis_window_files/ \
         --group-files-path=gs://cpg-bioheart-main/saige-qtl/bioheart_n787_and_tob_n960/241008_ashg/input_files/group_files_mt/ \
-        --chrom-mt-files-path=gs://cpg-bioheart-main/saige-qtl/bioheart_n787_and_tob_n960/241008_ashg/input_files/genotypes/vds-tenk10k1-0_qc_pass
+        --chrom-mt-files-path=gs://cpg-bioheart-main/saige-qtl/bioheart_n787_and_tob_n960/241008_ashg/input_files/genotypes/vds-tenk10k1-0_qc_pass --max-delay=30
+
+In test:
+
+analysis-runner \
+   --description "make variant group input files" \
+   --dataset "bioheart" \
+   --access-level "test" \
+   --output-dir "saige-qtl/bioheart_n990_and_tob_n1055/241004_n100/input_files/" \
+   python3 make_group_file.py --chromosomes chr21 \
+       --cis-window-files-path gs://cpg-bioheart-test/saige-qtl/bioheart_n990_and_tob_n1055/241004_n100/input_files/cis_window_files/ \
+       --group-files-path gs://cpg-bioheart-test/saige-qtl/bioheart_n990_and_tob_n1055/241004_n100/input_files/group_files_mt/ \
+       --chrom-mt-files-path gs://cpg-bioheart-test/saige-qtl/bioheart_n990_and_tob_n1055/241004_n100/input_files/genotypes/vds-tenk10k1-0_subset --max-delay=10
+
 """
 
 import click
@@ -47,7 +62,6 @@ def make_group_file(
     """
     Make group file
     """
-    import math
     import random
     import time
 
@@ -69,45 +83,69 @@ def make_group_file(
     # extract variants within interval
     chrom_mt_filename = f'{mt_path}/{chrom}_rare_variants.mt'
     chrom_mt = hl.read_matrix_table(chrom_mt_filename)
-    ds_result = filter_intervals(
+    chrom_mt = filter_intervals(
         chrom_mt,
         [parse_locus_interval(gene_interval, reference_genome=genome_reference)],
     )
-    variants_chrom_pos = [
-        f'{loc.contig}:{loc.position}' for loc in ds_result.locus.collect()
-    ]
-    variants_alleles = [
-        f'{allele[0]}:{allele[1]}' for allele in ds_result.alleles.collect()
-    ]
-    variants = [
-        f'{variants_chrom_pos[i]}:{variants_alleles[i]}'.replace('chr', '')
-        for i in range(len(variants_chrom_pos))
-    ]
+
+    # strip the chr from chromosome, annotate as a new field
+    # create a new text field with both alleles
+    chrom_mt = chrom_mt.annotate_rows(
+        var=hl.delimit(
+            [
+                chrom_mt.locus.contig.replace('chr', ''),
+                hl.str(chrom_mt.locus.position),
+                chrom_mt.alleles[0],
+                chrom_mt.alleles[1],
+            ],
+            ':',
+        ),
+        gene=gene,
+    )
 
     if gamma != 'none':
+
         gene_tss = int(window_start) + cis_window
-        distances = [int(var.split(":")[1]) - gene_tss for var in variants]
+
+        # annotate distances
+        chrom_mt = chrom_mt.annotate_rows(
+            distance=hl.abs(chrom_mt.locus.position - gene_tss)
+        )
+
         # get weight for genetic variants based on
         # the distance of that variant from the gene
         # Following the approach used by the APEX authors
         # doi: https://doi.org/10.1101/2020.12.18.423490
-        weights = [math.exp(-float(gamma) * abs(d)) for d in distances]
-        group_df = pd.DataFrame(
-            {
-                'gene': [gene, gene, gene],
-                'category': ['var', 'anno', 'weight:dTSS'],
-            }
+        chrom_mt = chrom_mt.annotate_rows(
+            **{'weight:dTSS': hl.exp(-float(gamma) * chrom_mt.distance)}
         )
-        vals_df = pd.DataFrame(
-            {'var': variants, 'anno': 'null', 'weight:dTSS': weights}
-        ).T
-    else:
-        group_df = pd.DataFrame({'gene': [gene, gene], 'category': ['var', 'anno']})
-        vals_df = pd.DataFrame({'var': variants, 'anno': 'null'}).T
-    vals_df['category'] = vals_df.index
-    # combine
-    group_vals_df = pd.merge(group_df, vals_df, on='category')
 
+        # re-key by variant string instead of locus/alleles
+        # select the columns we want (dropping the rest)
+        # keep only the rows
+        chrom_mt = (
+            chrom_mt.key_rows_by(chrom_mt.var).select_rows('gene', 'weight:dTSS').rows()
+        )
+        categories_data = {
+            'gene': [gene, gene, gene],
+            'category': ['var', 'anno', 'weight:dTSS'],
+        }
+
+    else:
+        # we don't annotate weights/distances
+        chrom_mt = chrom_mt.key_rows_by(chrom_mt.var).select_rows('gene').rows()
+        categories_data = {'gene': [gene, gene, gene], 'category': ['var', 'anno']}
+
+    chrom_mt.export(str(group_file).replace('.tsv', '_tmp.tsv'))
+    chrom_df = pd.read_csv(str(group_file).replace('.tsv', '_tmp.tsv'), sep='\t')
+    chrom_df['anno'] = 'null'
+    if gamma != 'none':
+        # annos before weights
+        chrom_df = chrom_df[['var', 'anno', 'weight:dTSS']]
+    vals_df = chrom_df.T
+    vals_df['category'] = vals_df.index
+    categories_df = pd.DataFrame(categories_data)
+    group_vals_df = pd.merge(categories_df, vals_df, on='category')
     with group_file.open('w') as gdf:
         group_vals_df.to_csv(gdf, index=False, header=False, sep=' ')
 
