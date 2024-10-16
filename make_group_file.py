@@ -124,9 +124,7 @@ def make_group_file(
         # select the columns we want (dropping the rest)
         # keep only the rows
         chrom_mt = (
-            chrom_mt.key_rows_by(chrom_mt.var)
-            .select_rows('gene', 'weight:dTSS')
-            .rows()
+            chrom_mt.key_rows_by(chrom_mt.var).select_rows('gene', 'weight:dTSS').rows()
         )
         categories_data = {
             'gene': [gene, gene, gene],
