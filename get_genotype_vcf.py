@@ -200,6 +200,22 @@ def main(
 
             mt = hl.variant_qc(mt)
 
+            if not rv_vcf_existence_outcome or rv_mt_existence_outcome:
+                # rare variants only
+                rv_mt = mt.filter_rows(hl.min(mt.variant_qc.AF) < rv_maf_threshold)
+
+                if not rv_mt_existence_outcome:
+                    # save chrom + rare variant mt for group file script
+                    rv_mt.write(rv_mt_path)
+                    rv_mt = hl.read_matrix_table(rv_mt_path)
+
+                if not rv_vcf_existence_outcome:
+                    # remove fields not in the VCF
+                    rv_mt = rv_mt.drop('gvcf_info')
+
+                    # export to vcf rare variants only
+                    export_vcf(rv_mt, rv_vcf_path)
+
             if not cv_vcf_existence_outcome:
                 # common variants only
                 cv_mt = mt.filter_rows(hl.min(mt.variant_qc.AF) >= cv_maf_threshold)
@@ -209,21 +225,6 @@ def main(
 
                 # export to vcf common variants only
                 export_vcf(cv_mt, cv_vcf_path)
-
-            if not rv_vcf_existence_outcome or rv_mt_existence_outcome:
-                # rare variants only
-                rv_mt = mt.filter_rows(hl.min(mt.variant_qc.AF) < rv_maf_threshold)
-
-                if not rv_vcf_existence_outcome:
-                    # remove fields not in the VCF
-                    rv_mt = rv_mt.drop('gvcf_info')
-
-                    # export to vcf rare variants only
-                    export_vcf(rv_mt, rv_vcf_path)
-
-                if not rv_mt_existence_outcome:
-                    # save chrom + rare variant mt for group file script
-                    rv_mt.write(rv_mt_path)
 
         # check existence of index file (CV) separately
         cv_index_file_existence_outcome = can_reuse(f'{cv_vcf_path}.csi')
