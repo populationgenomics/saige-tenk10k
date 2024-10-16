@@ -136,8 +136,8 @@ def make_group_file(
         chrom_mt = chrom_mt.key_rows_by(chrom_mt.var).select_rows('gene').rows()
         categories_data = {'gene': [gene, gene, gene], 'category': ['var', 'anno']}
 
-    chrom_mt.export(group_file.replace('.tsv', '_tmp.tsv'))
-    chrom_df = pd.read_csv(group_file.replace('.tsv', '_tmp.tsv'), sep='\t')
+    chrom_mt.export(str(group_file).replace('.tsv', '_tmp.tsv'))
+    chrom_df = pd.read_csv(str(group_file).replace('.tsv', '_tmp.tsv'), sep='\t')
     chrom_df['anno'] = 'null'
     if gamma != 'none':
         # annos before weights
