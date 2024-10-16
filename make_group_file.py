@@ -32,9 +32,9 @@ analysis-runner \
    --access-level "test" \
    --output-dir "saige-qtl/bioheart_n990_and_tob_n1055/241004_n100/input_files/" \
    python3 make_group_file.py --chromosomes chr21 \
-       --cis-window-files-path gs://cpg-bioheart-main/saige-qtl/bioheart_n990_and_tob_n1055/241004_n100/input_files/cis_window_files/ \
-       --group-files-path gs://cpg-bioheart-main/saige-qtl/bioheart_n990_and_tob_n1055/241004_n100/input_files/group_files_mt/ \
-       --chrom-mt-files-path gs://cpg-bioheart-main/saige-qtl/bioheart_n990_and_tob_n1055/241004_n100/input_files/genotypes/vds-tenk10k1-0_subset --max-delay=10
+       --cis-window-files-path gs://cpg-bioheart-test/saige-qtl/bioheart_n990_and_tob_n1055/241004_n100/input_files/cis_window_files/ \
+       --group-files-path gs://cpg-bioheart-test/saige-qtl/bioheart_n990_and_tob_n1055/241004_n100/input_files/group_files_mt/ \
+       --chrom-mt-files-path gs://cpg-bioheart-test/saige-qtl/bioheart_n990_and_tob_n1055/241004_n100/input_files/genotypes/vds-tenk10k1-0_subset --max-delay=10
 
 """
 
