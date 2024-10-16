@@ -79,8 +79,15 @@ def make_group_file(
     # strip the chr from chromosome, annotate as a new field
     # create a new text field with both alleles
     chrom_mt = chrom_mt.annotate_rows(
-        variant_string=hl.delimit([chrom_mt.chrom.replace('chr', ''), hl.str(chrom_mt.locus.position), chrom_mt.alleles], ':'),
-        gene=gene
+        variant_string=hl.delimit(
+            [
+                chrom_mt.chrom.replace('chr', ''),
+                hl.str(chrom_mt.locus.position),
+                *chrom_mt.alleles,
+            ],
+            ':',
+        ),
+        gene=gene,
     )
 
     if gamma != 'none':
@@ -88,26 +95,34 @@ def make_group_file(
         gene_tss = int(window_start) + cis_window
 
         # annotate distances
-        chrom_mt = chrom_mt.annotate_rows(distance=hl.abs(chrom_mt.locus.position - gene_tss))
+        chrom_mt = chrom_mt.annotate_rows(
+            distance=hl.abs(chrom_mt.locus.position - gene_tss)
+        )
 
         # get weight for genetic variants based on
         # the distance of that variant from the gene
         # Following the approach used by the APEX authors
         # doi: https://doi.org/10.1101/2020.12.18.423490
-        chrom_mt = chrom_mt.annotate_rows(**{'weight:dTSS': math.exp(-float(gamma) * chrom_mt.distance)})
+        chrom_mt = chrom_mt.annotate_rows(
+            **{'weight:dTSS': math.exp(-float(gamma) * chrom_mt.distance)}
+        )
 
         # re-key by variant string instead of locus/alleles
         # select the columns we want (dropping the rest)
         # keep only the rows
-        chrom_mt = chrom_mt.key_rows_by(chrom_mt).select_rows(
-            'variant_string', 'gene', 'distance', 'weight:dTSS'
-        ).rows()
+        chrom_mt = (
+            chrom_mt.key_rows_by(chrom_mt)
+            .select_rows('variant_string', 'gene', 'distance', 'weight:dTSS')
+            .rows()
+        )
 
     else:
         # we don't annotate weights/distances
-        chrom_mt = chrom_mt.key_rows_by(chrom_mt).select_rows('variant_string', 'gene').rows()
+        chrom_mt = (
+            chrom_mt.key_rows_by(chrom_mt).select_rows('variant_string', 'gene').rows()
+        )
 
-    chrom_mt.write(group_file)
+    chrom_mt.export(group_file)
 
 
 @click.command()
