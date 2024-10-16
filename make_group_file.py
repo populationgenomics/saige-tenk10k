@@ -81,9 +81,10 @@ def make_group_file(
     chrom_mt = chrom_mt.annotate_rows(
         variant_string=hl.delimit(
             [
-                chrom_mt.chrom.replace('chr', ''),
+                chrom_mt.locus.contig.replace('chr', ''),
                 hl.str(chrom_mt.locus.position),
-                *chrom_mt.alleles,
+                chrom_mt.alleles[0],
+                chrom_mt.alleles[1],
             ],
             ':',
         ),
