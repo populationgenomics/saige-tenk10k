@@ -13,15 +13,14 @@ SAIGE-QTL association pipeline.
 To run:
 
 analysis-runner \
-   --description "make variant group input files" \
-   --dataset "bioheart" \
-   --access-level "standard" \
-   --output-dir "saige-qtl/bioheart_n990_and_tob_n1055/input_files/240920" \
-   python3 make_group_file.py --chromosomes chr2 \
-       --cis-window-files-path gs://cpg-bioheart-main/saige-qtl/bioheart_n990_and_tob_n1055/input_files/240920/cis_window_files/ \
-       --group-files-path gs://cpg-bioheart-main/saige-qtl/bioheart_n990_and_tob_n1055/input_files/240920/group_files/ \
-       --vcf-path gs://cpg-bioheart-main/saige-qtl/bioheart_n990_and_tob_n1055/input_files/240920/genotypes/vds-tenk10k1-0
-
+    --dataset "bioheart" \
+    --description "make variant group input files" \
+    --access-level "standard" \
+    --output-dir "saige-qtl/bioheart_n787_and_tob_n960/241008_ashg/input_files/" \
+    python3 make_group_file.py --chromosomes chr21 \
+        --cis-window-files-path=gs://cpg-bioheart-main/saige-qtl/bioheart_n787_and_tob_n960/241008_ashg/input_files/cis_window_files/ \
+        --group-files-path=gs://cpg-bioheart-main/saige-qtl/bioheart_n787_and_tob_n960/241008_ashg/input_files/group_files_mt/ \
+        --chrom-mt-files-path=gs://cpg-bioheart-main/saige-qtl/bioheart_n787_and_tob_n960/241008_ashg/input_files/genotypes/vds-tenk10k1-0_qc_pass
 """
 
 import click
@@ -35,7 +34,7 @@ from cpg_utils.hail_batch import get_batch, init_batch
 
 
 def make_group_file(
-    vds_path: str,
+    mt_path: str,
     gene: str,
     chrom: str,
     cis_window_files_path: str,
@@ -66,10 +65,9 @@ def make_group_file(
     window_start = gene_df.columns.values[1]
     window_end = gene_df.columns.values[2]
     gene_interval = f'chr{num_chrom}:{window_start}-{window_end}'
-    # extract variants within interval - ideally drop this read & densify (see #193)
-    vds = hl.vds.read_vds(vds_path)
-    chrom_vds = hl.vds.filter_chromosomes(vds, keep=chrom)
-    chrom_mt = hl.vds.to_dense_mt(chrom_vds)
+    # extract variants within interval
+    chrom_mt_filename = f'{mt_path}/{chrom}_rare_variants.mt'
+    chrom_mt = hl.read_matrix_table(chrom_mt_filename)
     chrom_mt = filter_intervals(
         chrom_mt,
         [parse_locus_interval(gene_interval, reference_genome=genome_reference)],
@@ -143,7 +141,7 @@ def make_group_file(
 @click.option('--chromosomes', help=' chr1,chr22 ')
 @click.option('--cis-window-files-path')
 @click.option('--group-files-path')
-@click.option('--vds-path')
+@click.option('--chrom-mt-files-path')
 @click.option('--cis-window', default=100000)
 @click.option('--gamma', default='1e-5')
 @click.option('--ngenes-to-test', default='all')
@@ -176,7 +174,7 @@ def main(
     chromosomes: str,
     cis_window_files_path: str,
     group_files_path: str,
-    vds_path,
+    chrom_mt_files_path: str,
     cis_window: int,
     gamma: str,
     ngenes_to_test: str,
@@ -244,7 +242,7 @@ def main(
                 gene_group_job.memory(gene_group_memory)
                 gene_group_job.call(
                     make_group_file,
-                    vds_path=vds_path,
+                    mt_path=chrom_mt_files_path,
                     gene=gene,
                     chrom=chrom,
                     cis_window_files_path=cis_window_files_path,
