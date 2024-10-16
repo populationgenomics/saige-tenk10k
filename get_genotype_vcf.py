@@ -171,7 +171,11 @@ def main(
         rv_mt_existence_outcome = can_reuse(rv_mt_path)
         logging.info(f'Does {rv_mt_path} exist? {rv_mt_existence_outcome}')
 
-        if not cv_vcf_existence_outcome or not rv_vcf_existence_outcome or not rv_mt_existence_outcome:
+        if (
+            not cv_vcf_existence_outcome
+            or not rv_vcf_existence_outcome
+            or not rv_mt_existence_outcome
+        ):
             # consider only relevant chromosome
             chrom_vds = hl.vds.filter_chromosomes(vds, keep=chromosome)
 
