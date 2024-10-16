@@ -31,11 +31,11 @@ import hail as hl
 import hailtop.batch.job as hb_job
 
 from cpg_utils import to_path
-from cpg_utils.hail_batch import get_batch, init_batch
+from cpg_utils.hail_batch import dataset_path, get_batch, init_batch
 
 
 def make_group_file(
-    vds_path: str,
+    mt_path: str,
     gene: str,
     chrom: str,
     cis_window_files_path: str,
@@ -68,9 +68,8 @@ def make_group_file(
     window_end = gene_df.columns.values[2]
     gene_interval = f'chr{num_chrom}:{window_start}-{window_end}'
     # extract variants within interval
-    vds = hl.vds.read_vds(vds_path)
-    chrom_vds = hl.vds.filter_chromosomes(vds, keep=chrom)
-    chrom_mt = hl.vds.to_dense_mt(chrom_vds)
+    chrom_mt_filename = f'{mt_path}/{chrom}_rare_variants.mt'
+    chrom_mt = hl.read_matrix_table(chrom_mt_filename)
     ds_result = filter_intervals(
         chrom_mt,
         [parse_locus_interval(gene_interval, reference_genome=genome_reference)],
@@ -118,7 +117,7 @@ def make_group_file(
 @click.option('--chromosomes', help=' chr1,chr22 ')
 @click.option('--cis-window-files-path')
 @click.option('--group-files-path')
-@click.option('--vds-path')
+@click.option('--vds-name')
 @click.option('--cis-window', default=100000)
 @click.option('--gamma', default='1e-5')
 @click.option('--ngenes-to-test', default='all')
@@ -151,7 +150,7 @@ def main(
     chromosomes: str,
     cis_window_files_path: str,
     group_files_path: str,
-    vds_path,
+    vds_name: str,
     cis_window: int,
     gamma: str,
     ngenes_to_test: str,
@@ -178,6 +177,8 @@ def main(
         if len(all_jobs) > concurrent_job_cap:
             new_job.depends_on(all_jobs[-concurrent_job_cap])
         all_jobs.append(new_job)
+
+    mt_path = dataset_path(f'vds-{vds_name}')
 
     # loop over chromosomes
     for chrom in chromosomes.split(','):
@@ -219,7 +220,7 @@ def main(
                 gene_group_job.memory(gene_group_memory)
                 gene_group_job.call(
                     make_group_file,
-                    vds_path=vds_path,
+                    mt_path=mt_path,
                     gene=gene,
                     chrom=chrom,
                     cis_window_files_path=cis_window_files_path,
