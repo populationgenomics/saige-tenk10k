@@ -39,9 +39,22 @@ VARS_PER_PARTITION = 20000
 
 
 def can_reuse(path: str):
-    if path and to_path(path).exists():
-        return True
-    return False
+    """
+    checks for existence of a Path
+    if the path is a MT or VDS, checks for the success file
+    """
+
+    if not path:
+        return False
+
+    path_as_path = to_path(path)
+
+    if path_as_path.suffix in ['.mt', '.ht']:
+        path_as_path /= '_SUCCESS'
+    if path_as_path.suffix in ['.vds']:
+        path_as_path /= 'variant_data/_SUCCESS'
+
+    return path_as_path.exists()
 
 
 def add_remove_chr_and_index_job(vcf_path):
@@ -206,7 +219,7 @@ def main(
 
                 if not rv_mt_existence_outcome:
                     # save chrom + rare variant mt for group file script
-                    rv_mt.write(rv_mt_path)
+                    rv_mt.write(rv_mt_path, overwrite=True)
                     rv_mt = hl.read_matrix_table(rv_mt_path)
 
                 if not rv_vcf_existence_outcome:
