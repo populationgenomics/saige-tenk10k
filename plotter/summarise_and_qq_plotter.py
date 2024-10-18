@@ -46,6 +46,7 @@ def plot_pvalues(
     init_batch()
 
     for celltype in celltypes.split(','):
+        print(f'summarising {common_or_rare} results for {celltype}')
 
         # collect all raw p-value files
         if common_or_rare == 'common':
@@ -60,6 +61,7 @@ def plot_pvalues(
                     f'{celltype}/*/{celltype}_*_cis_rare.singleAssoc.txt'
                 )
             ]
+        print(f'these are the files Im concatenating: {existing_assoc_results}')
         # concatenates the dataframes using pandas
         results_all_df_list = []
         results_top_snp_df_list = []
