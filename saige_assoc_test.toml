@@ -1,8 +1,8 @@
 [saige]
 # principal arguments
-celltypes = ['CD4_Naive','NK']
+celltypes = ['CD4_Naive']
 chromosomes = ['chr6']
-drop_genes =[]
+drop_genes =['ENSG00000196376','ENSG00000290710']
 # secondary arguments
 max_parallel_jobs = 50
 cis_window_size = 100000
@@ -62,4 +62,4 @@ storage = '25G'
 [saige.job_specs.set_test]
 cpu = 1
 storage = '30G'
-memory = "50G"
+memory = "15G"
