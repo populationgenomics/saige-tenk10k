@@ -65,40 +65,45 @@ def add_variant_to_pheno_file(
     pheno_df = pd.read_csv(pheno_file, sep='\t')
     # open conditional file to extract variant(s)
     conditional_file = f'{conditional_files_path}{celltype}_conditional_file.tsv'
+    condition_df = pd.read_csv(conditional_file, sep='\t')
+    variants = condition_df[condition_df['gene']==gene]['variants_to_condition_on']
     # extract variant(s) from chrom mt
     chrom_mt_filename = f'{mt_path}/{chrom}_common_variants.mt'
     chrom_mt = hl.read_matrix_table(chrom_mt_filename)
-    chrom_mt = filter_intervals(
-        chrom_mt,
-        [parse_locus_interval(gene_interval, reference_genome=genome_reference)],
-    )
+    # extract genotypes for relevant variant(s)
+    # add as column to new df
+    new_pheno_df = pheno_df
+    # chrom_mt = filter_intervals(
+    #     chrom_mt,
+    #     [parse_locus_interval(gene_interval, reference_genome=genome_reference)],
+    # )
 
-    # strip the chr from chromosome, annotate as a new field
-    # create a new text field with both alleles
-    chrom_mt = chrom_mt.annotate_rows(
-        var=hl.delimit(
-            [
-                chrom_mt.locus.contig.replace('chr', ''),
-                hl.str(chrom_mt.locus.position),
-                chrom_mt.alleles[0],
-                chrom_mt.alleles[1],
-            ],
-            ':',
-        ),
-        gene=gene,
-    )
-    chrom_mt.export(str(group_file).replace('.tsv', '_tmp.tsv'))
-    chrom_df = pd.read_csv(str(group_file).replace('.tsv', '_tmp.tsv'), sep='\t')
-    chrom_df['anno'] = 'null'
-    if gamma != 'none':
-        # annos before weights
-        chrom_df = chrom_df[['var', 'anno', 'weight:dTSS']]
-    vals_df = chrom_df.T
-    vals_df['category'] = vals_df.index
-    categories_df = pd.DataFrame(categories_data)
-    group_vals_df = pd.merge(categories_df, vals_df, on='category')
-    with group_file.open('w') as gdf:
-        group_vals_df.to_csv(gdf, index=False, header=False, sep=' ')
+    # # strip the chr from chromosome, annotate as a new field
+    # # create a new text field with both alleles
+    # chrom_mt = chrom_mt.annotate_rows(
+    #     var=hl.delimit(
+    #         [
+    #             chrom_mt.locus.contig.replace('chr', ''),
+    #             hl.str(chrom_mt.locus.position),
+    #             chrom_mt.alleles[0],
+    #             chrom_mt.alleles[1],
+    #         ],
+    #         ':',
+    #     ),
+    #     gene=gene,
+    # )
+    # chrom_mt.export(str(group_file).replace('.tsv', '_tmp.tsv'))
+    # chrom_df = pd.read_csv(str(group_file).replace('.tsv', '_tmp.tsv'), sep='\t')
+    # chrom_df['anno'] = 'null'
+    # if gamma != 'none':
+    #     # annos before weights
+    #     chrom_df = chrom_df[['var', 'anno', 'weight:dTSS']]
+    # vals_df = chrom_df.T
+    # vals_df['category'] = vals_df.index
+    # categories_df = pd.DataFrame(categories_data)
+    # group_vals_df = pd.merge(categories_df, vals_df, on='category')
+    with new_pheno_files_path.open('w') as npf:
+        new_pheno_df.to_csv(npf, index=False, header=False, sep=' ')
 
 
 @click.command()
