@@ -155,57 +155,53 @@ def main(
         all_jobs.append(new_job)
 
     # loop over chromosomes
-    for chrom in chromosomes.split(','):
-        print(f'chrom: {chrom}')
+    for celltype in celltypes.split(','):
+        print(f'celltype: {celltype}')
+        # loop over chromosomes
+        for chrom in chromosomes.split(','):
+            print(f'chrom: {chrom}')
 
-        # do a glob, then pull out all file names as Strings
-        files = [
-            str(file)
-            for file in to_path(cis_window_files_path).glob(f'{chrom}/*bp.tsv')
-        ]
-        # if specified, only test ngenes genes
-        if ngenes_to_test != 'all':
-            files = files[0 : int(ngenes_to_test)]
-        logging.info(f'I found these files: {", ".join(files)}')
+            # do a glob, then pull out all file names as Strings
+            files = [
+                str(file)
+                for file in to_path(cis_window_files_path).glob(f'{chrom}/*bp.tsv')
+            ]
+            # if specified, only test ngenes genes
+            if ngenes_to_test != 'all':
+                files = files[0 : int(ngenes_to_test)]
+            logging.info(f'I found these files: {", ".join(files)}')
 
-        genes = [
-            f.replace(f'_{cis_window}bp.tsv', '').replace(
-                f'{cis_window_files_path}{chrom}/', ''
-            )
-            for f in files
-        ]
-        logging.info(f'I found these genes: {", ".join(genes)}')
+            genes = [
+                f.replace(f'_{cis_window}bp.tsv', '').replace(
+                    f'{cis_window_files_path}{chrom}/', ''
+                )
+                for f in files
+            ]
+            logging.info(f'I found these genes: {", ".join(genes)}')
 
-        for gene in genes:
-            print(f'gene: {gene}')
-            if gamma != 'none':
-                group_file = (
-                    f'{group_files_path}{chrom}/{gene}_{cis_window}bp_dTSS_weights.tsv'
-                )
-            else:
-                group_file = (
-                    f'{group_files_path}{chrom}/{gene}_{cis_window}bp_no_weights.tsv'
-                )
-            if not to_path(group_file).exists():
-                gene_group_job = get_batch().new_python_job(
-                    name=f'gene make group file: {gene}'
-                )
-                gene_group_job.storage(gene_group_storage)
-                gene_group_job.memory(gene_group_memory)
-                gene_group_job.call(
-                    make_group_file,
-                    mt_path=chrom_mt_files_path,
-                    gene=gene,
-                    chrom=chrom,
-                    cis_window_files_path=cis_window_files_path,
-                    group_file=to_path(group_file),
-                    cis_window=cis_window,
-                    genome_reference=genome_reference,
-                    gamma=gamma,
-                    max_delay=max_delay,
-                )
-                manage_concurrency(gene_group_job)
-                logging.info(f'make group file job for {gene} scheduled')
+            for gene in genes:
+                print(f'gene: {gene}')
+                pheno_new_file = f'{condition_pheno_files_path}_'
+                if not to_path(pheno_new_file).exists():
+                    pheno_cond_job = get_batch().new_python_job(
+                        name=f'gene make pheno cond file: {celltype},{gene}'
+                    )
+                    pheno_cond_job.storage(gene_condition_storage)
+                    pheno_cond_job.memory(gene_condition_memory)
+                    pheno_cond_job.call(
+                        add_variant_to_pheno_file,
+                        mt_path=chrom_mt_files_path,
+                        gene=gene,
+                        chrom=chrom,
+                        celltype=celltype,
+                        original_pheno_files_path=original_pheno_files_path,
+                        new_pheno_files_path=new_pheno_files_path,
+                        conditional_files_path=conditional_files_path,
+                    )
+                    manage_concurrency(pheno_cond_job)
+                    logging.info(
+                        f'make conditional pheno cov file job for {gene}, {celltype} scheduled'
+                    )
 
     get_batch().run(wait=False)
 
