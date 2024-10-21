@@ -176,6 +176,10 @@ def main(
         cv_vcf_existence_outcome = can_reuse(cv_vcf_path)
         logging.info(f'Does {cv_vcf_path} exist? {cv_vcf_existence_outcome}')
 
+        cv_mt_path = output_path(f'vds-{vds_name}/{chromosome}_rare_variants.mt')
+        cv_mt_existence_outcome = can_reuse(cv_mt_path)
+        logging.info(f'Does {cv_mt_path} exist? {cv_mt_existence_outcome}')
+
         rv_vcf_path = output_path(f'vds-{vds_name}/{chromosome}_rare_variants.vcf.bgz')
         rv_vcf_existence_outcome = can_reuse(rv_vcf_path)
         logging.info(f'Does {rv_vcf_path} exist? {rv_vcf_existence_outcome}')
@@ -186,6 +190,7 @@ def main(
 
         if (
             not cv_vcf_existence_outcome
+            or not cv_mt_existence_outcome
             or not rv_vcf_existence_outcome
             or not rv_mt_existence_outcome
         ):
@@ -229,15 +234,21 @@ def main(
                     # export to vcf rare variants only
                     export_vcf(rv_mt, rv_vcf_path)
 
-            if not cv_vcf_existence_outcome:
+            if not cv_vcf_existence_outcome or not cv_mt_existence_outcome:
                 # common variants only
                 cv_mt = mt.filter_rows(hl.min(mt.variant_qc.AF) >= cv_maf_threshold)
 
-                # remove fields not in the VCF
-                cv_mt = cv_mt.drop('gvcf_info')
+                if not cv_mt_existence_outcome:
+                    # save chrom + rare variant mt for group file script
+                    cv_mt.write(cv_mt_path, overwrite=True)
+                    cv_mt = hl.read_matrix_table(cv_mt_path)
 
-                # export to vcf common variants only
-                export_vcf(cv_mt, cv_vcf_path)
+                if not cv_vcf_existence_outcome:
+                    # remove fields not in the VCF
+                    cv_mt = cv_mt.drop('gvcf_info')
+
+                    # export to vcf common variants only
+                    export_vcf(cv_mt, cv_vcf_path)
 
         # check existence of index file (CV) separately
         cv_index_file_existence_outcome = can_reuse(f'{cv_vcf_path}.csi')

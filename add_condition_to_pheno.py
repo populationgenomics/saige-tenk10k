@@ -41,8 +41,10 @@ def add_variant_to_pheno_file(
     mt_path: str,
     gene: str,
     chrom: str,
+    celltype: str,
     original_pheno_files_path: str,
     new_pheno_files_path: str,
+    conditional_files_path: str,
     genome_reference: str,
 ):
     """
@@ -57,15 +59,14 @@ def add_variant_to_pheno_file(
 
     init_batch()
 
-    pheno_file = f'{original_pheno_files_path}{chrom}/{gene}.tsv'
+    # open original pheno cov file
+    pheno_file = f'{original_pheno_files_path}{celltype}/{chrom}/{gene}_{celltype}_pheno_cov.tsv'
     print(f'original pheno file: {pheno_file}')
-    gene_df = pd.read_csv(pheno_file, sep='\t')
-    num_chrom = gene_df.columns.values[0]
-    window_start = gene_df.columns.values[1]
-    window_end = gene_df.columns.values[2]
-    gene_interval = f'chr{num_chrom}:{window_start}-{window_end}'
-    # extract variants within interval
-    chrom_mt_filename = f'{mt_path}/{chrom}_rare_variants.mt'
+    pheno_df = pd.read_csv(pheno_file, sep='\t')
+    # open conditional file to extract variant(s)
+    conditional_file = f'{conditional_files_path}{celltype}_conditional_file.tsv'
+    # extract variant(s) from chrom mt
+    chrom_mt_filename = f'{mt_path}/{chrom}_common_variants.mt'
     chrom_mt = hl.read_matrix_table(chrom_mt_filename)
     chrom_mt = filter_intervals(
         chrom_mt,
