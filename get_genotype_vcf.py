@@ -176,7 +176,7 @@ def main(
         cv_vcf_existence_outcome = can_reuse(cv_vcf_path)
         logging.info(f'Does {cv_vcf_path} exist? {cv_vcf_existence_outcome}')
 
-        cv_mt_path = output_path(f'vds-{vds_name}/{chromosome}_rare_variants.mt')
+        cv_mt_path = output_path(f'vds-{vds_name}/{chromosome}_common_variants.mt')
         cv_mt_existence_outcome = can_reuse(cv_mt_path)
         logging.info(f'Does {cv_mt_path} exist? {cv_mt_existence_outcome}')
 
