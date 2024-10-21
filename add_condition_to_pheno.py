@@ -45,76 +45,67 @@ def add_variant_to_pheno_file(
     original_pheno_files_path: str,
     new_pheno_files_path: str,
     conditional_files_path: str,
-    genome_reference: str,
 ):
     """
-    Make conditional pheno file
+    Add variant as column to pheno cov file
     """
-    import random
-    import time
-
-    from hail import filter_intervals, parse_locus_interval
     import pandas as pd
     from cpg_utils.hail_batch import init_batch
 
     init_batch()
 
     # open original pheno cov file
-    pheno_file = f'{original_pheno_files_path}{celltype}/{chrom}/{gene}_{celltype}_pheno_cov.tsv'
+    pheno_file = (
+        f'{original_pheno_files_path}{celltype}/{chrom}/{gene}_{celltype}_pheno_cov.tsv'
+    )
     print(f'original pheno file: {pheno_file}')
     pheno_df = pd.read_csv(pheno_file, sep='\t')
     # open conditional file to extract variant(s)
     conditional_file = f'{conditional_files_path}{celltype}_conditional_file.tsv'
     condition_df = pd.read_csv(conditional_file, sep='\t')
-    variants = condition_df[condition_df['gene']==gene]['variants_to_condition_on']
+    variant = condition_df[condition_df['gene'] == gene]['variants_to_condition_on']
     # extract variant(s) from chrom mt
     chrom_mt_filename = f'{mt_path}/{chrom}_common_variants.mt'
     chrom_mt = hl.read_matrix_table(chrom_mt_filename)
     # extract genotypes for relevant variant(s)
-    # add as column to new df
-    new_pheno_df = pheno_df
-    # chrom_mt = filter_intervals(
-    #     chrom_mt,
-    #     [parse_locus_interval(gene_interval, reference_genome=genome_reference)],
-    # )
+    chrom_mt_filtered = chrom_mt.filter_rows(
+        (chrom_mt.locus.position == int(variant.split(':')[1]))
+        & (chrom_mt.alleles[1] == variant.split(':')[3])
+    )
+    # steal all the entries as a Table, dropping everything except chr, pos, alleles, Genotypes
+    genos = chrom_mt_filtered.select_entries('GT').select_rows().entries()
+    # create an integer representation of the genotypes
+    genos = genos.annotate(
+        GT=hl.case()
+        .when(genos.GT.is_hom_var(), 2)
+        .when(genos.GT.is_het(), 1)
+        .default(0)
+    )
+    # export
+    genos.export('table.tsv', delimiter='\t')
+    variant_underscores = variant.replace(":", "_")
+    new_pheno_file = pheno_file.replace('.tsv', f'_{variant_underscores}.tsv')
+    genos.export(str(new_pheno_file).replace('.tsv', '_tmp.tsv'), delimiter='\t')
+    geno_df = pd.read_csv(str(new_pheno_file).replace('.tsv', '_tmp.tsv'), sep='\t')
+    # rename useful columns and drop the rest
+    geno_df = geno_df.rename(columns={"s": "individual", "GT": variant})
+    geno_df = geno_df.drop(['locus', 'alleles'], axis=1)
 
-    # # strip the chr from chromosome, annotate as a new field
-    # # create a new text field with both alleles
-    # chrom_mt = chrom_mt.annotate_rows(
-    #     var=hl.delimit(
-    #         [
-    #             chrom_mt.locus.contig.replace('chr', ''),
-    #             hl.str(chrom_mt.locus.position),
-    #             chrom_mt.alleles[0],
-    #             chrom_mt.alleles[1],
-    #         ],
-    #         ':',
-    #     ),
-    #     gene=gene,
-    # )
-    # chrom_mt.export(str(group_file).replace('.tsv', '_tmp.tsv'))
-    # chrom_df = pd.read_csv(str(group_file).replace('.tsv', '_tmp.tsv'), sep='\t')
-    # chrom_df['anno'] = 'null'
-    # if gamma != 'none':
-    #     # annos before weights
-    #     chrom_df = chrom_df[['var', 'anno', 'weight:dTSS']]
-    # vals_df = chrom_df.T
-    # vals_df['category'] = vals_df.index
-    # categories_df = pd.DataFrame(categories_data)
-    # group_vals_df = pd.merge(categories_df, vals_df, on='category')
+    # add as column to new df (merging on pheno file)
+    new_pheno_df = pd.merge(geno_df, pheno_df, on='individual', how='right')
+
     with new_pheno_files_path.open('w') as npf:
         new_pheno_df.to_csv(npf, index=False, header=False, sep=' ')
 
 
 @click.command()
+@click.option('--celltypes')
 @click.option('--chromosomes', help=' chr1,chr22 ')
-@click.option('--cis-window-files-path')
-@click.option('--group-files-path')
+@click.option('--pheno-files-path')
+@click.option('--condition-pheno-files-path')
+@click.option('--conditional-files-path')
 @click.option('--chrom-mt-files-path')
-@click.option('--cis-window', default=100000)
-@click.option('--gamma', default='1e-5')
 @click.option('--ngenes-to-test', default='all')
-@click.option('--genome-reference', default='GRCh38')
 @click.option(
     '--concurrent-job-cap',
     type=int,
@@ -126,35 +117,27 @@ def add_variant_to_pheno_file(
     ),
 )
 @click.option(
-    '--max-delay',
-    type=int,
-    default=3000,
-    help='delay starting the jobs as they all access the same VDS which causes Hail issues',
-)
-@click.option(
-    '--gene-group-storage',
+    '--gene-condition-storage',
     default='8G',
 )
 @click.option(
-    '--gene-group-memory',
+    '--gene-condition-memory',
     default='8G',
 )
 def main(
+    celltypes: str,
     chromosomes: str,
-    cis_window_files_path: str,
-    group_files_path: str,
+    pheno_files_path: str,
+    condition_pheno_files_path: str,
+    conditional_files_path: str,
     chrom_mt_files_path: str,
-    cis_window: int,
-    gamma: str,
     ngenes_to_test: str,
-    genome_reference: str,
     concurrent_job_cap: int,
-    max_delay: int,
-    gene_group_storage: str,
-    gene_group_memory: str,
+    gene_condition_storage: str,
+    gene_condition_memory: str,
 ):
     """
-    Make group file for rare variant pipeline
+    Make conditional pheno cov file for conditional analysis
     """
 
     init_batch()
