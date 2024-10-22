@@ -28,12 +28,16 @@ from cpg_utils.hail_batch import init_batch, output_path
 
 @click.command()
 @click.option('--vds-path', required=True)
+@click.option('--donors-to-keep', default='all')
+@click.option('--donors-to-exclude', default='none')
 @click.option('--cv-maf-threshold', default=0.05)
 @click.option('--rv-maf-threshold', default=0.01)
 @click.option('--exclude-multiallelic', default=False)
 @click.option('--exclude-indels', default=False)
 def count_variants(
     vds_path: str,
+    donors_to_keep: str,
+    donors_to_exclude: str,
     cv_maf_threshold: float,
     rv_maf_threshold: float,
     exclude_multiallelic: bool,
@@ -53,6 +57,16 @@ def count_variants(
     vds = hl.vds.split_multi(vds, filter_changed_loci=True)
     # convert to hail matrix table
     mt = hl.vds.to_dense_mt(vds)
+
+    if donors_to_keep!='all':
+        keep_samples_table = hl.read_table(donors_to_keep)
+        keep_samples = hl.literal(keep_samples_table.s.collect())
+        mt = mt.filter_cols(keep_samples.contains(mt['s']))
+
+    if donors_to_exclude!='none':
+        exclude_samples_table = hl.read_table(donors_to_exclude)
+        exclude_samples = hl.literal(exclude_samples_table.s.collect())
+        mt = mt.filter_cols(~exclude_samples.contains(mt['s']))
 
     # filter out loci & variant QC
     mt = mt.filter_rows(hl.len(mt.alleles) == 2)  # remove hom-ref
