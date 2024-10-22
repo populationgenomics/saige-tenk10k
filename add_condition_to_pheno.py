@@ -20,10 +20,23 @@ analysis-runner \
     --dataset "bioheart" \
     --access-level "standard" \
     --output-dir "saige-qtl/bioheart_n787_and_tob_n960/241008_ashg/input_files/" \
-    python3 make_group_file.py --chromosomes chr21 \
+    python3 add_condition_to_pheno.py \
         --pheno-files-path=gs://cpg-bioheart-main/saige-qtl/bioheart_n787_and_tob_n960/241008_ashg/input_files/pheno_cov_files/ \
-        --conditional-files-path=gs://cpg-bioheart-main/saige-qtl/bioheart_n787_and_tob_n960/241008_ashg/input_files/conditional_files/ \
+        --conditional-files-path=gs://cpg-bioheart-main-analysis/saige-qtl/bioheart_n787_and_tob_n960/241008_ashg/input_files/conditional_files/ \
         --chrom-mt-files-path=gs://cpg-bioheart-main/saige-qtl/bioheart_n787_and_tob_n960/241008_ashg/input_files/genotypes/vds-tenk10k1-0_qc_pass --max-delay=30
+
+In test:
+
+analysis-runner \
+   --description "add variant to pheno files" \
+   --dataset "bioheart" \
+   --access-level "test" \
+   --output-dir "saige-qtl/bioheart_n990_and_tob_n1055/241004_n100/input_files/" \
+   python3 add_condition_to_pheno.py \
+       --pheno-files-path gs://cpg-bioheart-test/saige-qtl/bioheart_n990_and_tob_n1055/241004_n100/input_files/pheno_cov_files/ \
+       --conditional-files-path gs://cpg-bioheart-test-analysis/saige-qtl/bioheart_n990_and_tob_n1055/241004_n100// \
+       --chrom-mt-files-path gs://cpg-bioheart-test/saige-qtl/bioheart_n990_and_tob_n1055/241004_n100/input_files/genotypes/vds-tenk10k1-0_subset --max-delay=10
+
 
 """
 
@@ -100,8 +113,6 @@ def add_variant_to_pheno_file(
 
 
 @click.command()
-# @click.option('--celltypes')
-# @click.option('--chromosomes', help=' chr1,chr22 ')
 @click.option('--pheno-files-path')
 @click.option('--condition-pheno-files-path')
 @click.option('--conditional-files-path')
@@ -126,8 +137,6 @@ def add_variant_to_pheno_file(
     default='8G',
 )
 def main(
-    # celltypes: str,
-    # chromosomes: str,
     pheno_files_path: str,
     condition_pheno_files_path: str,
     conditional_files_path: str,
