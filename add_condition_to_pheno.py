@@ -34,9 +34,9 @@ analysis-runner \
    --output-dir "saige-qtl/bioheart_n990_and_tob_n1055/241004_n100/input_files/" \
    python3 add_condition_to_pheno.py \
        --pheno-files-path gs://cpg-bioheart-test/saige-qtl/bioheart_n990_and_tob_n1055/241004_n100/input_files/pheno_cov_files/ \
-       --conditional-files-path gs://cpg-bioheart-test-analysis/saige-qtl/bioheart_n990_and_tob_n1055/241004_n100// \
-       --chrom-mt-files-path gs://cpg-bioheart-test/saige-qtl/bioheart_n990_and_tob_n1055/241004_n100/input_files/genotypes/vds-tenk10k1-0_subset --max-delay=10
-
+       --condition-pheno-files-path gs://cpg-bioheart-test/saige-qtl/bioheart_n990_and_tob_n1055/241004_n100/input_files/pheno_cov_files_condition/ \
+       --conditional-files-path gs://cpg-bioheart-test-analysis/saige-qtl/bioheart_n990_and_tob_n1055/241004_n100/output_files/conditioning_on_top_one_variant_from_cv_test_round1/ \
+       --chrom-mt-files-path gs://cpg-bioheart-test/saige-qtl/bioheart_n990_and_tob_n1055/241004_n100/input_files/genotypes/vds-tenk10k1-0_subset
 
 """
 
@@ -56,8 +56,7 @@ def add_variant_to_pheno_file(
     gene: str,
     chrom: str,
     celltype: str,
-    original_pheno_files_path: str,
-    new_pheno_files_path,
+    original_pheno_file: str,
     conditional_files_path: str,
 ):
     """
@@ -69,11 +68,8 @@ def add_variant_to_pheno_file(
     init_batch()
 
     # open original pheno cov file
-    pheno_file = (
-        f'{original_pheno_files_path}{celltype}/{chrom}/{gene}_{celltype}_pheno_cov.tsv'
-    )
-    print(f'original pheno file: {pheno_file}')
-    pheno_df = pd.read_csv(pheno_file, sep='\t')
+    print(f'original pheno file: {original_pheno_file}')
+    pheno_df = pd.read_csv(original_pheno_file, sep='\t')
     # open conditional file to extract variant(s)
     conditional_file = f'{conditional_files_path}{celltype}_conditional_file.tsv'
     condition_df = pd.read_csv(conditional_file, sep='\t')
@@ -98,7 +94,7 @@ def add_variant_to_pheno_file(
     # export
     genos.export('table.tsv', delimiter='\t')
     variant_underscores = variant.replace(":", "_")
-    new_pheno_file = pheno_file.replace(gene, f'{gene}_{variant_underscores}')
+    new_pheno_file = original_pheno_file.replace(gene, f'{gene}_{variant_underscores}')
     genos.export(str(new_pheno_file).replace('.tsv', '_tmp.tsv'), delimiter='\t')
     geno_df = pd.read_csv(str(new_pheno_file).replace('.tsv', '_tmp.tsv'), sep='\t')
     # rename useful columns and drop the rest
@@ -108,7 +104,7 @@ def add_variant_to_pheno_file(
     # add as column to new df (merging on pheno file)
     new_pheno_df = pd.merge(geno_df, pheno_df, on='individual', how='right')
 
-    with new_pheno_files_path.open('w') as npf:
+    with to_path(new_pheno_file).open('w') as npf:
         new_pheno_df.to_csv(npf, index=False, header=False, sep=' ')
 
 
@@ -207,7 +203,6 @@ def main(
                 pheno_original_file = (
                     f'{pheno_files_path_ct}{chrom}/{gene}_{celltype}_pheno_cov.tsv'
                 )
-                pheno_new_file = f'{condition_pheno_files_path}{celltype}/{chrom}/{gene}_{celltype}_conditional_pheno_cov.tsv'
                 if not to_path(pheno_new_file).exists():
                     pheno_cond_job = get_batch().new_python_job(
                         name=f'gene make pheno cond file: {celltype},{gene}'
@@ -220,8 +215,7 @@ def main(
                         gene=gene,
                         chrom=chrom,
                         celltype=celltype,
-                        original_pheno_files_path=pheno_original_file,
-                        new_pheno_files_path=to_path(pheno_new_file),
+                        original_pheno_file=pheno_original_file,
                         conditional_files_path=conditional_files_path,
                     )
                     manage_concurrency(pheno_cond_job)
