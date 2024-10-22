@@ -290,6 +290,7 @@ def create_a_2b_job() -> hb.batch.job.Job:
 @click.option(
     '--writeout-file-prefix', default=dataset_path('saige-qtl', category='analysis')
 )
+@click.option('--genes-to-test', default='all')
 @click.option('--ngenes-to-test', default='all')
 @click.option('--group-file-specs', default='')
 @click.option('--jobs-per-vm', default=10, type=int)
@@ -304,6 +305,7 @@ def main(
     vre_files_prefix: str,
     # write out inputs and flags used for this run
     writeout_file_prefix: str,
+    genes_to_test: str,
     ngenes_to_test: str,
     group_file_specs: str,
     jobs_per_vm: int,
@@ -385,10 +387,14 @@ def main(
             logging.info(f'I found these files: {", ".join(files)}')
 
             genes = [f.replace(f'_{celltype}_pheno_cov.tsv', '') for f in files]
-            logging.info(f'I found these genes: {", ".join(genes)}')
+
+             # if specified, only test genes_to_test
+            if genes_to_test != 'all':
+                genes = genes_to_test.split(',')
+
+            logging.info(f'I am testing these genes: {", ".join(genes)}')
 
             drop_genes: list[str] = get_config()['saige']['drop_genes']
-
             genes = [x for x in genes if x not in drop_genes]
 
             # extract relevant gene-related files
