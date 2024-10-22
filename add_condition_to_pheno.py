@@ -74,7 +74,10 @@ def add_variant_to_pheno_file(
     # open conditional file to extract variant(s)
     conditional_file = f'{conditional_files_path}{celltype}_conditional_file.tsv'
     condition_df = pd.read_csv(conditional_file, sep='\t')
-    variant = condition_df[condition_df['gene'] == gene]['variants_to_condition_on']
+    conditional_string = condition_df[condition_df['gene'] == gene][
+        'variants_to_condition_on'
+    ]
+    variant = conditional_string.values[0]
     # extract variant(s) from chrom mt
     chrom_mt_filename = f'{mt_path}/{chrom}_common_variants.mt'
     chrom_mt = hl.read_matrix_table(chrom_mt_filename)
