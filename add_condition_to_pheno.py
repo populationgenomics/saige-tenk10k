@@ -29,6 +29,7 @@ analysis-runner \
 
 import click
 import logging
+import pandas as pd
 
 import hail as hl
 import hailtop.batch.job as hb_job
@@ -99,8 +100,8 @@ def add_variant_to_pheno_file(
 
 
 @click.command()
-@click.option('--celltypes')
-@click.option('--chromosomes', help=' chr1,chr22 ')
+# @click.option('--celltypes')
+# @click.option('--chromosomes', help=' chr1,chr22 ')
 @click.option('--pheno-files-path')
 @click.option('--condition-pheno-files-path')
 @click.option('--conditional-files-path')
@@ -125,8 +126,8 @@ def add_variant_to_pheno_file(
     default='8G',
 )
 def main(
-    celltypes: str,
-    chromosomes: str,
+    # celltypes: str,
+    # chromosomes: str,
     pheno_files_path: str,
     condition_pheno_files_path: str,
     conditional_files_path: str,
@@ -154,26 +155,49 @@ def main(
             new_job.depends_on(all_jobs[-concurrent_job_cap])
         all_jobs.append(new_job)
 
-    # loop over chromosomes
-    for celltype in celltypes.split(','):
+    # extract conditional files using glob
+    files = [
+        str(file)
+        for file in to_path(conditional_files_path).glob('*_conditional_file.tsv')
+    ]
+    # determine what cell type we have conditional files for
+    celltypes = [
+        file.replace(conditional_files_path, '').replace('_conditional_file.tsv', '')
+        for file in files
+    ]
+
+    # loop over celltypes
+    for celltype in celltypes:
         print(f'celltype: {celltype}')
+        # pheno cov file path
+        pheno_files_path_ct = f'{pheno_files_path}{celltype}/'
+        # open cell type specific conditional file
+        conditional_files_path_ct_file = (
+            f'{conditional_files_path}{celltype}_conditional_file.tsv'
+        )
+        conditional_df = pd.read_csv(conditional_files_path_ct_file, sep='\t')
+        # extract unique chromosomes
+        conditional_df['chr'] = [
+            f"chr{variant.split(':')[0]}" for variant in conditional_df['top_MarkerID']
+        ]
         # loop over chromosomes
-        for chrom in chromosomes.split(','):
+        for chrom in conditional_df['chr'].unique():
             print(f'chrom: {chrom}')
 
             # do a glob, then pull out all file names as Strings
             files = [
                 str(file)
-                for file in to_path(cis_window_files_path).glob(f'{chrom}/*bp.tsv')
+                for file in to_path(pheno_files_path_ct).glob(f'{chrom}/*pheno_cov.tsv')
             ]
+
             # if specified, only test ngenes genes
             if ngenes_to_test != 'all':
                 files = files[0 : int(ngenes_to_test)]
             logging.info(f'I found these files: {", ".join(files)}')
 
             genes = [
-                f.replace(f'_{cis_window}bp.tsv', '').replace(
-                    f'{cis_window_files_path}{chrom}/', ''
+                f.replace(f'_{celltype}_pheno_cov.tsv', '').replace(
+                    f'{pheno_files_path_ct}{chrom}/', ''
                 )
                 for f in files
             ]
@@ -181,7 +205,10 @@ def main(
 
             for gene in genes:
                 print(f'gene: {gene}')
-                pheno_new_file = f'{condition_pheno_files_path}_'
+                pheno_original_file = (
+                    f'{pheno_files_path_ct}{chrom}/{gene}_{celltype}_pheno_cov.tsv'
+                )
+                pheno_new_file = f'{condition_pheno_files_path}{celltype}/{chrom}/{gene}_{celltype}_conditional_pheno_cov.tsv'
                 if not to_path(pheno_new_file).exists():
                     pheno_cond_job = get_batch().new_python_job(
                         name=f'gene make pheno cond file: {celltype},{gene}'
@@ -194,8 +221,8 @@ def main(
                         gene=gene,
                         chrom=chrom,
                         celltype=celltype,
-                        original_pheno_files_path=original_pheno_files_path,
-                        new_pheno_files_path=new_pheno_files_path,
+                        original_pheno_files_path=pheno_original_file,
+                        new_pheno_files_path=pheno_new_file,
                         conditional_files_path=conditional_files_path,
                     )
                     manage_concurrency(pheno_cond_job)
