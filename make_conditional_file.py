@@ -34,7 +34,7 @@ from multipy.fdr import qvalue
 def make_condition_file(
     celltypes: str,
     results_path: str,
-    conditional_files_output_path: str,
+    conditional_files_output_path,
     add_to_existing_file: str,
     qv_significance_threshold: float,
 ):

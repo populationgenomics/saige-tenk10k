@@ -44,7 +44,7 @@ def add_variant_to_pheno_file(
     chrom: str,
     celltype: str,
     original_pheno_files_path: str,
-    new_pheno_files_path: str,
+    new_pheno_files_path,
     conditional_files_path: str,
 ):
     """
