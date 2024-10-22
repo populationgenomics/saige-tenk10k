@@ -11,10 +11,12 @@ analysis-runner \
     --access-level "test" \
     --image 'australia-southeast1-docker.pkg.dev/cpg-common/images/multipy:0.16_rebuild' \
     --output-dir "saige-qtl/" \
-    python3 helper/make_conditional_file.py \
+    python3 make_conditional_file.py \
         --celltypes='B_naive' \
         --results-path='gs://cpg-bioheart-test-analysis/saige-qtl/bioheart_n990_and_tob_n1055/241004_n100/output_files' \
-        --conditional-files-output-path='gs://cpg-bioheart-test-analysis/saige-qtl/bioheart_n990_and_tob_n1055/241004_n100/output_files/conditioning_on_top_one_variant_from_cv_test_round1'
+        --conditional-files-output-path='gs://cpg-bioheart-test-analysis/saige-qtl/bioheart_n990_and_tob_n1055/241004_n100/output_files/conditioning_on_top_one_variant_from_cv_test_round1' \
+        --qv-significance-threshold=1
+
 """
 
 import click
