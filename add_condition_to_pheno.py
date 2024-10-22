@@ -222,7 +222,7 @@ def main(
                         chrom=chrom,
                         celltype=celltype,
                         original_pheno_files_path=pheno_original_file,
-                        new_pheno_files_path=pheno_new_file,
+                        new_pheno_files_path=to_path(pheno_new_file),
                         conditional_files_path=conditional_files_path,
                     )
                     manage_concurrency(pheno_cond_job)
