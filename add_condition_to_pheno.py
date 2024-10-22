@@ -57,6 +57,7 @@ def add_variant_to_pheno_file(
     chrom: str,
     celltype: str,
     original_pheno_file: str,
+    pheno_new_file,
     conditional_files_path: str,
 ):
     """
@@ -93,10 +94,10 @@ def add_variant_to_pheno_file(
     )
     # export
     genos.export('table.tsv', delimiter='\t')
-    variant_underscores = variant.replace(":", "_")
-    new_pheno_file = original_pheno_file.replace(gene, f'{gene}_{variant_underscores}')
-    genos.export(str(new_pheno_file).replace('.tsv', '_tmp.tsv'), delimiter='\t')
-    geno_df = pd.read_csv(str(new_pheno_file).replace('.tsv', '_tmp.tsv'), sep='\t')
+    # variant_underscores = variant.replace(":", "_")
+    # new_pheno_file = original_pheno_file.replace(gene, f'{gene}_{variant_underscores}')
+    genos.export(str(pheno_new_file).replace('.tsv', '_tmp.tsv'), delimiter='\t')
+    geno_df = pd.read_csv(str(pheno_new_file).replace('.tsv', '_tmp.tsv'), sep='\t')
     # rename useful columns and drop the rest
     geno_df = geno_df.rename(columns={"s": "individual", "GT": variant})
     geno_df = geno_df.drop(['locus', 'alleles'], axis=1)
@@ -104,7 +105,7 @@ def add_variant_to_pheno_file(
     # add as column to new df (merging on pheno file)
     new_pheno_df = pd.merge(geno_df, pheno_df, on='individual', how='right')
 
-    with to_path(new_pheno_file).open('w') as npf:
+    with pheno_new_file.open('w') as npf:
         new_pheno_df.to_csv(npf, index=False, header=False, sep=' ')
 
 
@@ -203,6 +204,7 @@ def main(
                 pheno_original_file = (
                     f'{pheno_files_path_ct}{chrom}/{gene}_{celltype}_pheno_cov.tsv'
                 )
+                pheno_new_file = f'{condition_pheno_files_path}{celltype}/{chrom}/{gene}_{celltype}_pheno_cov.tsv'
                 if not to_path(pheno_new_file).exists():
                     pheno_cond_job = get_batch().new_python_job(
                         name=f'gene make pheno cond file: {celltype},{gene}'
@@ -217,6 +219,7 @@ def main(
                         celltype=celltype,
                         original_pheno_file=pheno_original_file,
                         conditional_files_path=conditional_files_path,
+                        pheno_new_file=to_path(pheno_new_file),
                     )
                     manage_concurrency(pheno_cond_job)
                     logging.info(
