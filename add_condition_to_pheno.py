@@ -184,7 +184,7 @@ def main(
         for chrom in conditional_df['chr'].unique():
             print(f'chrom: {chrom}')
 
-            conditional_df_chr = conditional_df[conditional_df['chr']==chrom]
+            conditional_df_chr = conditional_df[conditional_df['chr'] == chrom]
             genes = conditional_df_chr['gene']
             logging.info(f'genes to test: {", ".join(genes)}')
 
@@ -192,7 +192,6 @@ def main(
             if ngenes_to_test != 'all':
                 genes = genes[0 : int(ngenes_to_test)]
             logging.info(f'I found these files: {", ".join(files)}')
-
 
             for gene in genes:
                 print(f'gene: {gene}')
