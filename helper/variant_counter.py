@@ -58,12 +58,12 @@ def count_variants(
     # convert to hail matrix table
     mt = hl.vds.to_dense_mt(vds)
 
-    if donors_to_keep!='all':
+    if donors_to_keep != 'all':
         keep_samples_table = hl.read_table(donors_to_keep)
         keep_samples = hl.literal(keep_samples_table.s.collect())
         mt = mt.filter_cols(keep_samples.contains(mt['s']))
 
-    if donors_to_exclude!='none':
+    if donors_to_exclude != 'none':
         exclude_samples_table = hl.read_table(donors_to_exclude)
         exclude_samples = hl.literal(exclude_samples_table.s.collect())
         mt = mt.filter_cols(~exclude_samples.contains(mt['s']))
