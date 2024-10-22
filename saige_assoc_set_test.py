@@ -388,7 +388,7 @@ def main(
 
             genes = [f.replace(f'_{celltype}_pheno_cov.tsv', '') for f in files]
 
-             # if specified, only test genes_to_test
+            # if specified, only test genes_to_test
             if genes_to_test != 'all':
                 genes = genes_to_test.split(',')
 
