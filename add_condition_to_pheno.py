@@ -184,24 +184,15 @@ def main(
         for chrom in conditional_df['chr'].unique():
             print(f'chrom: {chrom}')
 
-            # do a glob, then pull out all file names as Strings
-            files = [
-                str(file)
-                for file in to_path(pheno_files_path_ct).glob(f'{chrom}/*pheno_cov.tsv')
-            ]
+            conditional_df_chr = conditional_df[conditional_df['chr']==chrom]
+            genes = conditional_df_chr['gene']
+            logging.info(f'genes to test: {", ".join(genes)}')
 
             # if specified, only test ngenes genes
             if ngenes_to_test != 'all':
-                files = files[0 : int(ngenes_to_test)]
+                genes = genes[0 : int(ngenes_to_test)]
             logging.info(f'I found these files: {", ".join(files)}')
 
-            genes = [
-                f.replace(f'_{celltype}_pheno_cov.tsv', '').replace(
-                    f'{pheno_files_path_ct}{chrom}/', ''
-                )
-                for f in files
-            ]
-            logging.info(f'I found these genes: {", ".join(genes)}')
 
             for gene in genes:
                 print(f'gene: {gene}')
