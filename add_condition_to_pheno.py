@@ -98,7 +98,7 @@ def add_variant_to_pheno_file(
     # export
     genos.export('table.tsv', delimiter='\t')
     variant_underscores = variant.replace(":", "_")
-    new_pheno_file = pheno_file.replace('.tsv', f'_{variant_underscores}.tsv')
+    new_pheno_file = pheno_file.replace(gene, f'{gene}_{variant_underscores}')
     genos.export(str(new_pheno_file).replace('.tsv', '_tmp.tsv'), delimiter='\t')
     geno_df = pd.read_csv(str(new_pheno_file).replace('.tsv', '_tmp.tsv'), sep='\t')
     # rename useful columns and drop the rest
