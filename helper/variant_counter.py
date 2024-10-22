@@ -15,7 +15,9 @@ analysis-runner \
     --dataset "bioheart" \
     --access-level "full" \
     --output-dir "saige-qtl/" \
-    python3 variant_counter.py --vds-path=gs://cpg-tob-wgs-main/vds/tob-wgs1-0.vds
+    python3 variant_counter.py --vds-path=gs://cpg-bioheart-main/ashg2024/tenk10k1-0_qc_pass.vds \
+        --donors-to-keep=gs://cpg-tob-wgs-main-analysis/large_cohort/tob-wgs1-0/sample_qc.ht/ \
+        --donors-to-exclude=gs://cpg-bioheart-main/large_cohort/tenk10k1-1/relateds_to_drop.ht
 """
 
 import click
