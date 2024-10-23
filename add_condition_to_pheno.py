@@ -100,7 +100,7 @@ def add_variant_to_pheno_file(
     geno_df = pd.read_csv(str(pheno_new_file).replace('.tsv', '_tmp.tsv'), sep='\t')
     # rename useful columns and drop the rest
     geno_df = geno_df.rename(
-        columns={'s': 'individual', 'GT': variant.replace(':', '_')}
+        columns={'s': 'individual', 'GT': f"chr{variant.replace(':', '_')}"}
     )
     geno_df = geno_df.drop(['locus', 'alleles'], axis=1)
 
