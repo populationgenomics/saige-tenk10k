@@ -108,7 +108,7 @@ def add_variant_to_pheno_file(
     new_pheno_df = pd.merge(geno_df, pheno_df, on='individual', how='right')
 
     with pheno_new_file.open('w') as npf:
-        new_pheno_df.to_csv(npf, index=False, header=False, sep=' ')
+        new_pheno_df.to_csv(npf, index=False, header=True, sep='\t')
 
 
 @click.command()
