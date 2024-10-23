@@ -105,7 +105,7 @@ def add_variant_to_pheno_file(
     geno_df = geno_df.drop(['locus', 'alleles'], axis=1)
 
     # add as column to new df (merging on pheno file)
-    new_pheno_df = pd.merge(geno_df, pheno_df, on='individual', how='right')
+    new_pheno_df = pd.merge(geno_df, pheno_df, on='individual')
 
     with pheno_new_file.open('w') as npf:
         new_pheno_df.to_csv(npf, index=False, header=True, sep='\t')
