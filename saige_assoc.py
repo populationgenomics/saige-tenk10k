@@ -316,6 +316,7 @@ def create_second_job(vcf_path: str) -> hb.batch.job.Job:
 @click.option(
     '--vre-files-prefix', default=dataset_path('saige-qtl/input_files/genotypes')
 )
+@click.option('--genes-to-test', default='all')
 @click.option(
     '--writeout-file-prefix', default=dataset_path('saige-qtl', category='analysis')
 )
@@ -329,6 +330,7 @@ def main(
     # outputs from genotype processing
     genotype_files_prefix: str,
     vre_files_prefix: str,
+    genes_to_test: str,
     # write out inputs and flags used for this run
     writeout_file_prefix: str,
     test_str: bool = False,
@@ -415,9 +417,14 @@ def main(
             logging.info(f'I found these files: {", ".join(files)}')
 
             genes = [f.replace(f'_{celltype}_pheno_cov.tsv', '') for f in files]
-            logging.info(f'I found these genes: {", ".join(genes)}')
+
+            # if specified, only test genes_to_test
+            if genes_to_test != 'all':
+                genes = genes_to_test.split(',')
 
             genes = [x for x in genes if x not in drop_genes]
+
+            logging.info(f'I am testing these genes: {", ".join(genes)}')
 
             # extract relevant gene-related files
             for gene in genes:
