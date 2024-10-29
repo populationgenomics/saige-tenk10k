@@ -9,8 +9,8 @@ cis_window_size = 100000
 # these args are applied directly to step1_fitNULLGLMM_qtl.R
 # as "--{key}={value} "
 [saige.build_fit_null]
-covarColList = 'sex,age,geno_PC1,geno_PC2,geno_PC3,geno_PC4,geno_PC5,harmony_PC1,harmony_PC2,harmony_PC3,harmony_PC4,harmony_PC5,BioHEART,chr5_55770838_G_A'
-sampleCovarColList = 'sex,age,geno_PC1,geno_PC2,geno_PC3,geno_PC4,geno_PC5,chr5_55770838_G_A'
+covarColList = 'sex,age,geno_PC1,geno_PC2,geno_PC3,geno_PC4,geno_PC5,harmony_PC1,harmony_PC2,harmony_PC3,harmony_PC4,harmony_PC5,BioHEART,chr1_156779339_T_A'
+sampleCovarColList = 'sex,age,geno_PC1,geno_PC2,geno_PC3,geno_PC4,geno_PC5,chr1_156779339_T_A'
 sampleIDColinphenoFile = 'individual'
 # Poisson, count_nb = Negative Binomial, quantitative = Normal
 traitType = 'count'
