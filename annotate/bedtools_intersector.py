@@ -7,7 +7,7 @@ analysis-runner --dataset "bioheart" \
     --description "bedtools_intersector" \
     --access-level "test" \
     --output-dir "saige-qtl/arthur" \
-        bedtools_intersector.py --catalog-path='gs://cpg-bioheart-test/str/ncAnnot.v0.14.jul2024.bed' \
+        annotate/bedtools_intersector.py --catalog-path='gs://cpg-bioheart-test/str/ncAnnot.v0.14.jul2024.bed' \
         --query-path='gs://cpg-bioheart-test/saige-qtl/arthur/SH2D2A_cis_region.tsv'
 
 
