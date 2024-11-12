@@ -38,7 +38,9 @@ import hail as hl
 from hail.methods import export_vcf
 
 import logging
+
 logging.basicConfig(level=logging.INFO)
+
 
 @click.command()
 @click.option('--vds-path', default=dataset_path('vds/bioheart1-0.vds'))
