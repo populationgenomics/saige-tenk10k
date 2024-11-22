@@ -104,7 +104,6 @@ def make_group_file(
     )
 
     if gamma != 'none':
-
         gene_tss = int(window_start) + cis_window
 
         # annotate distances

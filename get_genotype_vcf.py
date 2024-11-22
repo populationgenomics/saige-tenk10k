@@ -287,7 +287,6 @@ def main(
             print(f'Writing new checkpoint to {dense_checkpoint}')
             mt = mt.checkpoint(dense_checkpoint)
 
-
         # again filter for biallelic SNPs
         mt = mt.filter_rows(
             ~(mt.was_split)  # biallelic (exclude multiallelic)

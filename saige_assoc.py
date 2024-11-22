@@ -378,7 +378,6 @@ def main(
     }
 
     for chromosome in chromosomes:
-
         # genotype vcf files are one per chromosome
         if test_str:
             vcf_file_path = (

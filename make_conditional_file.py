@@ -48,7 +48,6 @@ def make_condition_file(
     init_batch()
 
     for celltype in celltypes.split(','):
-
         gene_level_results = (
             f'{results_path}/summary_stats/{celltype}_all_cis_cv_gene_level_results.tsv'
         )
