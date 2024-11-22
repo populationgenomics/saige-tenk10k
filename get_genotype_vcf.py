@@ -17,9 +17,9 @@ analysis-runner \
    --dataset "bioheart" \
    --access-level "standard" \
    --output-dir saige-qtl/bioheart_n990_and_tob_n1055/input_files/240920/genotypes/ \
-    python3 get_genotype_vcf.py --vds-path=gs://cpg-bioheart-main/vds/tenk10k1-0.vds --chromosomes chr2 \
-    --relateds-to-drop-path=gs://cpg-bioheart-main-analysis/large_cohort/bioheart1-0/relateds_to_drop.ht
-"""
+    python3 get_genotype_vcf.py --vds-path=gs://cpg-bioheart-main/vds/tenk10k1-0.vds --chromosomes chr2
+    
+    """
 
 import logging
 
@@ -287,11 +287,6 @@ def main(
             print(f'Writing new checkpoint to {dense_checkpoint}')
             mt = mt.checkpoint(dense_checkpoint)
 
-        # filter out related samples from vre too
-        # this will get dropped as the vds file will already be clean
-        related_ht = hl.read_table(relateds_to_drop_path)
-        related_samples = hl.literal(related_ht.s.collect())
-        mt = mt.filter_cols(~related_samples.contains(mt['s']))
 
         # again filter for biallelic SNPs
         mt = mt.filter_rows(
