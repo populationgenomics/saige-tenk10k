@@ -4,21 +4,21 @@
 Copy of https://github.com/populationgenomics/sv-workflows/str/coloc/coloc_runner.py
 to rework for common variant SAIGE-QTL results
 
-This script performs SNP-only colocalisation analysis betweeen eGenes identified by pseudobulk STR analysis and GWAS signals.
+This script performs SNP-only colocalisation analysis betweeen eGenes identified by single-cell eQTL analysis (using SAIGE-QTL) and GWAS signals.
 Assumes that the SNP GWAS data has been pre-processed with the following columns: 'chromosome', 'position' (hg38 bp), 'snp'(chromosome_position_refallele_effectallele), 'beta', 'varbeta'
 
-1) Identify eGenes where at least one STR has pval < 5e-8
+1) Identify eGenes where at least one eQTL has pval < 5e-8
 2) Extract the SNP GWAS data for the cis-window (gene +/- 100kB)
 3) Run coloc for each eGene (if the SNP GWAS data has at least one variant with pval <5e-8)
 4) Write the results to a TSV file
 
 analysis-runner --dataset "bioheart" \
-    --description "Run coloc for eGenes identified by STR analysis" \
+    --description "Run coloc for eGenes identified by SAIGE-QTL analysis" \
     --access-level "test" \
     --memory='8G' \
     --image "australia-southeast1-docker.pkg.dev/analysis-runner/images/driver:d4922e3062565ff160ac2ed62dcdf2fba576b75a-hail-8f6797b033d2e102575c40166cf0c977e91f834e" \
-    --output-dir "str/associatr" \
-    coloc_runner.py \
+    --output-dir "saige-qtl/bioheart_n990_and_tob_n1055/241004_n100/" \
+    coloc/coloc_runner.py \
     --snp-gwas-file=gs://cpg-bioheart-test/str/gwas_catalog/gcst/gcst-gwas-catalogs/ibd_EAS_EUR_SiKJEF_meta_IBD.tsv \
     --pheno-output-name="ibd_liu2023" \
     --celltypes "NK"
