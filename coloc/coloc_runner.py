@@ -102,7 +102,10 @@ def coloc_runner(gwas, eqtl_file_path, celltype, pheno_output_name):
 
     # write to GCS
     pd_p4_df.to_csv(
-        output_path(f"coloc-snp-only/sig_str_filter_only/{pheno_output_name}/{celltype}/{gene}_100kb.tsv", 'analysis'),
+        output_path(
+            f"coloc-snp-only/sig_str_filter_only/{pheno_output_name}/{celltype}/{gene}_100kb.tsv",
+            'analysis',
+        ),
         sep='\t',
         index=False,
     )
@@ -124,11 +127,23 @@ def coloc_runner(gwas, eqtl_file_path, celltype, pheno_output_name):
     default='gs://cpg-bioheart-test/str/gwas_catalog/gcst/gcst-gwas-catalogs/GCST011071_parsed.tsv',
 )
 @click.option('--celltypes', help='Cell types to run', default='ASDC')
-@click.option('--max-parallel-jobs', help='Maximum number of parallel jobs to run', default=500)
-@click.option('--pheno-output-name', help='Phenotype output name', default='covid_GCST011071')
+@click.option(
+    '--max-parallel-jobs', help='Maximum number of parallel jobs to run', default=500
+)
+@click.option(
+    '--pheno-output-name', help='Phenotype output name', default='covid_GCST011071'
+)
 @click.option('--job-cpu', help='Number of CPUs to use for each job', default=0.25)
 @click.command()
-def main(snp_cis_dir, egenes_file, celltypes, snp_gwas_file, pheno_output_name, max_parallel_jobs, job_cpu):
+def main(
+    snp_cis_dir,
+    egenes_file,
+    celltypes,
+    snp_gwas_file,
+    pheno_output_name,
+    max_parallel_jobs,
+    job_cpu,
+):
     # Setup MAX concurrency by genes
     _dependent_jobs: list[hb.batch.job.Job] = []
 
@@ -154,13 +169,29 @@ def main(snp_cis_dir, egenes_file, celltypes, snp_gwas_file, pheno_output_name, 
     egenes = pd.read_csv(
         egenes_file,
         sep='\t',
-        usecols=['chr', 'pos', 'pval_meta', 'motif', 'susie_pip', 'gene', 'finemap_prob', 'celltype', 'ref_len'],
+        usecols=[
+            'chr',
+            'pos',
+            'pval_meta',
+            'motif',
+            'susie_pip',
+            'gene',
+            'finemap_prob',
+            'celltype',
+            'ref_len',
+        ],
     )
 
     result_df_cfm = egenes
-    result_df_cfm['variant_type'] = result_df_cfm['motif'].str.contains('-').map({True: 'SNV', False: 'STR'})
-    result_df_cfm_str = result_df_cfm[result_df_cfm['variant_type'] == 'STR']  # filter for STRs
-    result_df_cfm_str = result_df_cfm_str[result_df_cfm_str['pval_meta'] < 5e-8]  # filter for STRs with p-value < 5e-8
+    result_df_cfm['variant_type'] = (
+        result_df_cfm['motif'].str.contains('-').map({True: 'SNV', False: 'STR'})
+    )
+    result_df_cfm_str = result_df_cfm[
+        result_df_cfm['variant_type'] == 'STR'
+    ]  # filter for STRs
+    result_df_cfm_str = result_df_cfm_str[
+        result_df_cfm_str['pval_meta'] < 5e-8
+    ]  # filter for STRs with p-value < 5e-8
     result_df_cfm_str = result_df_cfm_str.drop_duplicates(
         subset=['gene', 'celltype'],
     )  # drop duplicates (ie pull out the distinct genes in each celltype)
@@ -176,7 +207,9 @@ def main(snp_cis_dir, egenes_file, celltypes, snp_gwas_file, pheno_output_name, 
             result_df_cfm_str['celltype'] == celltype
         ]  # filter for the celltype of interest
         for gene in result_df_cfm_str_celltype['gene']:
-            chrom = result_df_cfm_str_celltype[result_df_cfm_str_celltype['gene'] == gene]['chr'].iloc[0]
+            chrom = result_df_cfm_str_celltype[
+                result_df_cfm_str_celltype['gene'] == gene
+            ]['chr'].iloc[0]
             if to_path(
                 output_path(
                     f"coloc-snp-only/sig_str_filter_only/{pheno_output_name}/{celltype}/{gene}_100kb.tsv",
@@ -184,7 +217,9 @@ def main(snp_cis_dir, egenes_file, celltypes, snp_gwas_file, pheno_output_name, 
                 ),
             ).exists():
                 continue
-            if to_path(f'{snp_cis_dir}/{celltype}/{chrom}/{gene}_100000bp_meta_results.tsv').exists():
+            if to_path(
+                f'{snp_cis_dir}/{celltype}/{chrom}/{gene}_100000bp_meta_results.tsv'
+            ).exists():
                 print('Cis results for ' + gene + ' exist: proceed with coloc')
 
                 # extract the coordinates for the cis-window (gene +/- 100kB)
@@ -194,9 +229,15 @@ def main(snp_cis_dir, egenes_file, celltypes, snp_gwas_file, pheno_output_name, 
                 chrom = gene_table['chr'].iloc[0]
                 hg38_map_chr = hg38_map[hg38_map['chromosome'] == (chrom)]
                 hg38_map_chr_start = hg38_map_chr[hg38_map_chr['position'] >= start]
-                hg38_map_chr_start_end = hg38_map_chr_start[hg38_map_chr_start['position'] <= end]
+                hg38_map_chr_start_end = hg38_map_chr_start[
+                    hg38_map_chr_start['position'] <= end
+                ]
                 if hg38_map_chr_start_end.empty:
-                    print('No SNP GWAS data for ' + gene + ' in the cis-window: skipping....')
+                    print(
+                        'No SNP GWAS data for '
+                        + gene
+                        + ' in the cis-window: skipping....'
+                    )
                     continue
                 # check if the p-value column contains at least one value which is <=5e-8:
                 # if hg38_map_chr_start_end['p_value'].min() > 5e-8:
