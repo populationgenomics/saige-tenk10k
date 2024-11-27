@@ -21,7 +21,7 @@ analysis-runner --dataset "bioheart" \
     coloc/coloc_runner.py \
     --snp-gwas-file=gs://cpg-bioheart-test/str/gwas_catalog/gcst/gcst-gwas-catalogs/ibd_EAS_EUR_SiKJEF_meta_IBD.tsv \
     --pheno-output-name="ibd_liu2023" \
-    --celltypes "NK"
+    --celltypes "B_naive"
 
 """
 
