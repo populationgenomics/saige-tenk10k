@@ -156,7 +156,7 @@ def main(
 
     # read in gene annotation file
     var_table = pd.read_csv(
-        'gs://cpg-bioheart-test/str/240_libraries_tenk10kp1_v2/concatenated_gene_info_donor_info_var.csv',
+        'gs://cpg-bioheart-test/saige-qtl/300-libraries/combined_anndata_obs_vars/300_libraries_concatenated_harmony_filtered_vars.csv',
     )
     hg38_map = pd.read_csv(
         snp_gwas_file,
