@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 """
-Copy of https://github.com/populationgenomics/sv-workflows/str/coloc/coloc_runner.py
+Copy of https://github.com/populationgenomics/sv-workflows/blob/main/str/coloc/coloc_runner.py
 to rework for common variant SAIGE-QTL results
 
 This script performs SNP-only colocalisation analysis betweeen eGenes identified by single-cell eQTL analysis (using SAIGE-QTL) and GWAS signals.
@@ -217,9 +217,13 @@ def main(
                 ),
             ).exists():
                 continue
-            if to_path(
-                f'{snp_cis_dir}/{celltype}/{chrom}/{celltype}_{gene}_cis'
-            ).exists():
+
+            # TO DO: figure out whether or not to include to_path here
+            eqtl_results_file = f'{snp_cis_dir}/{celltype}/{chrom}/{celltype}_{gene}_cis'
+            # if to_path(
+            #     f'{snp_cis_dir}/{celltype}/{chrom}/{celltype}_{gene}_cis'
+            # ).exists():
+            if to_path(eqtl_results_file).exists():
                 print('Cis results for ' + gene + ' exist: proceed with coloc')
 
                 # extract the coordinates for the cis-window (gene +/- 100kB)
@@ -249,13 +253,13 @@ def main(
                 coloc_job = b.new_python_job(
                     f'Coloc for {gene}: {celltype}',
                 )
-                f'{snp_cis_dir}/{celltype}/{chrom}/{gene}_100000bp_meta_results.tsv'
+                # f'{snp_cis_dir}/{celltype}/{chrom}/{gene}_100000bp_meta_results.tsv' ???
                 coloc_job.image(image_path('r-meta'))
                 coloc_job.cpu(job_cpu)
                 coloc_job.call(
                     coloc_runner,
                     hg38_map_chr_start_end,
-                    f'{snp_cis_dir}/{celltype}/{chrom}/{gene}_100000bp_meta_results.tsv',
+                    eqtl_results_file,
                     celltype,
                     pheno_output_name,
                 )
