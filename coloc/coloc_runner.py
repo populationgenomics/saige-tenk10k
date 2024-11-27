@@ -119,7 +119,9 @@ def coloc_runner(gwas, eqtl_file_path, celltype, coloc_results_file):
     help='Path to the SNP GWAS file',
     default='gs://cpg-bioheart-test/str/gwas_catalog/gcst/gcst-gwas-catalogs/GCST011071_parsed.tsv',
 )
-@click.option('--celltypes', help='Cell types to run', default='ASDC')
+@click.option(
+    '--celltypes', help='Cell types to run, single str, comma separated', default='ASDC'
+)
 @click.option('--cis-window-size', help='Cis window size used', default=100000)
 @click.option('fdr-threshold', help='FDR threshold', default=0.05)
 @click.option(
