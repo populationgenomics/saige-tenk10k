@@ -34,7 +34,7 @@ from cpg_utils import to_path
 from cpg_utils.hail_batch import get_batch, image_path, output_path
 
 
-def coloc_runner(gwas, eqtl_file_path, celltype, pheno_output_name):
+def coloc_runner(gwas, eqtl_file_path, celltype, coloc_results_file):
     import rpy2.robjects as ro
     from rpy2.robjects import pandas2ri
 
@@ -65,13 +65,7 @@ def coloc_runner(gwas, eqtl_file_path, celltype, pheno_output_name):
     eqtl['se'] = eqtl['SE']
     eqtl['position'] = eqtl['POS']
     eqtl['snp'] = eqtl['MarkerID'].str.replace(':', '_', regex=False)
-    # eqtl['beta'] = eqtl['coeff_meta']
-    # eqtl['se'] = eqtl['se_meta']
-    # eqtl['position'] = eqtl['pos']
-    # eqtl['snp'] = eqtl['chr'] + '_' + eqtl['position'].astype(str) + '_' + eqtl['motif']
-    # eqtl['snp'] = eqtl['snp'].str.replace('-', '_', regex=False)
     gene = eqtl_file_path.split('/')[-1].replace(f'{celltype}_', '').replace('_cis', '')
-    # gene = eqtl_file_path.split('/')[-1].split('_')[0]
     with (ro.default_converter + pandas2ri.converter).context():
         eqtl_r = ro.conversion.get_conversion().py2rpy(eqtl)
     ro.globalenv['eqtl_r'] = eqtl_r
@@ -107,10 +101,7 @@ def coloc_runner(gwas, eqtl_file_path, celltype, pheno_output_name):
 
     # write to GCS
     pd_p4_df.to_csv(
-        output_path(
-            f"coloc-snp-only/sig_str_filter_only/{pheno_output_name}/{celltype}/{gene}_100kb.tsv",
-            'analysis',
-        ),
+        coloc_results_file,
         sep='\t',
         index=False,
     )
@@ -173,45 +164,31 @@ def main(
         sep='\t',
     )
 
-    # read in eGenes file
-    # TODO: update to take in SAIGE-QTL results
-    egenes_file = (
-        egenes_file
-    ) = f'{egenes_file_path}/{celltype}_all_cis_cv_gene_level_results.tsv'
-    result_df_cfm = pd.read_csv(
-        egenes_file,
-        sep='\t',
-    )
-    result_df_cfm = result_df_cfm[
-        result_df_cfm['ACAT_p'] < fdr_threshold
-    ]  # filter for sc-eQTLs with p-value < fdr_threshold
-    result_df_cfm_str = result_df_cfm_str.drop_duplicates(
-        subset=['gene', 'celltype'],
-    )  # drop duplicates (ie pull out the distinct genes in each celltype)
-    result_df_cfm_str['gene'] = result_df_cfm_str['gene'].str.replace(
-        '.tsv',
-        '',
-        regex=False,
-    )  # remove .tsv from gene names (artefact of the data file)
     b = get_batch(name=f'Run coloc:{pheno_output_name}')
 
     for celltype in celltypes.split(','):
-        result_df_cfm_str_celltype = result_df_cfm_str[
-            result_df_cfm_str['celltype'] == celltype
-        ]  # filter for the celltype of interest
-        for gene in result_df_cfm_str_celltype['gene']:
-            chrom = result_df_cfm_str_celltype[
-                result_df_cfm_str_celltype['gene'] == gene
-            ]['chr'].iloc[0]
-            if to_path(
-                output_path(
-                    f"coloc-snp-only/sig_str_filter_only/{pheno_output_name}/{celltype}/{gene}_{cis_window_size}.tsv",
-                    'analysis',
-                ),
-            ).exists():
+
+        # read in eGenes file
+        egenes_file = (
+            egenes_file
+        ) = f'{egenes_file_path}/{celltype}_all_cis_cv_gene_level_results.tsv'
+        result_df_cfm = pd.read_csv(
+            egenes_file,
+            sep='\t',
+        )
+        result_df_cfm = result_df_cfm[
+            result_df_cfm['ACAT_p'] < fdr_threshold
+        ]  # filter for sc-eQTLs with p-value < fdr_threshold
+
+        for gene in result_df_cfm['gene']:
+            chrom = result_df_cfm[result_df_cfm['gene'] == gene]['chr'].iloc[0]
+            coloc_results_file = output_path(
+                f"coloc-snp-only/sig_genes_only/{pheno_output_name}/{celltype}/{gene}_{cis_window_size}.tsv",
+                'analysis',
+            )
+            if to_path(coloc_results_file).exists():
                 continue
 
-            # TO DO: figure out whether or not to include to_path here
             eqtl_results_file = (
                 f'{snp_cis_dir}/{celltype}/{chrom}/{celltype}_{gene}_cis'
             )
@@ -256,7 +233,7 @@ def main(
                     hg38_map_chr_start_end,
                     eqtl_results_file,
                     celltype,
-                    pheno_output_name,
+                    coloc_results_file,
                 )
                 manage_concurrency_for_job(coloc_job)
 
