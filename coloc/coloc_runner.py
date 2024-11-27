@@ -54,7 +54,6 @@ def coloc_runner(gwas, eqtl_file_path, celltype, coloc_results_file):
 
     ''',
     )
-    # TODO: update eQTL df parsing to SAIGE-QTL results
     eqtl = pd.read_csv(
         eqtl_file_path,
         sep='\t',
