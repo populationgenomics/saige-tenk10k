@@ -131,15 +131,15 @@ def coloc_runner(gwas, eqtl_file_path, celltype, coloc_results_file):
 @click.option('--job-cpu', help='Number of CPUs to use for each job', default=0.25)
 @click.command()
 def main(
-    snp_cis_dir,
-    egenes_file_path,
-    celltypes,
-    snp_gwas_file,
-    pheno_output_name,
-    max_parallel_jobs,
-    cis_window_size,
-    fdr_threshold,
-    job_cpu,
+    snp_cis_dir: str,
+    egenes_file_path: str,
+    celltypes: str,
+    snp_gwas_file: str,
+    pheno_output_name: str,
+    max_parallel_jobs: int,
+    cis_window_size: int,
+    fdr_threshold: float,
+    job_cpu: float,
 ):
     # Setup MAX concurrency by genes
     _dependent_jobs: list[hb.batch.job.Job] = []
