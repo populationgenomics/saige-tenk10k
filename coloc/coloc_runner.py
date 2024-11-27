@@ -119,7 +119,7 @@ def coloc_runner(gwas, eqtl_file_path, celltype, pheno_output_name):
 @click.option(
     '--snp-cis-dir',
     help='Path to the directory containing the SNP cis results',
-    default='gs://cpg-bioheart-test/str/associatr/common_variants_snps/tob_n1055_and_bioheart_n990/meta_results/meta_results',
+    default='gs://cpg-bioheart-test-analysis/saige-qtl/bioheart_n990_and_tob_n1055/241004_n100/output_files',
 )
 @click.option(
     '--snp-gwas-file',
@@ -218,7 +218,7 @@ def main(
             ).exists():
                 continue
             if to_path(
-                f'{snp_cis_dir}/{celltype}/{chrom}/{gene}_100000bp_meta_results.tsv'
+                f'{snp_cis_dir}/{celltype}/{chrom}/{celltype}_{gene}_cis'
             ).exists():
                 print('Cis results for ' + gene + ' exist: proceed with coloc')
 
