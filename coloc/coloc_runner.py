@@ -61,12 +61,17 @@ def coloc_runner(gwas, eqtl_file_path, celltype, pheno_output_name):
         eqtl_file_path,
         sep='\t',
     )
-    eqtl['beta'] = eqtl['coeff_meta']
-    eqtl['se'] = eqtl['se_meta']
-    eqtl['position'] = eqtl['pos']
-    eqtl['snp'] = eqtl['chr'] + '_' + eqtl['position'].astype(str) + '_' + eqtl['motif']
-    eqtl['snp'] = eqtl['snp'].str.replace('-', '_', regex=False)
-    gene = eqtl_file_path.split('/')[-1].split('_')[0]
+    eqtl['beta'] = eqtl['BETA']
+    eqtl['se'] = eqtl['SE']
+    eqtl['position'] = eqtl['POS']
+    eqtl['snp'] = eqtl['MarkerID'].str.replace(':', '_', regex=False)
+    # eqtl['beta'] = eqtl['coeff_meta']
+    # eqtl['se'] = eqtl['se_meta']
+    # eqtl['position'] = eqtl['pos']
+    # eqtl['snp'] = eqtl['chr'] + '_' + eqtl['position'].astype(str) + '_' + eqtl['motif']
+    # eqtl['snp'] = eqtl['snp'].str.replace('-', '_', regex=False)
+    gene = eqtl_file_path.split('/')[-1].replace(f'{celltype}_', '').replace('_cis', '')
+    # gene = eqtl_file_path.split('/')[-1].split('_')[0]
     with (ro.default_converter + pandas2ri.converter).context():
         eqtl_r = ro.conversion.get_conversion().py2rpy(eqtl)
     ro.globalenv['eqtl_r'] = eqtl_r
@@ -127,6 +132,7 @@ def coloc_runner(gwas, eqtl_file_path, celltype, pheno_output_name):
     default='gs://cpg-bioheart-test/str/gwas_catalog/gcst/gcst-gwas-catalogs/GCST011071_parsed.tsv',
 )
 @click.option('--celltypes', help='Cell types to run', default='ASDC')
+@click.option('--cis-window-size', help='Cis window size used', default=100000)
 @click.option(
     '--max-parallel-jobs', help='Maximum number of parallel jobs to run', default=500
 )
@@ -142,6 +148,7 @@ def main(
     snp_gwas_file,
     pheno_output_name,
     max_parallel_jobs,
+    cis_window_size,
     job_cpu,
 ):
     # Setup MAX concurrency by genes
@@ -211,7 +218,7 @@ def main(
             ]['chr'].iloc[0]
             if to_path(
                 output_path(
-                    f"coloc-snp-only/sig_str_filter_only/{pheno_output_name}/{celltype}/{gene}_100kb.tsv",
+                    f"coloc-snp-only/sig_str_filter_only/{pheno_output_name}/{celltype}/{gene}_{cis_window_size}.tsv",
                     'analysis',
                 ),
             ).exists():
@@ -229,8 +236,8 @@ def main(
 
                 # extract the coordinates for the cis-window (gene +/- 100kB)
                 gene_table = var_table[var_table['gene_ids'] == gene]
-                start = float(gene_table['start'].astype(float)) - 100000
-                end = float(gene_table['end'].astype(float)) + 100000
+                start = int(gene_table['start'].astype(int)) - cis_window_size
+                end = int(gene_table['end'].astype(int)) + cis_window_size
                 chrom = gene_table['chr'].iloc[0]
                 hg38_map_chr = hg38_map[hg38_map['chromosome'] == (chrom)]
                 hg38_map_chr_start = hg38_map_chr[hg38_map_chr['position'] >= start]
