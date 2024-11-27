@@ -190,9 +190,6 @@ def main(
             eqtl_results_file = (
                 f'{snp_cis_dir}/{celltype}/{chrom}/{celltype}_{gene}_cis'
             )
-            # if to_path(
-            #     f'{snp_cis_dir}/{celltype}/{chrom}/{celltype}_{gene}_cis'
-            # ).exists():
             if to_path(eqtl_results_file).exists():
                 print('Cis results for ' + gene + ' exist: proceed with coloc')
 
@@ -214,16 +211,19 @@ def main(
                     )
                     continue
                 # check if the p-value column contains at least one value which is <=5e-8:
-                # if hg38_map_chr_start_end['p_value'].min() > 5e-8:
-                # print('No significant SNP GWAS data for ' + gene + ' in the cis-window: skipping....')
-                # continue
-                # print('Extracted SNP GWAS data for ' + gene)
+                if hg38_map_chr_start_end['p_value'].min() > 5e-8:
+                    print(
+                        'No significant SNP GWAS data for '
+                        + gene
+                        + ' in the cis-window: skipping....'
+                    )
+                    continue
+                print('Extracted SNP GWAS data for ' + gene)
 
                 # run coloc
                 coloc_job = b.new_python_job(
                     f'Coloc for {gene}: {celltype}',
                 )
-                # f'{snp_cis_dir}/{celltype}/{chrom}/{gene}_100000bp_meta_results.tsv' ???
                 coloc_job.image(image_path('r-meta'))
                 coloc_job.cpu(job_cpu)
                 coloc_job.call(
