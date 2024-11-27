@@ -166,7 +166,7 @@ def main(
 
     # read in eGenes file
     # TODO: update to take in SAIGE-QTL results
-    egenes = pd.read_csv(
+    result_df_cfm = pd.read_csv(
         egenes_file,
         sep='\t',
         usecols=[
@@ -182,7 +182,6 @@ def main(
         ],
     )
 
-    result_df_cfm = egenes
     result_df_cfm['variant_type'] = (
         result_df_cfm['motif'].str.contains('-').map({True: 'SNV', False: 'STR'})
     )
