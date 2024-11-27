@@ -7,7 +7,7 @@ to rework for common variant SAIGE-QTL results
 This script will run SusieR, fine-mapping tool.
 
 Required inputs:
-- output from`corr_matrix_maker.py` (ie LD matrix)
+- output from`ld_matrix_maker.py` (ie LD matrix)
 - associaTR raw outputs (eSNPs and eSTRs combined), preferably also run with `remove_STR_indels.py`.
 analysis-runner --dataset "bioheart" \
     --description "Run susieR for eGenes identified by STR analysis" \
@@ -30,7 +30,9 @@ from cpg_utils import to_path
 from cpg_utils.hail_batch import get_batch, output_path
 
 
-def susie_runner(ld_path, associatr_path, celltype, chrom, num_iterations, num_causal_variants):
+def susie_runner(
+    ld_path, associatr_path, celltype, chrom, num_iterations, num_causal_variants
+):
     import pandas as pd
     import rpy2.robjects as ro
     from rpy2.robjects import pandas2ri
@@ -111,7 +113,9 @@ def susie_runner(ld_path, associatr_path, celltype, chrom, num_iterations, num_c
     raw_output_python = ro.r('raw_output')
 
     # write raw output to GCS
-    with to_path(output_path(f"susie/{celltype}/{chrom}/{gene}_100kb_output.txt", 'analysis')).open('w') as file:
+    with to_path(
+        output_path(f"susie/{celltype}/{chrom}/{gene}_100kb_output.txt", 'analysis')
+    ).open('w') as file:
         file.write(str(raw_output_python))
 
     # write dataframe to GCS
@@ -126,10 +130,14 @@ def susie_runner(ld_path, associatr_path, celltype, chrom, num_iterations, num_c
 @click.option('--chromosomes', help='Chromosomes comma separated')
 @click.option('--ld-dir', help='Directory to LD correlation matrices')
 @click.option('--associatr-dir', help='Directory to associatr outputs')
-@click.option('--max-parallel-jobs', help='Maximum number of parallel jobs', default=500)
+@click.option(
+    '--max-parallel-jobs', help='Maximum number of parallel jobs', default=500
+)
 @click.option('--num_iterations', help='Number of iterations for SusieR', default=100)
 @click.option('--susie-cpu', help='CPU for SusieR job', default=0.25)
-@click.option('--num-causal-variants', help='Number of causal variants to estimate', default=10)
+@click.option(
+    '--num-causal-variants', help='Number of causal variants to estimate', default=10
+)
 @click.option('--always-run', help='Job set to always run', is_flag=True)
 @click.command()
 def main(
@@ -164,7 +172,9 @@ def main(
                 gene = ld_file.split('/')[-1].split('_')[0]
                 print(f'Processing {gene}...')
                 if to_path(
-                    output_path(f"susie/{celltype}/{chrom}/{gene}_100kb.tsv", 'analysis'),
+                    output_path(
+                        f"susie/{celltype}/{chrom}/{gene}_100kb.tsv", 'analysis'
+                    ),
                 ).exists():
                     continue
                 associatr_path = f'{associatr_dir}/{celltype}/{chrom}/{gene}_100000bp_meta_results.tsv'
