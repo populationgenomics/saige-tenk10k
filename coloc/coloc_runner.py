@@ -219,7 +219,9 @@ def main(
                 continue
 
             # TO DO: figure out whether or not to include to_path here
-            eqtl_results_file = f'{snp_cis_dir}/{celltype}/{chrom}/{celltype}_{gene}_cis'
+            eqtl_results_file = (
+                f'{snp_cis_dir}/{celltype}/{chrom}/{celltype}_{gene}_cis'
+            )
             # if to_path(
             #     f'{snp_cis_dir}/{celltype}/{chrom}/{celltype}_{gene}_cis'
             # ).exists():
