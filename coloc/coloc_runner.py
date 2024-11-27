@@ -117,9 +117,9 @@ def coloc_runner(gwas, eqtl_file_path, celltype, pheno_output_name):
 
 
 @click.option(
-    '--egenes-file',
-    help='Path to the eGenes file with FINEMAP and SUSIE probabilities',
-    default='gs://cpg-bioheart-test-analysis/str/associatr/fine_mapping/susie_finemap/all_cell_types_all_genes_sig_only.tsv',
+    '--egenes-files-path',
+    help='Path to the gene-level summary files',
+    default='gs://cpg-bioheart-test-analysis/saige-qtl/bioheart_n990_and_tob_n1055/241004_n100/output_files/summary_stats',
 )
 @click.option(
     '--snp-cis-dir',
@@ -133,6 +133,7 @@ def coloc_runner(gwas, eqtl_file_path, celltype, pheno_output_name):
 )
 @click.option('--celltypes', help='Cell types to run', default='ASDC')
 @click.option('--cis-window-size', help='Cis window size used', default=100000)
+@click.option('fdr-threshold', help='FDR threshold', default=0.05)
 @click.option(
     '--max-parallel-jobs', help='Maximum number of parallel jobs to run', default=500
 )
@@ -143,12 +144,13 @@ def coloc_runner(gwas, eqtl_file_path, celltype, pheno_output_name):
 @click.command()
 def main(
     snp_cis_dir,
-    egenes_file,
+    egenes_file_path,
     celltypes,
     snp_gwas_file,
     pheno_output_name,
     max_parallel_jobs,
     cis_window_size,
+    fdr_threshold,
     job_cpu,
 ):
     # Setup MAX concurrency by genes
@@ -173,31 +175,16 @@ def main(
 
     # read in eGenes file
     # TODO: update to take in SAIGE-QTL results
+    egenes_file = (
+        egenes_file
+    ) = f'{egenes_file_path}/{celltype}_all_cis_cv_gene_level_results.tsv'
     result_df_cfm = pd.read_csv(
         egenes_file,
         sep='\t',
-        usecols=[
-            'chr',
-            'pos',
-            'pval_meta',
-            'motif',
-            'susie_pip',
-            'gene',
-            'finemap_prob',
-            'celltype',
-            'ref_len',
-        ],
     )
-
-    result_df_cfm['variant_type'] = (
-        result_df_cfm['motif'].str.contains('-').map({True: 'SNV', False: 'STR'})
-    )
-    result_df_cfm_str = result_df_cfm[
-        result_df_cfm['variant_type'] == 'STR'
-    ]  # filter for STRs
-    result_df_cfm_str = result_df_cfm_str[
-        result_df_cfm_str['pval_meta'] < 5e-8
-    ]  # filter for STRs with p-value < 5e-8
+    result_df_cfm = result_df_cfm[
+        result_df_cfm['ACAT_p'] < fdr_threshold
+    ]  # filter for sc-eQTLs with p-value < fdr_threshold
     result_df_cfm_str = result_df_cfm_str.drop_duplicates(
         subset=['gene', 'celltype'],
     )  # drop duplicates (ie pull out the distinct genes in each celltype)
