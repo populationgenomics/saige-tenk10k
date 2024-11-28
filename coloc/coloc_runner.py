@@ -135,7 +135,7 @@ def coloc_runner(gwas, eqtl_file_path, celltype, coloc_results_file):
 @click.command()
 def main(
     snp_cis_dir: str,
-    egenes_file_path: str,
+    egenes_files_path: str,
     celltypes: str,
     snp_gwas_file: str,
     pheno_output_name: str,
@@ -171,7 +171,7 @@ def main(
         # read in eGenes file
         egenes_file = (
             egenes_file
-        ) = f'{egenes_file_path}/{celltype}_all_cis_cv_gene_level_results.tsv'
+        ) = f'{egenes_files_path}/{celltype}_all_cis_cv_gene_level_results.tsv'
         result_df_cfm = pd.read_csv(
             egenes_file,
             sep='\t',
