@@ -124,7 +124,7 @@ def coloc_runner(gwas, eqtl_file_path, celltype, coloc_results_file):
     '--celltypes', help='Cell types to run, single str, comma separated', default='ASDC'
 )
 @click.option('--cis-window-size', help='Cis window size used', default=100000)
-@click.option('fdr-threshold', help='FDR threshold', default=0.05)
+@click.option('--fdr-threshold', help='FDR threshold', default=0.05)
 @click.option(
     '--max-parallel-jobs', help='Maximum number of parallel jobs to run', default=500
 )
