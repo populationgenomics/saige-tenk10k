@@ -61,7 +61,7 @@ def coloc_runner(gwas, eqtl_file_path, celltype, coloc_results_file):
     eqtl['beta'] = eqtl['BETA']
     eqtl['se'] = eqtl['SE']
     eqtl['position'] = eqtl['POS']
-    eqtl['snp'] = eqtl['MarkerID'].apply(lambda snp: 'chr'+snp.replace(':', '_'))
+    eqtl['snp'] = eqtl['MarkerID'].apply(lambda snp: 'chr' + snp.replace(':', '_'))
     # while I figure out if it's easy to extract sdY, give N and MAF instead
     # https://chr1swallace.github.io/coloc/articles/a02_data.html#what-if-i-dont-have-sdy
     eqtl['MAF'] = eqtl['AF_Allele2'].apply(lambda af: min(af, (1 - af)))
