@@ -124,6 +124,10 @@ def coloc_runner(gwas, eqtl_file_path, celltype, coloc_results_file):
 @click.option(
     '--celltypes', help='Cell types to run, single str, comma separated', default='ASDC'
 )
+@click.option(
+    '--gene-info-file',
+    default='gs://cpg-bioheart-test/saige-qtl/300-libraries/combined_anndata_obs_vars/300_libraries_concatenated_harmony_filtered_vars.csv',
+)
 @click.option('--cis-window-size', help='Cis window size used', default=100000)
 @click.option('--fdr-threshold', help='FDR threshold', default=0.05)
 @click.option(
@@ -139,6 +143,7 @@ def main(
     egenes_files_path: str,
     celltypes: str,
     snp_gwas_file: str,
+    gene_info_file: str,
     pheno_output_name: str,
     max_parallel_jobs: int,
     cis_window_size: int,
@@ -157,9 +162,7 @@ def main(
         _dependent_jobs.append(job)
 
     # read in gene annotation file
-    var_table = pd.read_csv(
-        'gs://cpg-bioheart-test/saige-qtl/300-libraries/combined_anndata_obs_vars/300_libraries_concatenated_harmony_filtered_vars.csv',
-    )
+    var_table = pd.read_csv(gene_info_file)
     hg38_map = pd.read_csv(
         snp_gwas_file,
         sep='\t',
