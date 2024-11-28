@@ -64,7 +64,7 @@ def coloc_runner(gwas, eqtl_file_path, celltype, coloc_results_file):
     eqtl['snp'] = eqtl['MarkerID'].str.replace(':', '_', regex=False)
     # while I figure out if it's easy to extract sdY, give N and MAF instead
     # https://chr1swallace.github.io/coloc/articles/a02_data.html#what-if-i-dont-have-sdy
-    eqtl['MAF'] = [min(af, (1 - af)) for af in eqtl['AF_Allele2']]
+    eqtl['MAF'] = eqtl['AF_Allele2'].apply(lambda af: min(af, (1 - af)))
     gene = eqtl_file_path.split('/')[-1].replace(f'{celltype}_', '').replace('_cis', '')
     with (ro.default_converter + pandas2ri.converter).context():
         eqtl_r = ro.conversion.get_conversion().py2rpy(eqtl)
@@ -176,9 +176,9 @@ def main(
             egenes_file,
             sep='\t',
         )
-        result_df_cfm['chr'] = [
-            'chr' + snp.split(':')[0] for snp in result_df_cfm['top_MarkerID']
-        ]
+        result_df_cfm['chr'] = result_df_cfm['top_MarkerID'].apply(
+            lambda snp: 'chr' + snp.split(':')[0]
+        )
         result_df_cfm = result_df_cfm[
             result_df_cfm['ACAT_p'] < fdr_threshold
         ]  # filter for sc-eQTLs with p-value < fdr_threshold
