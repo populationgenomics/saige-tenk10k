@@ -90,5 +90,3 @@ trujillo_methylation_eQTLs = 'gs://cpg-bioheart-test/str/Trujillo_methylation_eQ
             'gymrek-ukbb-platelet_distribution_width': f'gs://cpg-bioheart-test/str/gymrek-ukbb-snp-str-gwas-catalogs/chr-specific/white_british_platelet_distribution_width_snp_str_gwas_results_hg38_{chrom}.tab.gz',
             'gymrek-ukbb-red_blood_cell_count': f'gs://cpg-bioheart-test/str/gymrek-ukbb-snp-str-gwas-catalogs/chr-specific/white_british_red_blood_cell_count_snp_str_gwas_results_hg38_{chrom}.tab.gz',
             'gymrek-ukbb-red_blood_cell_distribution_width': f'gs://cpg-bioheart-test/str/gymrek-ukbb-snp-str-gwas-catalogs/chr-specific/white_british_red_blood_cell_distribution_width_snp_str_gwas_results_hg38_{chrom}.tab.gz',
-
-
