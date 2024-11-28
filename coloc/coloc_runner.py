@@ -194,13 +194,14 @@ def main(
                 'analysis',
             )
             if to_path(coloc_results_file).exists():
+                print(f'Output file for {gene} already exists: skip')
                 continue
 
             eqtl_results_file = (
                 f'{snp_cis_dir}/{celltype}/{chrom}/{celltype}_{gene}_cis'
             )
             if to_path(eqtl_results_file).exists():
-                print('Cis results for ' + gene + ' exist: proceed with coloc')
+                print(f'Cis results for {gene} exist: proceed with coloc')
 
                 # extract the coordinates for the cis-window (gene +/- 100kB)
                 gene_table = var_table[var_table['gene_ids'] == gene]
@@ -214,9 +215,7 @@ def main(
                 ]
                 if hg38_map_chr_start_end.empty:
                     print(
-                        'No SNP GWAS data for '
-                        + gene
-                        + ' in the cis-window: skipping....'
+                        f'No SNP GWAS data for {gene} in the cis-window: skipping....'
                     )
                     continue
                 # check if the p-value column contains at least one value which is <=5e-8:
@@ -227,7 +226,7 @@ def main(
                 #         + ' in the cis-window: skipping....'
                 #     )
                 #     continue
-                print('Extracted SNP GWAS data for ' + gene)
+                print(f'Extracted SNP GWAS data for {gene}')
 
                 # run coloc
                 coloc_job = b.new_python_job(
