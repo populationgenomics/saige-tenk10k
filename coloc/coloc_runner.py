@@ -107,6 +107,12 @@ def coloc_runner(gwas, eqtl_file_path, celltype, coloc_results_file):
 
 
 @click.option(
+    '--celltypes', help='Cell types to run, single str, comma separated', default='ASDC'
+)
+@click.option(
+    '--pheno-output-name', help='Phenotype output name', default='covid_GCST011071'
+)
+@click.option(
     '--egenes-files-path',
     help='Path to the gene-level summary files',
     default='gs://cpg-bioheart-test-analysis/saige-qtl/bioheart_n990_and_tob_n1055/241004_n100/output_files/summary_stats',
@@ -122,9 +128,6 @@ def coloc_runner(gwas, eqtl_file_path, celltype, coloc_results_file):
     default='gs://cpg-bioheart-test/str/gwas_catalog/gcst/gcst-gwas-catalogs/GCST011071_parsed.tsv',
 )
 @click.option(
-    '--celltypes', help='Cell types to run, single str, comma separated', default='ASDC'
-)
-@click.option(
     '--gene-info-file',
     default='gs://cpg-bioheart-test/saige-qtl/300-libraries/combined_anndata_obs_vars/300_libraries_concatenated_harmony_filtered_vars.csv',
 )
@@ -133,21 +136,18 @@ def coloc_runner(gwas, eqtl_file_path, celltype, coloc_results_file):
 @click.option(
     '--max-parallel-jobs', help='Maximum number of parallel jobs to run', default=500
 )
-@click.option(
-    '--pheno-output-name', help='Phenotype output name', default='covid_GCST011071'
-)
 @click.option('--job-cpu', help='Number of CPUs to use for each job', default=0.25)
 @click.command()
 def main(
-    snp_cis_dir: str,
-    egenes_files_path: str,
     celltypes: str,
+    pheno_output_name: str,
+    egenes_files_path: str,
+    snp_cis_dir: str,
     snp_gwas_file: str,
     gene_info_file: str,
-    pheno_output_name: str,
-    max_parallel_jobs: int,
     cis_window_size: int,
     fdr_threshold: float,
+    max_parallel_jobs: int,
     job_cpu: float,
 ):
     # Setup MAX concurrency by genes
