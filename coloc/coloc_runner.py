@@ -190,11 +190,11 @@ def main(
         for gene in result_df_cfm['gene']:
             chrom = result_df_cfm[result_df_cfm['gene'] == gene]['chr'].iloc[0]
             coloc_results_file = output_path(
-                f"coloc-snp-only/sig_genes_only/{pheno_output_name}/{celltype}/{gene}_{cis_window_size}.tsv",
+                f'coloc-snp-only/sig_genes_only/{pheno_output_name}/{celltype}/{gene}_{cis_window_size}.tsv',
                 'analysis',
             )
             if to_path(coloc_results_file).exists():
-                print(f'Output file for {gene} already exists: skip')
+                print(f'Output file for {gene} already exists: skipping....')
                 continue
 
             eqtl_results_file = (
@@ -219,13 +219,11 @@ def main(
                     )
                     continue
                 # check if the p-value column contains at least one value which is <=5e-8:
-                # if hg38_map_chr_start_end['p_value'].min() > 5e-8:
-                #     print(
-                #         'No significant SNP GWAS data for '
-                #         + gene
-                #         + ' in the cis-window: skipping....'
-                #     )
-                #     continue
+                if hg38_map_chr_start_end['p_value'].min() > 5e-8:
+                    print(
+                        f'No significant SNP GWAS data for {gene}in the cis-window: skipping....'
+                    )
+                    continue
                 print(f'Extracted SNP GWAS data for {gene}')
 
                 # run coloc
@@ -244,7 +242,7 @@ def main(
                 manage_concurrency_for_job(coloc_job)
 
             else:
-                print('No cis results for ' + gene + ' exist: skipping....')
+                print(f'No cis results for {gene} exist: skipping....')
 
     b.run(wait=False)
 
