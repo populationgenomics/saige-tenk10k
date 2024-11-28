@@ -7,8 +7,8 @@ to rework for common variant SAIGE-QTL results
 This script performs SNP-only colocalisation analysis betweeen eGenes identified by single-cell eQTL analysis (using SAIGE-QTL) and GWAS signals.
 Assumes that the SNP GWAS data has been pre-processed with the following columns: 'chromosome', 'position' (hg38 bp), 'snp'(chromosome_position_refallele_effectallele), 'beta', 'varbeta'
 
-1) Identify eGenes where at least one eQTL has pval < 5e-8
-2) Extract the SNP GWAS data for the cis-window (gene +/- 100kB)
+1) Identify eGenes using FDR < fdr_threshold (default: 0.05)
+2) Extract the SNP GWAS data for the cis-window (gene +/- window; default: 100kB)
 3) Run coloc for each eGene (if the SNP GWAS data has at least one variant with pval <5e-8)
 4) Write the results to a TSV file
 
