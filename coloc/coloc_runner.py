@@ -58,6 +58,7 @@ def coloc_runner(gwas, eqtl_file_path, celltype, coloc_results_file):
         eqtl_file_path,
         sep='\t',
     )
+    eqtl['chr'] = eqtl['CHR'].apply(lambda chr: f'chr{chr}')
     eqtl['beta'] = eqtl['BETA']
     eqtl['se'] = eqtl['SE']
     eqtl['position'] = eqtl['POS']
