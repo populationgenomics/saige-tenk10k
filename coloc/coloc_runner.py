@@ -14,10 +14,10 @@ Assumes that the SNP GWAS data has been pre-processed with the following columns
 
 analysis-runner --dataset "bioheart" \
     --description "Run coloc for eGenes identified by SAIGE-QTL analysis" \
-    --access-level "test" \
+    --access-level "full" \
     --memory='8G' \
     --image "australia-southeast1-docker.pkg.dev/analysis-runner/images/driver:d4922e3062565ff160ac2ed62dcdf2fba576b75a-hail-8f6797b033d2e102575c40166cf0c977e91f834e" \
-    --output-dir "saige-qtl/bioheart_n990_and_tob_n1055/241004_n100/" \
+    --output-dir "saige-qtl/bioheart_n787_and_tob_n960/241008_ashg/" \
     coloc/coloc_runner.py \
     --snp-gwas-file=gs://cpg-bioheart-test/str/gwas_catalog/gcst/gcst-gwas-catalogs/ibd_EAS_EUR_SiKJEF_meta_IBD.tsv \
     --pheno-output-name="ibd_liu2023" \
@@ -115,12 +115,12 @@ def coloc_runner(gwas, eqtl_file_path, celltype, coloc_results_file):
 @click.option(
     '--egenes-files-path',
     help='Path to the gene-level summary files',
-    default='gs://cpg-bioheart-test-analysis/saige-qtl/bioheart_n990_and_tob_n1055/241004_n100/output_files/summary_stats',
+    default='gs://cpg-bioheart-main-analysis/saige-qtl/bioheart_n787_and_tob_n960/241008_ashg/output_files/summary_stats',
 )
 @click.option(
     '--snp-cis-dir',
     help='Path to the directory containing the SNP cis results',
-    default='gs://cpg-bioheart-test-analysis/saige-qtl/bioheart_n990_and_tob_n1055/241004_n100/output_files',
+    default='gs://cpg-bioheart-main-analysis/saige-qtl/bioheart_n787_and_tob_n960/241008_ashg/output_files',
 )
 @click.option(
     '--snp-gwas-file',
@@ -129,7 +129,7 @@ def coloc_runner(gwas, eqtl_file_path, celltype, coloc_results_file):
 )
 @click.option(
     '--gene-info-file',
-    default='gs://cpg-bioheart-test/saige-qtl/300-libraries/combined_anndata_obs_vars/300_libraries_concatenated_harmony_filtered_vars.csv',
+    default='gs://cpg-bioheart-test/saige-qtl/300-libraries/combined_anndata_obs_vars/300_libraries_concatenated_harmony_filtered_vars_all_genes.csv',
 )
 @click.option('--cis-window-size', help='Cis window size used', default=100000)
 @click.option('--fdr-threshold', help='FDR threshold', default=0.05)
