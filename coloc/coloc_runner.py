@@ -62,6 +62,9 @@ def coloc_runner(gwas, eqtl_file_path, celltype, coloc_results_file):
     eqtl['se'] = eqtl['SE']
     eqtl['position'] = eqtl['POS']
     eqtl['snp'] = eqtl['MarkerID'].str.replace(':', '_', regex=False)
+    # while I figure out if it's easy to extract sdY, give N and MAF instead
+    # https://chr1swallace.github.io/coloc/articles/a02_data.html#what-if-i-dont-have-sdy
+    eqtl['MAF'] = [min(af, (1 - af)) for af in eqtl['AF_Allele2']]
     gene = eqtl_file_path.split('/')[-1].replace(f'{celltype}_', '').replace('_cis', '')
     with (ro.default_converter + pandas2ri.converter).context():
         eqtl_r = ro.conversion.get_conversion().py2rpy(eqtl)
@@ -73,12 +76,10 @@ def coloc_runner(gwas, eqtl_file_path, celltype, coloc_results_file):
     eqtl_r = eqtl_r %>% distinct(snp, .keep_all = TRUE)
     eqtl_r$varbeta = eqtl_r$se**2
     eqtl_r$position = eqtl_r$pos
-    eqtl_r = eqtl_r %>% select(beta, varbeta, position, snp)
+    eqtl_r = eqtl_r %>% select(beta, varbeta, position, snp, N, MAF)
 
     eqtl_r = eqtl_r %>% as.list()
     eqtl_r$type = 'quant'
-    eqtl_r$sdY = 1
-
 
     my.res <- coloc.abf(dataset1=gwas_r,
                     dataset2=eqtl_r)
