@@ -176,6 +176,9 @@ def main(
             egenes_file,
             sep='\t',
         )
+        result_df_cfm['chr'] = [
+            'chr' + snp.split(':')[0] for snp in result_df_cfm['top_MarkerID']
+        ]
         result_df_cfm = result_df_cfm[
             result_df_cfm['ACAT_p'] < fdr_threshold
         ]  # filter for sc-eQTLs with p-value < fdr_threshold
