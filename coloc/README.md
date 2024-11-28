@@ -4,9 +4,10 @@ Using COLOC {ref}
 
 ## Contents
 
-* coloc runner
-* maybe one more coloc runner for UKBB traits
-* shell script to automate running on multiple phenotypes
+* [coloc runner](coloc_runner.py)
+* WIP: [shell script to automate running on multiple phenotypes](multi_pheno_runner.sh)
+* TO DO: one more coloc runner for UKBB traits
+* TO DO: plotter
 
 ## Combiner
 
