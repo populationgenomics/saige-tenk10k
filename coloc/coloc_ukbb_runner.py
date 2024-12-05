@@ -233,8 +233,9 @@ def main(
 
                     # extract the coordinates for the cis-window (gene +/- 100kB)
                     gene_table = var_table[var_table['gene_ids'] == gene]
-                    start = float(gene_table['start'].astype(float)) - 100000
-                    end = float(gene_table['end'].astype(float)) + 100000
+                    start = int(gene_table['start'].iloc[0]) - cis_window_size
+                    end = int(gene_table['end'].iloc[0]) + cis_window_size
+                    chrom = gene_table['chr'].iloc[0]
                     hg38_map_chr = hg38_map[hg38_map['chromosome'] == (chrom)]
                     hg38_map_chr_start = hg38_map_chr[hg38_map_chr['position'] >= start]
                     hg38_map_chr_start_end = hg38_map_chr_start[
