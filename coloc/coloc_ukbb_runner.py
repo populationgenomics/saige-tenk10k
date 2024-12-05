@@ -112,26 +112,48 @@ def coloc_runner(gwas, eqtl_file_path, celltype, coloc_results_file):
 
 
 @click.option(
-    '--egenes-file',
-    help='Path to the eGenes file with FINEMAP and SUSIE probabilities',
-    default='gs://cpg-bioheart-test-analysis/str/associatr/fine_mapping/susie_finemap/all_cell_types_all_genes_sig_only.tsv',
-)
-@click.option(
-    '--snp-cis-dir',
-    help='Path to the directory containing the SNP cis results',
-    default='gs://cpg-bioheart-test/str/associatr/snps_and_strs/tob_n1055_and_bioheart_n990/meta_results/meta_results',
-)
-@click.option('--celltypes', help='Cell types to run', default='ASDC')
-@click.option(
-    '--max-parallel-jobs', help='Maximum number of parallel jobs to run', default=500
+    '--celltypes', help='Cell types to run, single str, comma separated', default='ASDC'
 )
 @click.option(
     '--pheno-output-name', help='Phenotype output name', default='covid_GCST011071'
 )
+@click.option(
+    '--egenes-files-path',
+    help='Path to the gene-level summary files',
+    default='gs://cpg-bioheart-main-analysis/saige-qtl/bioheart_n787_and_tob_n960/241008_ashg/output_files/summary_stats',
+)
+@click.option(
+    '--snp-cis-dir',
+    help='Path to the directory containing the SNP cis results',
+    default='gs://cpg-bioheart-main-analysis/saige-qtl/bioheart_n787_and_tob_n960/241008_ashg/output_files',
+)
+@click.option(
+    '--snp-gwas-file',
+    help='Path to the SNP GWAS file',
+    default='gs://cpg-bioheart-test/str/gwas_catalog/gcst/gcst-gwas-catalogs/GCST011071_parsed.tsv',
+)
+@click.option(
+    '--gene-info-file',
+    default='gs://cpg-bioheart-test/saige-qtl/300-libraries/combined_anndata_obs_vars/300_libraries_concatenated_harmony_filtered_vars_all_genes.csv',
+)
+@click.option('--cis-window-size', help='Cis window size used', default=100000)
+@click.option('--fdr-threshold', help='FDR threshold', default=0.05)
+@click.option(
+    '--max-parallel-jobs', help='Maximum number of parallel jobs to run', default=500
+)
 @click.option('--job-cpu', help='Number of CPUs to use for each job', default=0.25)
 @click.command()
 def main(
-    snp_cis_dir, egenes_file, celltypes, pheno_output_name, max_parallel_jobs, job_cpu
+    celltypes: str,
+    pheno_output_name: str,
+    egenes_files_path: str,
+    snp_cis_dir: str,
+    snp_gwas_file: str,
+    gene_info_file: str,
+    cis_window_size: int,
+    fdr_threshold: float,
+    max_parallel_jobs: int,
+    job_cpu: float,
 ):
     # Setup MAX concurrency by genes
     _dependent_jobs: list[hb.batch.job.Job] = []
@@ -145,8 +167,10 @@ def main(
         _dependent_jobs.append(job)
 
     # read in gene annotation file
-    var_table = pd.read_csv(
-        'gs://cpg-bioheart-test/str/240_libraries_tenk10kp1_v2/concatenated_gene_info_donor_info_var.csv',
+    var_table = pd.read_csv(gene_info_file)
+    hg38_map = pd.read_csv(
+        snp_gwas_file,
+        sep='\t',
     )
     # read in eGenes file
     egenes = pd.read_csv(
@@ -165,33 +189,28 @@ def main(
         ],
     )
 
-    result_df_cfm = egenes
-    result_df_cfm['variant_type'] = (
-        result_df_cfm['motif'].str.contains('-').map({True: 'SNV', False: 'STR'})
-    )
-    result_df_cfm_str = result_df_cfm[
-        result_df_cfm['variant_type'] == 'STR'
-    ]  # filter for STRs
-    result_df_cfm_str = result_df_cfm_str[
-        result_df_cfm_str['pval_meta'] < 5e-8
-    ]  # filter for STRs with p-value < 5e-8
-    result_df_cfm_str = result_df_cfm_str.drop_duplicates(
-        subset=['gene', 'celltype'],
-    )  # drop duplicates (ie pull out the distinct genes in each celltype)
-    result_df_cfm_str['gene'] = result_df_cfm_str['gene'].str.replace(
-        '.tsv',
-        '',
-        regex=False,
-    )  # remove .tsv from gene names (artefact of the data file)
-    b = get_batch(name=f'Run coloc:{pheno_output_name} and {celltypes}')
+    b = get_batch(name=f'Run coloc:{pheno_output_name}')
 
     for celltype in celltypes.split(','):
-        result_df_cfm_str_celltype = result_df_cfm_str[
-            result_df_cfm_str['celltype'] == celltype
-        ]  # filter for the celltype of interest
-        for chrom in result_df_cfm_str_celltype['chr'].unique():
-            result_df_cfm_str_celltype_chrom = result_df_cfm_str_celltype[
-                result_df_cfm_str_celltype['chr'] == chrom
+
+        # read in eGenes file
+        egenes_file = (
+            egenes_file
+        ) = f'{egenes_files_path}/{celltype}_all_cis_cv_gene_level_results.tsv'
+        result_df_cfm = pd.read_csv(
+            egenes_file,
+            sep='\t',
+        )
+        result_df_cfm['chr'] = result_df_cfm['top_MarkerID'].apply(
+            lambda snp: 'chr' + snp.split(':')[0]
+        )
+        result_df_cfm = result_df_cfm[
+            result_df_cfm['ACAT_p'] < fdr_threshold
+        ]  # filter for sc-eQTLs with p-value < fdr_threshold
+
+        for chrom in result_df_cfm['chr'].unique():
+            result_df_cfm_str_celltype_chrom = result_df_cfm[
+                result_df_cfm['chr'] == chrom
             ]
             phenotype = pheno_output_name.split('-')[-1]
             chr_gwas_file = f'gs://cpg-bioheart-test/str/gymrek-ukbb-snp-str-gwas-catalogs/chr-specific/white_british_{phenotype}_snp_str_gwas_results_hg38_{chrom}.tab.gz'
