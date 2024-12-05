@@ -25,19 +25,24 @@ celltypes='B_intermediate,ILC,Plasmablast,ASDC,cDC1,pDC,NK_CD56bright,MAIT,B_mem
 # Convert the cell types into an array
 IFS=',' read -ra celltype_array <<< "$celltypes"
 
-# Loop through each cell type
-for celltype in "${celltype_array[@]}"; do
-    echo "Running coloc analysis for cell type: $celltype, phenotype: $pheno_name"
-    analysis-runner --dataset "bioheart" \
-    --description "Run coloc for eGenes identified by SAIGE-QTL analysis" \
-    --access-level "full" \
-    --memory='8G' \
-    --image "australia-southeast1-docker.pkg.dev/analysis-runner/images/driver:d4922e3062565ff160ac2ed62dcdf2fba576b75a-hail-8f6797b033d2e102575c40166cf0c977e91f834e" \
-    --output-dir "saige-qtl/bioheart_n787_and_tob_n960/241008_ashg/coloc-snp-only/sig_genes_only/" \
-    coloc/coloc_runner.py \
-    --snp-gwas-file="$pheno_gwas_file" \
-    --pheno-output-name="$pheno_name" \
-    --celltypes="$celltype"
-done
+# create phenotype array
+# ???
 
+# Loop through each phenotype
+for pheno_name in "${phenotype_array[@]}"; do
+    # Loop through each cell type
+    for celltype in "${celltype_array[@]}"; do
+        echo "Running coloc analysis for cell type: $celltype, phenotype: $pheno_name"
+        analysis-runner --dataset "bioheart" \
+        --description "Run coloc for eGenes identified by SAIGE-QTL analysis" \
+        --access-level "full" \
+        --memory='8G' \
+        --image "australia-southeast1-docker.pkg.dev/analysis-runner/images/driver:d4922e3062565ff160ac2ed62dcdf2fba576b75a-hail-8f6797b033d2e102575c40166cf0c977e91f834e" \
+        --output-dir "saige-qtl/bioheart_n787_and_tob_n960/241008_ashg/coloc-snp-only/sig_genes_only/" \
+        coloc/coloc_runner.py \
+        --snp-gwas-file="$pheno_gwas_file" \
+        --pheno-output-name="$pheno_name" \
+        --celltypes="$celltype"
+    done
+done
 
