@@ -219,11 +219,11 @@ def main(
                     )
                     continue
                 # check if the p-value column contains at least one value which is <=5e-8:
-                # if hg38_map_chr_start_end['p_value'].min() > 5e-8:
-                #     print(
-                #         f'No significant SNP GWAS data for {gene}in the cis-window: skipping....'
-                #     )
-                #     continue
+                if hg38_map_chr_start_end['p_value'].min() > 5e-8:
+                    print(
+                        f'No significant SNP GWAS data for {gene}in the cis-window: skipping....'
+                    )
+                    continue
                 print(f'Extracted SNP GWAS data for {gene}')
 
                 # run coloc
