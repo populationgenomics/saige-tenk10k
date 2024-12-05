@@ -6,8 +6,7 @@ Using [COLOC](https://chr1swallace.github.io/coloc/index.html)
 
 * [coloc runner](coloc_runner.py)
 * [shell script to automate running on multiple phenotypes](multi_pheno_runner.sh)
-* TO DO: one more coloc runner for UKBB traits
-* TO DO: plotter
+* [one more coloc runner for UKBB traits](coloc_ukbb_runner.py)
 
 ## Combiner
 
