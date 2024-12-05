@@ -36,7 +36,7 @@ from cpg_utils import to_path
 from cpg_utils.hail_batch import get_batch, image_path, output_path
 
 
-def coloc_runner(gwas, eqtl_file_path, celltype, pheno_output_name):
+def coloc_runner(gwas, eqtl_file_path, celltype, coloc_results_file):
     import rpy2.robjects as ro
     from rpy2.robjects import pandas2ri
 
@@ -55,7 +55,6 @@ def coloc_runner(gwas, eqtl_file_path, celltype, pheno_output_name):
     gwas_r = gwas_r %>% distinct(snp, .keep_all = TRUE)
     gwas_r = gwas_r%>% as.list()
     gwas_r$type = 'quant'
-    gwas_r$sdY = 1
 
     ''',
     )
@@ -63,13 +62,15 @@ def coloc_runner(gwas, eqtl_file_path, celltype, pheno_output_name):
         eqtl_file_path,
         sep='\t',
     )
-    gene = eqtl_file_path.split('/')[-1].split('_')[0]
-    eqtl['beta'] = eqtl['coeff_meta']
-    eqtl['se'] = eqtl['se_meta']
-    eqtl['position'] = eqtl['pos']
-    eqtl['snp'] = eqtl['chr'] + '_' + eqtl['position'].astype(str) + '_' + eqtl['motif']
-    eqtl['snp'] = eqtl['snp'].str.replace('-', '_', regex=False)
-
+    eqtl['chr'] = eqtl['CHR'].apply(lambda chr: f'chr{chr}')
+    eqtl['beta'] = eqtl['BETA']
+    eqtl['se'] = eqtl['SE']
+    eqtl['position'] = eqtl['POS']
+    eqtl['snp'] = eqtl['MarkerID'].apply(lambda snp: 'chr' + snp.replace(':', '_'))
+    # while I figure out if it's easy to extract sdY, give N and MAF instead
+    # https://chr1swallace.github.io/coloc/articles/a02_data.html#what-if-i-dont-have-sdy
+    eqtl['MAF'] = eqtl['AF_Allele2'].apply(lambda af: min(af, (1 - af)))
+    gene = eqtl_file_path.split('/')[-1].replace(f'{celltype}_', '').replace('_cis', '')
     with (ro.default_converter + pandas2ri.converter).context():
         eqtl_r = ro.conversion.get_conversion().py2rpy(eqtl)
     ro.globalenv['eqtl_r'] = eqtl_r
@@ -80,11 +81,10 @@ def coloc_runner(gwas, eqtl_file_path, celltype, pheno_output_name):
     eqtl_r = eqtl_r %>% distinct(snp, .keep_all = TRUE)
     eqtl_r$varbeta = eqtl_r$se**2
     eqtl_r$position = eqtl_r$pos
-    eqtl_r = eqtl_r %>% select(beta, varbeta, position, snp)
+    eqtl_r = eqtl_r %>% select(beta, varbeta, position, snp, N, MAF)
 
     eqtl_r = eqtl_r %>% as.list()
     eqtl_r$type = 'quant'
-    eqtl_r$sdY = 1
 
 
     my.res <- coloc.abf(dataset1=gwas_r,
@@ -105,10 +105,7 @@ def coloc_runner(gwas, eqtl_file_path, celltype, pheno_output_name):
 
     # write to GCS
     pd_p4_df.to_csv(
-        output_path(
-            f"coloc/sig_str_and_gwas_hit/{pheno_output_name}/{celltype}/{gene}_100kb.tsv",
-            'analysis',
-        ),
+        coloc_results_file,
         sep='\t',
         index=False,
     )
