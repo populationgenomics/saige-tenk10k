@@ -38,6 +38,8 @@ for i in \
         --image "australia-southeast1-docker.pkg.dev/analysis-runner/images/driver:d4922e3062565ff160ac2ed62dcdf2fba576b75a-hail-8f6797b033d2e102575c40166cf0c977e91f834e" \
         --output-dir "saige-qtl/bioheart_n990_and_tob_n1055/241004_n100/" \
         coloc/coloc_runner.py \
+        --egenes-files-path=gs://cpg-bioheart-test-analysis/saige-qtl/bioheart_n990_and_tob_n1055/241004_n100/output_files/summary_stats \
+        --snp-cis-dir=gs://cpg-bioheart-test-analysis/saige-qtl/bioheart_n990_and_tob_n1055/241004_n100/output_files \
         --snp-gwas-file="$2" \
         --pheno-output-name="$1" \
         --celltypes="$celltype" --fdr-threshold=1
