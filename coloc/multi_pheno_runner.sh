@@ -45,4 +45,3 @@ for pheno_name in "${phenotype_array[@]}"; do
         --celltypes="$celltype"
     done
 done
-
