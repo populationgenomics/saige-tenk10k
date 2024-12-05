@@ -26,8 +26,8 @@ for i in \
     # "nephrotic_GCST90258619 'gs://cpg-bioheart-test/str/gwas_catalog/gcst/gcst-gwas-catalogs/nephrotic_GCST90258619_parsed.tsv'" \
     # "kiryluk_IgAN 'gs://cpg-bioheart-test/str/gwas_catalog/gcst/gcst-gwas-catalogs/Kiryluk_IgAN_parsed.tsv'" \
     # "trujillo_methylation_eQTLs 'gs://cpg-bioheart-test/str/Trujillo_methylation_eQTLs/hg38_STRs_SNVs_parsed.tsv'" \
-    set -- $i
     ; do
+    set -- $i
     # Loop through each cell type
     for celltype in "${celltype_array[@]}"; do
         echo "Running coloc analysis for cell type: $celltype, phenotype: $1"
