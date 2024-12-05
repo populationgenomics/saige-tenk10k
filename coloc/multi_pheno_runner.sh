@@ -33,13 +33,13 @@ for i in \
         echo "Running coloc analysis for cell type: $celltype, phenotype: $1"
         analysis-runner --dataset "bioheart" \
         --description "Run coloc for eGenes identified by SAIGE-QTL analysis" \
-        --access-level "full" \
+        --access-level "test" \
         --memory='8G' \
         --image "australia-southeast1-docker.pkg.dev/analysis-runner/images/driver:d4922e3062565ff160ac2ed62dcdf2fba576b75a-hail-8f6797b033d2e102575c40166cf0c977e91f834e" \
-        --output-dir "saige-qtl/bioheart_n787_and_tob_n960/241008_ashg/coloc-snp-only/sig_genes_only/" \
+        --output-dir "saige-qtl/bioheart_n990_and_tob_n1055/241004_n100/" \
         coloc/coloc_runner.py \
         --snp-gwas-file="$2" \
         --pheno-output-name="$1" \
-        --celltypes="$celltype"
+        --celltypes="$celltype" --fdr-threshold=1
     done
 done

@@ -29,6 +29,7 @@ analysis-runner --dataset "bioheart" \
 ## Traits considered
 
 ### GCST
+
 alzheimer_GCST90027158 = 'gs://cpg-bioheart-test/str/gwas_catalog/gcst/gcst-gwas-catalogs/GCST90027158.h_parsed.tsv'
 breastca_GCST004988 = 'gs://cpg-bioheart-test/str/gwas_catalog/gcst/gcst-gwas-catalogs/GCST004988.h_parsed.tsv'
 colorectalca_GCST90129505 = 'gs://cpg-bioheart-test/str/gwas_catalog/gcst/gcst-gwas-catalogs/colorectalca_GCST90129505_parsed.tsv'
@@ -48,6 +49,7 @@ kiryluk_IgAN = 'gs://cpg-bioheart-test/str/gwas_catalog/gcst/gcst-gwas-catalogs/
 trujillo_methylation_eQTLs = 'gs://cpg-bioheart-test/str/Trujillo_methylation_eQTLs/hg38_STRs_SNVs_parsed.tsv'
 
 ### 44 UKBB traits from Margoliash et al. (Gymrek)
+
 'gymrek-ukbb-alanine-aminotransferase': f'gs://cpg-bioheart-test/str/gymrek-ukbb-snp-str-gwas-catalogs/chr-specific/white_british_alanine_aminotransferase_snp_str_gwas_results_hg38_{chrom}.tab.gz',
 'gymrek-ukbb-albumin': f'gs://cpg-bioheart-test/str/gymrek-ukbb-snp-str-gwas-catalogs/chr-specific/white_british_albumin_snp_str_gwas_results_hg38_{chrom}.tab.gz',
 'gymrek-ukbb-alkaline_phosphatase': f'gs://cpg-bioheart-test/str/gymrek-ukbb-snp-str-gwas-catalogs/chr-specific/white_british_alkaline_phosphatase_snp_str_gwas_results_hg38_{chrom}.tab.gz',
