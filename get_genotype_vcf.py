@@ -14,11 +14,12 @@ SAIGE-QTL association pipeline.
 
 analysis-runner \
    --description "get common and rare variant VCFs" \
-   --dataset "bioheart" \
+   --dataset "tenk10k" \
    --access-level "standard" \
    --output-dir saige-qtl/bioheart_n990_and_tob_n1055/input_files/240920/genotypes/ \
-    python3 get_genotype_vcf.py --vds-path=gs://cpg-bioheart-main/vds/tenk10k1-0.vds --chromosomes chr2 \
-    --relateds-to-drop-path=gs://cpg-bioheart-main-analysis/large_cohort/bioheart1-0/relateds_to_drop.ht
+    python3 get_genotype_vcf.py --vds-path=gs://cpg-tenk10k-main/vds/tenk10k-genome-2-0.vds --chromosomes chr2 \
+    --relateds-to-drop-path=gs://cpg-tenk10k-main/large_cohort/tenk10k-genome-2-3-eur/relateds_to_drop.ht \
+    --qc_pass_variants_path=gs://cpg-tenk10k-main/large_cohort/tenk10k-genome-2-3-eur/variants_qc.ht
 """
 
 import logging
@@ -133,7 +134,11 @@ def remove_chr_from_bim(input_bim: str, output_bim: str, bim_renamed: str):
 @click.option('--chromosomes', help=' e.g., chr22,chrX ')
 @click.option(
     '--relateds-to-drop-path',
-    default='gs://cpg-bioheart-main-analysis/large_cohort/bioheart1-0/relateds_to_drop.ht',
+    default='gs://cpg-tenk10k-main/large_cohort/tenk10k-genome-2-3-eur/relateds_to_drop.ht',
+)
+@click.option(
+    '--qc_pass_variants_path',
+    default='gs://cpg-tenk10k-main/large_cohort/tenk10k-genome-2-3-eur/variants_qc.ht',
 )
 @click.option('--cv-maf-threshold', default=0.01)
 @click.option('--rv-maf-threshold', default=0.01)
@@ -149,6 +154,7 @@ def main(
     vds_path: str,
     chromosomes: str,
     relateds_to_drop_path: str,
+    qc_pass_variants_path: str,
     cv_maf_threshold: float,
     rv_maf_threshold: float,
     vre_mac_threshold: int,
@@ -204,12 +210,13 @@ def main(
             mt = hl.vds.to_dense_mt(chrom_vds)
 
             # filter out related samples
-            # this will get dropped as the vds file will already be clean
             related_ht = hl.read_table(relateds_to_drop_path)
             related_samples = hl.literal(related_ht.s.collect())
             mt = mt.filter_cols(~related_samples.contains(mt['s']))
 
             # filter out loci & variant QC
+            qc_pass_variants = hl.read_table(qc_pass_variants_path)
+            mt = mt.semi_join_rows(qc_pass_variants)
             mt = mt.filter_rows(hl.len(mt.alleles) == 2)  # remove hom-ref
             if exclude_multiallelic:  # biallelic only (exclude multiallelic)
                 mt = mt.filter_rows(~(mt.was_split))
@@ -288,12 +295,13 @@ def main(
             mt = mt.checkpoint(dense_checkpoint)
 
         # filter out related samples from vre too
-        # this will get dropped as the vds file will already be clean
         related_ht = hl.read_table(relateds_to_drop_path)
         related_samples = hl.literal(related_ht.s.collect())
         mt = mt.filter_cols(~related_samples.contains(mt['s']))
 
-        # again filter for biallelic SNPs
+        # again filter for QC-pass, biallelic SNPs
+        qc_pass_variants = hl.read_table(qc_pass_variants_path)
+        mt = mt.semi_join_rows(qc_pass_variants)
         mt = mt.filter_rows(
             ~(mt.was_split)  # biallelic (exclude multiallelic)
             & (hl.len(mt.alleles) == 2)  # remove hom-ref
