@@ -19,7 +19,7 @@ analysis-runner \
    --output-dir saige-qtl/bioheart_n990_and_tob_n1055/input_files/240920/genotypes/ \
     python3 get_genotype_vcf.py --vds-path=gs://cpg-tenk10k-main/vds/tenk10k-genome-2-0.vds --chromosomes chr2 \
     --relateds-to-drop-path=gs://cpg-tenk10k-main/large_cohort/tenk10k-genome-2-3-eur/relateds_to_drop.ht \
-    --qc_pass_variants_path=gs://cpg-tenk10k-main/large_cohort/tenk10k-genome-2-3-eur/variants_qc.ht
+    --qc-pass-variants-path=gs://cpg-tenk10k-main/large_cohort/tenk10k-genome-2-3-eur/variants_qc.ht
 """
 
 import logging
@@ -137,7 +137,7 @@ def remove_chr_from_bim(input_bim: str, output_bim: str, bim_renamed: str):
     default='gs://cpg-tenk10k-main/large_cohort/tenk10k-genome-2-3-eur/relateds_to_drop.ht',
 )
 @click.option(
-    '--qc_pass_variants_path',
+    '--qc-pass-variants-path',
     default='gs://cpg-tenk10k-main/large_cohort/tenk10k-genome-2-3-eur/variants_qc.ht',
 )
 @click.option('--cv-maf-threshold', default=0.01)
