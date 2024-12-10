@@ -143,7 +143,8 @@ def main(
             mt = hl.read_matrix_table(dense_checkpoint)
         else:
             print(f'Writing new checkpoint to {dense_checkpoint}')
-            mt = mt.checkpoint(dense_checkpoint)
+            # force overwrite, in case a partially written checkpoint existed
+            mt = mt.checkpoint(dense_checkpoint, overwrite=True)
 
         # filter out related samples from vre too
         related_ht = hl.read_table(relateds_to_drop_path)
@@ -175,7 +176,7 @@ def main(
             mt = hl.read_matrix_table(common_checkpoint)
         else:
             print(f'Writing new checkpoint to {common_checkpoint}')
-            mt = mt.checkpoint(common_checkpoint)
+            mt = mt.checkpoint(common_checkpoint, overwrite=True)
 
         logging.info(f'common checkpoint written, MT size: {mt.count()}')
         mt.describe()
