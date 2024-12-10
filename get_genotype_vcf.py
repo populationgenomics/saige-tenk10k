@@ -16,7 +16,7 @@ analysis-runner \
    --description "get common and rare variant VCFs" \
    --dataset "tenk10k" \
    --access-level "standard" \
-   --output-dir saige-qtl/bioheart_n990_and_tob_n1055/input_files/240920/genotypes/ \
+   --output-dir saige-qtl/tenk10k-genome-2-3-eur/input_files/241210/genotypes/ \
     python3 get_genotype_vcf.py --vds-path=gs://cpg-tenk10k-main/vds/tenk10k-genome-2-0.vds --chromosomes chr2 \
     --relateds-to-drop-path=gs://cpg-tenk10k-main/large_cohort/tenk10k-genome-2-3-eur/relateds_to_drop.ht \
     --qc-pass-variants-path=gs://cpg-tenk10k-main/large_cohort/tenk10k-genome-2-3-eur/variants_qc.ht

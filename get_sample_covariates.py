@@ -17,15 +17,16 @@ To run:
 
 analysis-runner \
    --description "get sample covariates" \
-   --dataset "bioheart" \
+   --dataset "tenk10k" \
    --access-level "standard" \
-   --output-dir "saige-qtl/bioheart_n787_and_tob_n960/241008_ashg/input_files/covariates" \
-    	python3 get_sample_covariates.py --tenk10k-sampleqc-file-path  'gs://cpg-bioheart-main/large_cohort/tenk10k1-1/sample_qc.ht' \
-               --project-names 'tob-wgs,bioheart' --vds-version tenk10k1-1-eur-nbm
+   --output-dir "saige-qtl/tenk10k-genome-2-3-eur/input_files/241210/covariates" \
+    	python3 get_sample_covariates.py --tenk10k-sampleqc-file-path='gs://cpg-tenk10k-main/large_cohort/tenk10k-genome-2-3-eur/sample_qc.ht' \
+            --tenk10k-pcs-file-path='gs://cpg-tenk10k-main/large_cohort/tenk10k-genome-2-3-eur/cohort-only/ancestry/scores.ht' \
+            --project-names 'tob-wgs,bioheart'
 
 """
 
-from cpg_utils.hail_batch import dataset_path, init_batch, output_path
+from cpg_utils.hail_batch import init_batch, output_path
 
 import click
 
@@ -57,7 +58,10 @@ GET_PARTICIPANT_META_QUERY = gql(
     '--tenk10k-sampleqc-file-path',
     help='this file should contain sample id and inferred sex info for the tenk10k cohort (tob + bioheart)',
 )
-@click.option('--vds-version', help=' e.g. tenk10k1-0,bioheart1-0 ')
+@click.option(
+    '--tenk10k-pcs-file-path',
+    help='this file should contain genotype PCs for the tenk10k cohort (tob + bioheart)',
+)
 @click.option('--project-names', default='tob-wgs,bioheart')
 @click.option('--number-of-sample-perms', default=10)
 @click.option('--fill-in-sex', default=False)
@@ -65,7 +69,7 @@ GET_PARTICIPANT_META_QUERY = gql(
 @click.command()
 def main(
     tenk10k_sampleqc_file_path: str,
-    vds_version: str,
+    tenk10k_pcs_file_path: str,
     project_names: str,
     number_of_sample_perms: int,
     fill_in_sex: bool,
@@ -77,30 +81,7 @@ def main(
 
     init_batch()
 
-    # sex
-    # option 1: separate files
-    # # tob
-    # tob_sample_qc_ht = hl.read_table(tob_sampleqc_file_path)
-    # # convert to pandas
-    # tob_sample_qc_df = tob_sample_qc_ht.to_pandas()
-    # # extract info and reformat to table
-    # tob_sample_qc_df['sample_id'] = [str(s) for s in tob_sample_qc_df['s']]
-    # # only retain relevant columns
-    # tob_sex_df = tob_sample_qc_df[['sample_id', 'sex']]
-    # # bioheart
-    # bioheart_sample_qc_ht = hl.read_table(bioheart_sampleqc_file_path)
-    # # convert to pandas
-    # bioheart_sample_qc_df = bioheart_sample_qc_ht.to_pandas()
-    # # extract info and reformat to table
-    # bioheart_sample_qc_df['sample_id'] = [str(s) for s in bioheart_sample_qc_df['s']]
-    # # only retain relevant columns
-    # bioheart_sex_df = bioheart_sample_qc_df[['sample_id', 'sex']]
-    # # combine_info
-    # sex_df = pd.concat([tob_sex_df, bioheart_sex_df], axis=0)
-
-    # # option 2: combined file
-    # at the moment this is not up to date, but ideally this would be what we'd run instead
-    # sample_qc_ht_path = dataset_path(f'large_cohort/{vds_version}/sample_qc.ht')
+    # get sex info from sample qc Hail Table
     sample_qc_ht = hl.read_table(tenk10k_sampleqc_file_path)
     # convert to pandas
     sample_qc_df = sample_qc_ht.to_pandas()
@@ -117,7 +98,7 @@ def main(
     if fill_in_sex:
         sex_df['sex'] = sex_df['sex'].fillna(0)
 
-    # age
+    # age from metamist
     # create a list from dictionary to populate
     age_dict_list = []
     # loop over projects (tob-wgs, bioheart)
@@ -140,8 +121,7 @@ def main(
         age_df['age'].fillna(mean_age)
 
     # genotype PCs
-    pcs_ht_path = dataset_path(f'large_cohort/{vds_version}/ancestry/scores.ht')
-    pcs_ht = hl.read_table(pcs_ht_path)
+    pcs_ht = hl.read_table(tenk10k_pcs_file_path)
     # convert to pandas
     pcs_df = pcs_ht.to_pandas()
     # extract info and reformat to table
