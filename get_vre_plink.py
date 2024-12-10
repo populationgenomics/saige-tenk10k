@@ -34,9 +34,6 @@ from cpg_utils.config import output_path
 from cpg_utils.hail_batch import get_batch, init_batch
 
 
-VARS_PER_PARTITION = 20000
-
-
 def can_reuse(path: str):
     """
     checks for existence of a Path
@@ -114,7 +111,8 @@ def main(
     ld_prune_bp_window_size: int,
 ):
     """
-    Write genotypes as VCF
+    Write one subset of the genotypes
+    as plink files
     """
 
     init_batch(worker_memory='highmem')
