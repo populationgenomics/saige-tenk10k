@@ -25,7 +25,6 @@ analysis-runner \
 import logging
 
 import click
-import pandas as pd
 
 import hail as hl
 
