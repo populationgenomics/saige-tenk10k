@@ -21,7 +21,7 @@ analysis-runner \
    --access-level "standard" \
    --output-dir "saige-qtl/tenk10k-genome-2-3-eur/241210/input_files/covariates" \
     	python3 get_sample_covariates.py --tenk10k-sampleqc-file-path='gs://cpg-tenk10k-main/large_cohort/tenk10k-genome-2-3-eur/sample_qc.ht' \
-            --tenk10k-pcs-file-path='gs://cpg-tenk10k-main/large_cohort/tenk10k-genome-2-3-eur/ancestry/scores.ht' \
+            --tenk10k-pcs-file-path='gs://cpg-tenk10k-main/large_cohort/tenk10k-genome-2-3-eur/cohort-only/ancestry/scores.ht' \
             --project-names 'tob-wgs,bioheart'
 
 """
