@@ -172,22 +172,6 @@ def main(
         snp_gwas_file,
         sep='\t',
     )
-    # read in eGenes file
-    egenes = pd.read_csv(
-        egenes_file,
-        sep='\t',
-        usecols=[
-            'chr',
-            'pos',
-            'pval_meta',
-            'motif',
-            'susie_pip',
-            'gene',
-            'finemap_prob',
-            'celltype',
-            'ref_len',
-        ],
-    )
 
     b = get_batch(name=f'Run coloc:{pheno_output_name}')
 
