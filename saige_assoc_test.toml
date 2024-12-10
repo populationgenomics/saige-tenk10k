@@ -1,7 +1,7 @@
 [saige]
 # principal arguments
-celltypes = ['CD14_Mono']
-chromosomes = ['chr5']
+celltypes = ['CD4_TCM']
+chromosomes = ['chr1']
 drop_genes =[]
 # secondary arguments
 max_parallel_jobs = 50
