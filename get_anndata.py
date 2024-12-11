@@ -116,11 +116,6 @@ def make_pheno_cov(
     """
     expression_adata = copy_h5ad_local_and_open(expression_adata_path)
 
-    # define cell
-    expression_adata.obs['cell'] = [
-        cell.split("-")[0] for cell in expression_adata.obs.index
-    ]
-
     # open dataframes
     sample_covs_df = pd.read_csv(sample_covs_file)
     sample_covs_df['individual'] = sample_covs_df['sample_id']
@@ -131,7 +126,6 @@ def make_pheno_cov(
     cell_ind_df = expression_adata.obs.loc[
         :,
         [
-            'cell',
             'individual',
             'total_counts',
             'pct_counts_mt',
@@ -145,29 +139,21 @@ def make_pheno_cov(
     cohort_df = pd.get_dummies(cell_ind_df['cohort']).astype(int)
     cell_ind_df = pd.concat([cell_ind_df, cohort_df, seq_lib_df], axis=1)
     # merge cell and sample covs
+    cell_ind_df['cell'] = cell_ind_df.index
     sample_covs_cells_df = cell_ind_df.merge(
         sample_covs_df, on='individual', how='inner'
     )
     sample_covs_cells_df.index = sample_covs_cells_df['cell']
-    # drop rows with missing values (SAIGE throws an error otherwise:  https://batch.hail.populationgenomics.org.au/batches/435978/jobs/91)
+    # drop rows with missing values (SAIGE-QTL throws an error otherwise:
+    # https://batch.hail.populationgenomics.org.au/batches/435978/jobs/91)
     sample_covs_cells_df = sample_covs_cells_df.dropna()
     gene_adata = expression_adata[:, expression_adata.var.index == gene]
     gene_name = gene.replace("-", "_")
     expr_df = pd.DataFrame(
         data=gene_adata.X.todense(), index=gene_adata.obs.index, columns=[gene_name]
     )
-    # move index (barcode) into a 'cell' column and reset the index - required prior to merging
-    # TO DO adjust when final data comes (see issue #97)
-    expr_df['cell'] = expr_df.index
-    expr_df = expr_df.reset_index(drop=True)
-    sample_covs_cells_df = sample_covs_cells_df.reset_index(drop=True)
-    celltype_covs_df['cell'] = celltype_covs_df.index
-    celltype_covs_df = celltype_covs_df.reset_index(drop=True)
 
-    sample_covs_cells_df = pd.merge(sample_covs_cells_df, expr_df, on='cell')
-    pheno_cov_df = pd.merge(
-        sample_covs_cells_df, celltype_covs_df, on='cell', how='inner'
-    )
+    pheno_cov_df = pd.concat([sample_covs_cells_df, expr_df, celltype_covs_df], axis=1)
 
     with to_path(out_path).open('w') as pcf:
         pheno_cov_df.to_csv(pcf, index=False, sep='\t')
