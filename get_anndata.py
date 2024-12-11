@@ -116,11 +116,8 @@ def make_pheno_cov(
     """
     expression_adata = copy_h5ad_local_and_open(expression_adata_path)
 
-    # barcoding discrepancy - to be fixed in the next freeze
-    expression_adata.obs.index = [
-        cell.split("-")[0] for cell in expression_adata.obs.index
-    ]
-    expression_adata.obs.cell = [
+    # define cell
+    expression_adata.obs['cell'] = [
         cell.split("-")[0] for cell in expression_adata.obs.index
     ]
 
@@ -132,7 +129,15 @@ def make_pheno_cov(
     logging.info('cell covariate file opened')
 
     cell_ind_df = expression_adata.obs.loc[
-        :, ['cell', 'individual', 'total_counts', 'sequencing_library', 'cohort']
+        :,
+        [
+            'cell',
+            'individual',
+            'total_counts',
+            'pct_counts_mt',
+            'sequencing_library',
+            'cohort',
+        ],
     ]
     # make sequencing_library from categorical to dummy numerical covs
     seq_lib_df = pd.get_dummies(cell_ind_df['sequencing_library']).astype(int)
