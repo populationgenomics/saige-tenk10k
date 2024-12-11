@@ -15,15 +15,15 @@ To run:
 
 analysis-runner \
    --description "make expression input files" \
-   --dataset "bioheart" \
+   --dataset "tenk10k" \
    --access-level "full" \
-   --output-dir "saige-qtl/bioheart_n990_and_tob_n1055/input_files/240920" \
+   --output-dir "saige-qtl/tenk10k-genome-2-3-eur/input_files/241210/" \
    --image australia-southeast1-docker.pkg.dev/cpg-common/images/scanpy:1.9.3 \
    python3 get_anndata.py --celltypes B_naive --chromosomes chr2 \
-   --anndata-files-prefix gs://cpg-bioheart-main/saige-qtl/240-libraries/anndata_objects_from_HPC \
-   --celltype-covs-files-prefix gs://cpg-bioheart-main/saige-qtl/240-libraries/celltype_covs_from_HPC \
-   --sample-covs-file gs://cpg-bioheart-main-analysis/saige-qtl/input_files/240920/covariates/sex_age_geno_pcs_shuffled_ids_tob_bioheart.csv \
-   --pc-job-mem=8G
+   --anndata-files-prefix=gs://cpg-tenk10k-main/saige-qtl/240-libraries/anndata_objects_from_HPC \
+   --celltype-covs-files-prefix=gs://cpg-tenk10k-main/saige-qtl/240-libraries/celltype_covs_from_HPC \
+   --sample-covs-file=gs://cpg-tenk10k-main-analysis/saige-qtl/tenk10k-genome-2-3-eur/input_files/241210/covariates/sex_age_geno_pcs_shuffled_ids_tob_bioheart.csv \
+   --pc-job-mem=8G --suffix='_no_harmony_with_regression'
 
 """
 
@@ -229,6 +229,7 @@ def copy_h5ad_local_and_open(adata_path: str) -> sc.AnnData:
     default='standard',
     help='Memory for each cis gene job',
 )
+@click.option('--suffix', type=str, default='')
 def main(
     celltypes: str,
     chromosomes: str,
@@ -242,6 +243,7 @@ def main(
     pc_job_mem: str,
     cis_job_cpu: float,
     cis_job_mem: str,
+    suffix: str,
 ):
     """
     Run expression processing pipeline
@@ -272,7 +274,7 @@ def main(
         # extract cell-level covariates
         # expression PCs, cell type specific
         celltype_covs_file = (
-            f'{celltype_covs_files_prefix}/{celltype}_expression_pcs.csv'
+            f'{celltype_covs_files_prefix}/{celltype}_expression_pcs{suffix}.csv'
         )
 
         for chromosome in chromosomes.split(','):
