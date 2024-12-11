@@ -20,8 +20,8 @@ analysis-runner \
    --output-dir "saige-qtl/tenk10k-genome-2-3-eur/input_files/241210/" \
    --image australia-southeast1-docker.pkg.dev/cpg-common/images/scanpy:1.9.3 \
    python3 get_anndata.py --celltypes B_naive --chromosomes chr2 \
-   --anndata-files-prefix=gs://cpg-tenk10k-main/saige-qtl/240-libraries/anndata_objects_from_HPC \
-   --celltype-covs-files-prefix=gs://cpg-tenk10k-main/saige-qtl/240-libraries/celltype_covs_from_HPC \
+   --anndata-files-prefix=gs://cpg-tenk10k-main/saige-qtl/300-libraries/anndata_objects_from_HPC \
+   --celltype-covs-files-prefix=gs://cpg-tenk10k-main/saige-qtl/300-libraries/celltype_covs_from_HPC \
    --sample-covs-file=gs://cpg-tenk10k-main-analysis/saige-qtl/tenk10k-genome-2-3-eur/input_files/241210/covariates/sex_age_geno_pcs_shuffled_ids_tob_bioheart.csv \
    --pc-job-mem=8G --suffix='_no_harmony_with_regression'
 
