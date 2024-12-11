@@ -15,15 +15,15 @@ To run:
 
 analysis-runner \
    --description "make expression input files" \
-   --dataset "bioheart" \
+   --dataset "tenk10k" \
    --access-level "full" \
-   --output-dir "saige-qtl/bioheart_n990_and_tob_n1055/input_files/240920" \
+   --output-dir "saige-qtl/tenk10k-genome-2-3-eur/input_files/241210/" \
    --image australia-southeast1-docker.pkg.dev/cpg-common/images/scanpy:1.9.3 \
    python3 get_anndata.py --celltypes B_naive --chromosomes chr2 \
-   --anndata-files-prefix gs://cpg-bioheart-main/saige-qtl/240-libraries/anndata_objects_from_HPC \
-   --celltype-covs-files-prefix gs://cpg-bioheart-main/saige-qtl/240-libraries/celltype_covs_from_HPC \
-   --sample-covs-file gs://cpg-bioheart-main-analysis/saige-qtl/input_files/240920/covariates/sex_age_geno_pcs_shuffled_ids_tob_bioheart.csv \
-   --pc-job-mem=8G
+   --anndata-files-prefix=gs://cpg-tenk10k-main/saige-qtl/240-libraries/anndata_objects_from_HPC \
+   --celltype-covs-files-prefix=gs://cpg-tenk10k-main/saige-qtl/240-libraries/celltype_covs_from_HPC \
+   --sample-covs-file=gs://cpg-tenk10k-main-analysis/saige-qtl/tenk10k-genome-2-3-eur/input_files/241210/covariates/sex_age_geno_pcs_shuffled_ids_tob_bioheart.csv \
+   --pc-job-mem=8G --suffix='_no_harmony_with_regression'
 
 """
 
@@ -116,14 +116,6 @@ def make_pheno_cov(
     """
     expression_adata = copy_h5ad_local_and_open(expression_adata_path)
 
-    # barcoding discrepancy - to be fixed in the next freeze
-    expression_adata.obs.index = [
-        cell.split("-")[0] for cell in expression_adata.obs.index
-    ]
-    expression_adata.obs.cell = [
-        cell.split("-")[0] for cell in expression_adata.obs.index
-    ]
-
     # open dataframes
     sample_covs_df = pd.read_csv(sample_covs_file)
     sample_covs_df['individual'] = sample_covs_df['sample_id']
@@ -132,7 +124,14 @@ def make_pheno_cov(
     logging.info('cell covariate file opened')
 
     cell_ind_df = expression_adata.obs.loc[
-        :, ['cell', 'individual', 'total_counts', 'sequencing_library', 'cohort']
+        :,
+        [
+            'individual',
+            'total_counts',
+            'pct_counts_mt',
+            'sequencing_library',
+            'cohort',
+        ],
     ]
     # make sequencing_library from categorical to dummy numerical covs
     seq_lib_df = pd.get_dummies(cell_ind_df['sequencing_library']).astype(int)
@@ -140,29 +139,21 @@ def make_pheno_cov(
     cohort_df = pd.get_dummies(cell_ind_df['cohort']).astype(int)
     cell_ind_df = pd.concat([cell_ind_df, cohort_df, seq_lib_df], axis=1)
     # merge cell and sample covs
+    cell_ind_df['cell'] = cell_ind_df.index
     sample_covs_cells_df = cell_ind_df.merge(
         sample_covs_df, on='individual', how='inner'
     )
     sample_covs_cells_df.index = sample_covs_cells_df['cell']
-    # drop rows with missing values (SAIGE throws an error otherwise:  https://batch.hail.populationgenomics.org.au/batches/435978/jobs/91)
+    # drop rows with missing values (SAIGE-QTL throws an error otherwise:
+    # https://batch.hail.populationgenomics.org.au/batches/435978/jobs/91)
     sample_covs_cells_df = sample_covs_cells_df.dropna()
     gene_adata = expression_adata[:, expression_adata.var.index == gene]
     gene_name = gene.replace("-", "_")
     expr_df = pd.DataFrame(
         data=gene_adata.X.todense(), index=gene_adata.obs.index, columns=[gene_name]
     )
-    # move index (barcode) into a 'cell' column and reset the index - required prior to merging
-    # TO DO adjust when final data comes (see issue #97)
-    expr_df['cell'] = expr_df.index
-    expr_df = expr_df.reset_index(drop=True)
-    sample_covs_cells_df = sample_covs_cells_df.reset_index(drop=True)
-    celltype_covs_df['cell'] = celltype_covs_df.index
-    celltype_covs_df = celltype_covs_df.reset_index(drop=True)
 
-    sample_covs_cells_df = pd.merge(sample_covs_cells_df, expr_df, on='cell')
-    pheno_cov_df = pd.merge(
-        sample_covs_cells_df, celltype_covs_df, on='cell', how='inner'
-    )
+    pheno_cov_df = pd.concat([sample_covs_cells_df, expr_df, celltype_covs_df], axis=1)
 
     with to_path(out_path).open('w') as pcf:
         pheno_cov_df.to_csv(pcf, index=False, sep='\t')
@@ -229,6 +220,7 @@ def copy_h5ad_local_and_open(adata_path: str) -> sc.AnnData:
     default='standard',
     help='Memory for each cis gene job',
 )
+@click.option('--suffix', type=str, default='')
 def main(
     celltypes: str,
     chromosomes: str,
@@ -242,6 +234,7 @@ def main(
     pc_job_mem: str,
     cis_job_cpu: float,
     cis_job_mem: str,
+    suffix: str,
 ):
     """
     Run expression processing pipeline
@@ -272,7 +265,7 @@ def main(
         # extract cell-level covariates
         # expression PCs, cell type specific
         celltype_covs_file = (
-            f'{celltype_covs_files_prefix}/{celltype}_expression_pcs.csv'
+            f'{celltype_covs_files_prefix}/{celltype}_expression_pcs{suffix}.csv'
         )
 
         for chromosome in chromosomes.split(','):
