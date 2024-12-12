@@ -42,7 +42,7 @@ import subprocess
 
 from cpg_utils import to_path
 from cpg_utils.config import get_config
-from cpg_utils.hail_batch import get_batch, init_batch, output_path
+from cpg_utils.hail_batch import get_batch, init_batch, output_path, reset_batch
 
 
 def filter_lowly_expressed_genes(expression_adata, min_pct=1) -> sc.AnnData:
@@ -298,6 +298,17 @@ def main(
             cmd = ["gsutil", "cp", tmp_adata_name, tmp_path]
             subprocess.run(cmd, check=True)
 
+            # create a new batch for genes in this cell type
+            # reset the list of jobs
+            all_jobs: List[hb_job.Job] = []
+            # reset the batch
+            reset_batch()
+            # set this up with the default (scanpy) python image
+            get_batch(
+               default_python_image=get_config()['images']['scanpy'],
+               name='prepare all gene files',
+            )
+
             # start up some jobs for each gene
             for gene in expression_adata.var.index:
                 # change hyphens to underscore for R usage
@@ -348,8 +359,7 @@ def main(
                     )
                     manage_concurrency(gene_cis_job)
                     logging.info(f'cis window job for {gene} scheduled')
-
-    get_batch().run(wait=False)
+            get_batch().run(wait=False)
 
 
 if __name__ == '__main__':
