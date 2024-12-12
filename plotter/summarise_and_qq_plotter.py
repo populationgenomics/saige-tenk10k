@@ -7,14 +7,15 @@ and plots QQ plots and histograms of the p-values
 To run:
 
 analysis-runner \
-    --description "plot p-values" \
-    --dataset "bioheart" \
-    --access-level "test" \
-    --output-dir "saige-qtl/" \
-    python3 plotter/summarise_and_qq_plotter.py \
-        --celltype='B_naive' \
-        --results-path=gs://cpg-bioheart-main-analysis/saige-qtl/bioheart_n990_and_tob_n1055/output_files/sample_perm0/output_files/ \
-        --title='shuffled'
+   --description "plot p-values" \
+   --dataset "tenk10k" \
+   --access-level "full" \
+   --output-dir "saige-qtl/" \
+   python3 plotter/summarise_and_qq_plotter.py \
+       --celltypes='CD4_TCM' \
+       --results-path=gs://cpg-tenk10k-main-analysis/saige-qtl/tenk10k-genome-2-3-eur/output_files/241210 \
+       --title='CD4_TCM_chr21'
+
 """
 
 import click
