@@ -124,7 +124,7 @@ def main(
     Write chromosome-level genotypes as VCF
     """
 
-    init_batch(worker_memory='highmem')
+    init_batch(worker_memory='highmem', driver_memory='highmem')
 
     vds = hl.vds.read_vds(vds_path)
     vds_name = vds_path.split('/')[-1].split('.')[0]
