@@ -295,6 +295,7 @@ def main(
             # create a new batch for genes in this cell type
             # reset the list of jobs
             all_jobs: List[hb_job.Job] = []
+
             # reset the batch
             reset_batch()
             # set this up with the default (scanpy) python image
