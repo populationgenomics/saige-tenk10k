@@ -187,7 +187,8 @@ def main(
                 if not rv_mt_existence_outcome:
                     # save chrom + rare variant mt for group file script
                     rv_mt.write(rv_mt_path, overwrite=True)
-                    rv_mt = hl.read_matrix_table(rv_mt_path)
+                rv_mt = hl.read_matrix_table(rv_mt_path)
+                
 
                 if not rv_vcf_existence_outcome:
                     # remove fields not in the VCF
@@ -203,7 +204,8 @@ def main(
                 if not cv_mt_existence_outcome:
                     # save chrom + rare variant mt for group file script
                     cv_mt.write(cv_mt_path, overwrite=True)
-                    cv_mt = hl.read_matrix_table(cv_mt_path)
+
+                cv_mt = hl.read_matrix_table(cv_mt_path)
 
                 if not cv_vcf_existence_outcome:
                     # remove fields not in the VCF
