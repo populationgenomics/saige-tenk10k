@@ -188,7 +188,6 @@ def main(
                     # save chrom + rare variant mt for group file script
                     rv_mt.write(rv_mt_path, overwrite=True)
                 rv_mt = hl.read_matrix_table(rv_mt_path)
-                
 
                 if not rv_vcf_existence_outcome:
                     # remove fields not in the VCF
