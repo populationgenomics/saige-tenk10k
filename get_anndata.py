@@ -239,12 +239,6 @@ def main(
     """
     Run expression processing pipeline
     """
-    # set this up with the default (scanpy) python image
-    get_batch(
-        default_python_image=get_config()['images']['scanpy'],
-        name='prepare all gene files',
-    )
-    all_jobs: List[hb_job.Job] = []
 
     def manage_concurrency(new_job: hb_job.Job):
         """
@@ -305,8 +299,8 @@ def main(
             reset_batch()
             # set this up with the default (scanpy) python image
             get_batch(
-               default_python_image=get_config()['images']['scanpy'],
-               name='prepare all gene files',
+                default_python_image=get_config()['images']['scanpy'],
+                name=f'Prepare all gene files on {chromosome}',
             )
 
             # start up some jobs for each gene
@@ -359,6 +353,7 @@ def main(
                     )
                     manage_concurrency(gene_cis_job)
                     logging.info(f'cis window job for {gene} scheduled')
+
             get_batch().run(wait=False)
 
 
