@@ -151,7 +151,6 @@ def main(
 
     # pull principal args from config
     celltypes: list[str] = get_config()['saige']['celltypes']
-    celltype_jobs: dict[str, list] = dict()
 
     vre_plink_path = f'{vre_files_prefix}/vre_plink_2000_variants'
 
@@ -176,8 +175,6 @@ def main(
         summarise_job = get_batch().new_python_job(
             f'Summarise CV results for {celltype}'
         )
-        if celltype in celltype_jobs:
-            summarise_job.depends_on(*celltype_jobs[celltype])
         summarise_job.call(
             summarise_cv_results,
             celltype=celltype,
