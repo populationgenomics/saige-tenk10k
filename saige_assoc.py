@@ -274,6 +274,15 @@ def create_second_job(vcf_path: str) -> hb.batch.job.Job:
     return second_job
 
 
+def manage_concurrency_for_job(job: hb.batch.job.Job, job_list: list[hb.batch.job.Job]):
+    """
+    To avoid having too many jobs running at once, we have to limit concurrency.
+    """
+    if len(job_list) >= get_config()['saige']['max_parallel_jobs']:
+        job.depends_on(job_list[-get_config()['saige']['max_parallel_jobs']])
+    job_list.append(job)
+
+
 @click.option(
     '--pheno-cov-files-path',
     default=dataset_path('saige-qtl/input_files/pheno_cov_files'),
@@ -313,15 +322,6 @@ def main(
     """
 
     batch = get_batch('SAIGE-QTL pipeline')
-    jobs: list[hb.batch.job.Job] = []
-
-    def manage_concurrency_for_job(job: hb.batch.job.Job):
-        """
-        To avoid having too many jobs running at once, we have to limit concurrency.
-        """
-        if len(jobs) >= get_config()['saige']['max_parallel_jobs']:
-            job.depends_on(jobs[-get_config()['saige']['max_parallel_jobs']])
-        jobs.append(job)
 
     # define writeout file by type of pipeline and date and time
     date_and_time = datetime.today().strftime('%Y-%m-%d_%H:%M:%S')
@@ -333,7 +333,6 @@ def main(
     chromosomes: list[str] = get_config()['saige']['chromosomes']
     celltypes: list[str] = get_config()['saige']['celltypes']
     drop_genes: list[str] = get_config()['saige']['drop_genes']
-    celltype_jobs: dict[str, list] = dict()
 
     vre_plink_path = f'{vre_files_prefix}/vre_plink_2000_variants'
     cis_window_size = get_config()['saige']['cis_window_size']
@@ -350,6 +349,9 @@ def main(
     }
 
     for chromosome in chromosomes:
+
+        # start a new list of jobs for this chromosome
+        chromosome_jobs: list[hb.batch.job.Job] = []
 
         # genotype vcf files are one per chromosome
         if test_str:
@@ -409,7 +411,8 @@ def main(
 
                 gene_dependency = get_batch().new_job(f' Always run job for {gene}')
                 gene_dependency.always_run()
-                manage_concurrency_for_job(gene_dependency)
+
+                manage_concurrency_for_job(gene_dependency, chromosome_jobs)
 
                 # check if these outputs already exist, if so don't make a new job
                 null_job, null_output = run_fit_null_job(
@@ -457,8 +460,6 @@ def main(
                         ),
                     )
                     job3.depends_on(single_var_test_job)
-                    # add this job to the list of jobs for this cell type
-                    celltype_jobs.setdefault(celltype, []).append(job3)
 
                 if jobs_in_vm >= jobs_per_vm:
                     single_var_test_job = create_second_job(vcf_file_path)
