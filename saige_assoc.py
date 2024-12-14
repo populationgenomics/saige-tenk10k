@@ -254,6 +254,35 @@ def run_fit_null_job(
     return gene_job, gene_job.output
 
 
+def summarise_cv_results(
+    celltype: str,
+    gene_results_path: str,
+    summary_output_path: str,
+):
+    """
+    Summarise gene-specific results
+    """
+    import logging
+    import pandas as pd
+    from cpg_utils import to_path
+    from cpg_utils.hail_batch import output_path
+
+    existing_cv_assoc_results = [
+        str(file)
+        for file in to_path(gene_results_path).glob(f'*/{celltype}_*_cis_gene_pval')
+    ]
+    results_all_df = pd.concat(
+        [
+            pd.read_csv(to_path(pv_df), index_col=0)
+            for pv_df in existing_cv_assoc_results
+        ]
+    )
+    result_all_filename = to_path(output_path(summary_output_path, category='analysis'))
+    logging.info(f'Write summary results to {result_all_filename}')
+    with result_all_filename.open('w') as rf:
+        results_all_df.to_csv(rf)
+
+
 def create_second_job(vcf_path: str) -> hb.batch.job.Job:
     """
     Create a second job to run the single variant test
@@ -272,15 +301,6 @@ def create_second_job(vcf_path: str) -> hb.batch.job.Job:
     second_job.storage(f'{size + 5 }Gi')
     second_job.image(image_path('saige-qtl'))
     return second_job
-
-
-def manage_concurrency_for_job(job: hb.batch.job.Job, job_list: list[hb.batch.job.Job]):
-    """
-    To avoid having too many jobs running at once, we have to limit concurrency.
-    """
-    if len(job_list) >= get_config()['saige']['max_parallel_jobs']:
-        job.depends_on(job_list[-get_config()['saige']['max_parallel_jobs']])
-    job_list.append(job)
 
 
 @click.option(
@@ -322,6 +342,15 @@ def main(
     """
 
     batch = get_batch('SAIGE-QTL pipeline')
+    jobs: list[hb.batch.job.Job] = []
+
+    def manage_concurrency_for_job(job: hb.batch.job.Job):
+        """
+        To avoid having too many jobs running at once, we have to limit concurrency.
+        """
+        if len(jobs) >= get_config()['saige']['max_parallel_jobs']:
+            job.depends_on(jobs[-get_config()['saige']['max_parallel_jobs']])
+        jobs.append(job)
 
     # define writeout file by type of pipeline and date and time
     date_and_time = datetime.today().strftime('%Y-%m-%d_%H:%M:%S')
@@ -333,6 +362,7 @@ def main(
     chromosomes: list[str] = get_config()['saige']['chromosomes']
     celltypes: list[str] = get_config()['saige']['celltypes']
     drop_genes: list[str] = get_config()['saige']['drop_genes']
+    celltype_jobs: dict[str, list] = dict()
 
     vre_plink_path = f'{vre_files_prefix}/vre_plink_2000_variants'
     cis_window_size = get_config()['saige']['cis_window_size']
@@ -349,9 +379,6 @@ def main(
     }
 
     for chromosome in chromosomes:
-
-        # start a new list of jobs for this chromosome
-        chromosome_jobs: list[hb.batch.job.Job] = []
 
         # genotype vcf files are one per chromosome
         if test_str:
@@ -411,8 +438,7 @@ def main(
 
                 gene_dependency = get_batch().new_job(f' Always run job for {gene}')
                 gene_dependency.always_run()
-
-                manage_concurrency_for_job(gene_dependency, chromosome_jobs)
+                manage_concurrency_for_job(gene_dependency)
 
                 # check if these outputs already exist, if so don't make a new job
                 null_job, null_output = run_fit_null_job(
@@ -460,10 +486,31 @@ def main(
                         ),
                     )
                     job3.depends_on(single_var_test_job)
+                    # add this job to the list of jobs for this cell type
+                    celltype_jobs.setdefault(celltype, []).append(job3)
 
                 if jobs_in_vm >= jobs_per_vm:
                     single_var_test_job = create_second_job(vcf_file_path)
                     jobs_in_vm = 0
+
+    # summarise results (per cell type)
+    for celltype in celltypes:
+        logging.info(f'start summarising results for {celltype}')
+        summary_output_path = (
+            f'summary_stats/{celltype}_all_cis_cv_gene_level_results.tsv'
+        )
+
+        summarise_job = get_batch().new_python_job(
+            f'Summarise CV results for {celltype}'
+        )
+        if celltype in celltype_jobs:
+            summarise_job.depends_on(*celltype_jobs[celltype])
+        summarise_job.call(
+            summarise_cv_results,
+            celltype=celltype,
+            gene_results_path=output_path(celltype),
+            summary_output_path=summary_output_path,
+        )
 
     # write the file containing all important input parameters
     with to_path(writeout_file).open('wt') as out_handle:
