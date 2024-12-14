@@ -44,49 +44,6 @@ from cpg_utils.config import get_config, image_path, output_path, try_get_ar_gui
 from cpg_utils.hail_batch import dataset_path, get_batch
 
 
-# Fit null model (step 1)
-def build_fit_null_command(
-    pheno_file: str, output_prefix: str, plink_path: str, pheno_col: str
-):
-    """Build SAIGE command for fitting null model
-    This will fit a Poisson / NB mixed model under the null hypothesis
-
-    Input:
-    - Phenotype / covariate file - rows: samples, cols: pheno (y), cov1, cov2 etc
-    - Comma separated str of column names from previous file to be used as covariates
-    - Same as above but for sample specific covariates
-    - Column name specifying sample / individual (e.g., IND_ID, or CPG_ID etc)
-    - output prefix: where to save the fitted model (.rda)
-    - Plink path: path to plink file (subset of ~2,000 markers for VRE)
-    - pheno col: name of column specifying pheno (default: "y")
-    - overwrite variance ratio file (estimated here)
-
-    Output:
-    Rscript command (str) ready to run (bash)
-    """
-    pheno_file = get_batch().read_input(pheno_file)
-    plink_prefix = get_batch().read_input_group(
-        bim=f'{plink_path}.bim', bed=f'{plink_path}.bed', fam=f'{plink_path}.fam'
-    )
-
-    # pull all values from the config file's saige.build_fit_null section
-    args_from_config = ' '.join(
-        [
-            f'--{key}={value}'
-            for key, value in get_config()['saige']['build_fit_null'].items()
-        ]
-    )
-
-    return f"""
-        Rscript /usr/local/bin/step1_fitNULLGLMM_qtl.R \
-        --phenoFile={pheno_file} \
-        --plinkFile={plink_prefix} \
-        --outputPrefix={output_prefix} \
-        --phenoCol={pheno_col} \
-        {args_from_config }
-    """
-
-
 def apply_job_settings(job: hb.batch.job.Job, job_name: str):
     """
     Apply settings to a job based on the name
