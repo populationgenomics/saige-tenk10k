@@ -77,7 +77,7 @@ def make_group_file(
     print(f'gene file: {gene_file}')
     gene_df = pd.read_csv(gene_file, sep='\t')
     num_chrom = gene_df.columns.values[0]
-    window_start = gene_df.columns.values[1]
+    window_start = round(float(gene_df.columns.values[1]))
     window_end = gene_df.columns.values[2]
     gene_interval = f'chr{num_chrom}:{window_start}-{window_end}'
     # extract variants within interval
