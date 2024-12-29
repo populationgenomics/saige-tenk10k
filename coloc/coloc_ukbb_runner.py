@@ -40,8 +40,6 @@ def coloc_runner(gwas, eqtl_file_path, celltype, coloc_results_file):
     import rpy2.robjects as ro
     from rpy2.robjects import pandas2ri
 
-    from cpg_utils.hail_batch import output_path
-
     ro.r('library(coloc)')
     ro.r('library(tidyverse)')
 
