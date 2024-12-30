@@ -1,12 +1,13 @@
 # Statistical colocalisation with SAIGE-QTL results
 
-Using [COLOC](https://chr1swallace.github.io/coloc/index.html)
+Using the [COLOC](https://chr1swallace.github.io/coloc/index.html) package.
 
 ## Contents
 
 * [coloc runner](coloc_runner.py)
+* [one more coloc runner for UKBB trait specifically](coloc_ukbb_runner.py)
 * [shell script to automate running on multiple phenotypes](multi_pheno_runner.sh)
-* [one more coloc runner for UKBB traits](coloc_ukbb_runner.py)
+
 
 ## Combiner
 
