@@ -50,13 +50,15 @@ for celltype in "${celltype_array[@]}"; do
     for i in "${!pheno_names[@]}"; do
         pheno="${pheno_names[$i]}"
         filepath="${pheno_files[$i]}"
-        analysis-runner --dataset "bioheart" \
-        --description "Run coloc for eGenes identified by STR analysis" \
-        --access-level "test" \
+        analysis-runner --dataset "tenk10k" \
+        --description "Run coloc for eGenes identified by SAIGE-QTL" \
+        --access-level "full" \
         --memory='16G' \
         --image "australia-southeast1-docker.pkg.dev/analysis-runner/images/driver:d4922e3062565ff160ac2ed62dcdf2fba576b75a-hail-8f6797b033d2e102575c40166cf0c977e91f834e" \
-        --output-dir "tenk10k/str/associatr/final_freeze" \
-        coloc_runner.py \
+        --output-dir "saige-qtl/tenk10k-genome-2-3-eur/input_files/241210" \
+        coloc/coloc_runner.py \
+        --egenes-files-path=gs://cpg-tenk10k-main-analysis/saige-qtl/tenk10k-genome-2-3-eur/output_files/241210/summary_stats \
+        --snp-cis-dir=gs://cpg-tenk10k-main-analysis/saige-qtl/tenk10k-genome-2-3-eur/output_files/241210 \
         --snp-gwas-file="$filepath" \
         --pheno-output-name="$pheno" \
         --celltypes="$celltype" \
