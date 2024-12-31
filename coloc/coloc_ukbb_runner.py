@@ -4,21 +4,24 @@
 Copy of https://github.com/populationgenomics/sv-workflows/blob/main/str/coloc/coloc_ukbb_runner.py
 to rework for common variant SAIGE-QTL results
 
+Copy of https://github.com/populationgenomics/sv-workflows/blob/main/str/coloc/coloc_runner.py
+to rework for common variant SAIGE-QTL results
 
-This script performs SNP+STR colocalisation analysis betweeen eGenes identified by pseudobulk STR analysis and UKBB GWAS signals.
+This script performs SNP-only colocalisation analysis betweeen eGenes identified by single-cell eQTL analysis (using SAIGE-QTL) and UKBB GWAS signals.
 Assumes that the SNP GWAS data has been pre-processed with the following columns: 'chromosome', 'position' (hg38 bp), 'snp'(chromosome_position_refallele_effectallele), 'beta', 'varbeta'
-1) Extract eGenes (FDR 5%) and those where STR pval < 5e-8
-2) Extract the SNP GWAS data for the cis-window (gene +/- 100kB)
-3) Run coloc for each eGene (if the GWAS data has at least one variant with pval <5e-8)
+
+1) Identify eGenes using FDR < fdr_threshold (default: 0.05)
+2) Extract the SNP GWAS data for the cis-window (gene +/- window; default: 100kB)
+3) Run coloc for each eGene (if the SNP GWAS data has at least one significant variant; default pval <5e-8)
 4) Write the results to a TSV file
 
-analysis-runner --dataset "bioheart" \
-    --description "Run coloc for eGenes identified by STR analysis" \
-    --access-level "test" \
-    --memory='4G' \
+analysis-runner --dataset "tenk10k" \
+    --description "Run UKBB coloc for eGenes identified by SAIGE-QTL analysis" \
+    --access-level "full" \
+    --memory='16G' \
     --image "australia-southeast1-docker.pkg.dev/analysis-runner/images/driver:d4922e3062565ff160ac2ed62dcdf2fba576b75a-hail-8f6797b033d2e102575c40166cf0c977e91f834e" \
-    --output-dir "str/associatr" \
-    coloc_ukbb_runner.py \
+    --output-dir "saige-qtl/tenk10k-genome-2-3-eur/output_files/241210/" \
+    coloc/coloc_ukbb_runner.py \
     --pheno-output-name=gymrek-ukbb-apolipoprotein-a \
     --celltypes "CD16_Mono" \
     --max-parallel-jobs 10000
@@ -122,17 +125,17 @@ def coloc_runner(
 @click.option(
     '--egenes-files-path',
     help='Path to the gene-level summary files',
-    default='gs://cpg-bioheart-main-analysis/saige-qtl/bioheart_n787_and_tob_n960/241008_ashg/output_files/summary_stats',
+    default='gs://cpg-tenk10k-main-analysis/saige-qtl/tenk10k-genome-2-3-eur/output_files/241210/summary_stats',
 )
 @click.option(
     '--snp-cis-dir',
     help='Path to the directory containing the SNP cis results',
-    default='gs://cpg-bioheart-main-analysis/saige-qtl/bioheart_n787_and_tob_n960/241008_ashg/output_files',
+    default='gs://cpg-tenk10k-main-analysis/saige-qtl/tenk10k-genome-2-3-eur/output_files/241210',
 )
 @click.option(
-    '--snp-gwas-file',
-    help='Path to the SNP GWAS file',
-    default='gs://cpg-bioheart-test/str/gwas_catalog/gcst/gcst-gwas-catalogs/GCST011071_parsed.tsv',
+    '--snp-gwas-file-prefix',
+    help='Prefix to the SNP GWAS file path',
+    default='gs://cpg-bioheart-test/str/gymrek-ukbb-snp-str-gwas-catalogs/chr-specific/',
 )
 @click.option(
     '--gene-info-file',
@@ -154,7 +157,7 @@ def main(
     pheno_output_name: str,
     egenes_files_path: str,
     snp_cis_dir: str,
-    snp_gwas_file: str,
+    snp_gwas_file_prefix: str,
     gene_info_file: str,
     cis_window_size: int,
     fdr_threshold: float,
@@ -205,7 +208,7 @@ def main(
                 result_df_cfm['chr'] == chrom
             ]
             phenotype = pheno_output_name.split('-')[-1]
-            chr_gwas_file = f'gs://cpg-bioheart-test/str/gymrek-ukbb-snp-str-gwas-catalogs/chr-specific/white_british_{phenotype}_snp_str_gwas_results_hg38_{chrom}.tab.gz'
+            chr_gwas_file = f'{snp_gwas_file_prefix}/white_british_{phenotype}_snp_str_gwas_results_hg38_{chrom}.tab.gz'
 
             with gzip.open(to_path(chr_gwas_file), 'rb') as f:
                 hg38_map = pd.read_csv(f, sep='\t')
@@ -213,7 +216,7 @@ def main(
             for gene in result_df_cfm_str_celltype_chrom['gene']:
                 if to_path(
                     output_path(
-                        f"coloc/sig_str_and_gwas_hit/{pheno_output_name}/{celltype}/{gene}_100kb.tsv",
+                        f"coloc-snp-only/sig_genes_only/{pheno_output_name}/{celltype}/{gene}_100kb.tsv",
                         'analysis',
                     ),
                 ).exists():
