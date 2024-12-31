@@ -115,12 +115,12 @@ def coloc_runner(gwas, eqtl_file_path, celltype, coloc_results_file):
 @click.option(
     '--egenes-files-path',
     help='Path to the gene-level summary files',
-    default='gs://cpg-bioheart-main-analysis/saige-qtl/bioheart_n787_and_tob_n960/241008_ashg/output_files/summary_stats',
+    default='gs://cpg-tenk10k-main-analysis/saige-qtl/tenk10k-genome-2-3-eur/input_files/241210/summary_stats',
 )
 @click.option(
     '--snp-cis-dir',
     help='Path to the directory containing the SNP cis results',
-    default='gs://cpg-bioheart-main-analysis/saige-qtl/bioheart_n787_and_tob_n960/241008_ashg/output_files',
+    default='gs://cpg-tenk10k-main-analysis/saige-qtl/tenk10k-genome-2-3-eur/output_files/241210',
 )
 @click.option(
     '--snp-gwas-file',
