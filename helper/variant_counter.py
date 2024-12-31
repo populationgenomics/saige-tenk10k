@@ -32,6 +32,8 @@ from cpg_utils.hail_batch import init_batch, output_path
 @click.option('--vds-path', required=True)
 @click.option('--donors-to-keep', default='all')
 @click.option('--donors-to-exclude', default='none')
+@click.option('--variants-to-keep', default='all')
+@click.option('--variants-to-exclude', default='none')
 @click.option('--cv-maf-threshold', default=0.05)
 @click.option('--rv-maf-threshold', default=0.01)
 @click.option('--exclude-multiallelic', default=False)
@@ -40,6 +42,8 @@ def count_variants(
     vds_path: str,
     donors_to_keep: str,
     donors_to_exclude: str,
+    variants_to_keep: str,
+    variants_to_exclude: str,
     cv_maf_threshold: float,
     rv_maf_threshold: float,
     exclude_multiallelic: bool,
@@ -68,6 +72,16 @@ def count_variants(
     if donors_to_exclude != 'none':
         exclude_samples_table = hl.read_table(donors_to_exclude)
         exclude_samples = hl.literal(exclude_samples_table.s.collect())
+        mt = mt.filter_cols(~exclude_samples.contains(mt['s']))
+
+    if variants_to_keep != 'all':
+        keep_variants_table = hl.read_table(variants_to_keep)
+        keep_variants = hl.literal(keep_samples_table.s.collect())
+        mt = mt.filter_cols(keep_samples.contains(mt['s']))
+
+    if variants_to_exclude != 'none':
+        exclude_variants_table = hl.read_table(variants_to_exclude)
+        exclude_variants = hl.literal(exclude_samples_table.s.collect())
         mt = mt.filter_cols(~exclude_samples.contains(mt['s']))
 
     # filter out loci & variant QC
