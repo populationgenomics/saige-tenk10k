@@ -129,7 +129,7 @@ def coloc_runner(gwas, eqtl_file_path, celltype, coloc_results_file):
 )
 @click.option(
     '--gene-info-file',
-    default='gs://cpg-bioheart-test/saige-qtl/300-libraries/combined_anndata_obs_vars/300_libraries_concatenated_harmony_filtered_vars_all_genes.csv',
+    default='gs://cpg-tenk10k-test/saige-qtl/300libraries_n1925_adata_raw_var.csv',
 )
 @click.option('--cis-window-size', help='Cis window size used', default=100000)
 @click.option('--fdr-threshold', help='FDR threshold', default=0.05)
