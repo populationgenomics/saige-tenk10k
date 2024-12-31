@@ -55,4 +55,3 @@ analysis-runner --dataset "bioheart" \
 
 * COVID-19
 * 44 UKBB traits from Margoliash et al. (Gymrek)
-
