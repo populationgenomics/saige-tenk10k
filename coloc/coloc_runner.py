@@ -119,7 +119,7 @@ def coloc_runner(
 @click.option(
     '--egenes-files-path',
     help='Path to the gene-level summary files',
-    default='gs://cpg-tenk10k-main-analysis/saige-qtl/tenk10k-genome-2-3-eur/input_files/241210/summary_stats',
+    default='gs://cpg-tenk10k-main-analysis/saige-qtl/tenk10k-genome-2-3-eur/output_files/241210/summary_stats',
 )
 @click.option(
     '--snp-cis-dir',
