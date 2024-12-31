@@ -34,7 +34,9 @@ from cpg_utils import to_path
 from cpg_utils.hail_batch import get_batch, image_path, output_path
 
 
-def coloc_runner(gwas, eqtl_file_path, celltype, coloc_results_file):
+def coloc_runner(
+    gwas, eqtl_file_path, celltype, coloc_results_file, common_maf_threshold
+):
     import rpy2.robjects as ro
     from rpy2.robjects import pandas2ri
 
@@ -66,6 +68,8 @@ def coloc_runner(gwas, eqtl_file_path, celltype, coloc_results_file):
     # while I figure out if it's easy to extract sdY, give N and MAF instead
     # https://chr1swallace.github.io/coloc/articles/a02_data.html#what-if-i-dont-have-sdy
     eqtl['MAF'] = eqtl['AF_Allele2'].apply(lambda af: min(af, (1 - af)))
+    # subset to only results for variants above chosen MAF
+    eqtl = eqtl[eqtl['MAF'] > common_maf_threshold]
     gene = eqtl_file_path.split('/')[-1].replace(f'{celltype}_', '').replace('_cis', '')
     with (ro.default_converter + pandas2ri.converter).context():
         eqtl_r = ro.conversion.get_conversion().py2rpy(eqtl)
@@ -134,6 +138,10 @@ def coloc_runner(gwas, eqtl_file_path, celltype, coloc_results_file):
 @click.option('--cis-window-size', help='Cis window size used', default=100000)
 @click.option('--fdr-threshold', help='FDR threshold', default=0.05)
 @click.option(
+    '--gwas-significance-threshold', help='GWAS significance threshold', default=5e-8
+)
+@click.option('--common-maf-threshold', help='common MAF threshold', default=0.01)
+@click.option(
     '--max-parallel-jobs', help='Maximum number of parallel jobs to run', default=500
 )
 @click.option('--job-cpu', help='Number of CPUs to use for each job', default=0.25)
@@ -147,6 +155,8 @@ def main(
     gene_info_file: str,
     cis_window_size: int,
     fdr_threshold: float,
+    gwas_significance_threshold: float,
+    common_maf_threshold: float,
     max_parallel_jobs: int,
     job_cpu: float,
 ):
@@ -218,8 +228,11 @@ def main(
                         f'No SNP GWAS data for {gene} in the cis-window: skipping....'
                     )
                     continue
-                # check if the p-value column contains at least one value which is <=5e-8:
-                if hg38_map_chr_start_end['p_value'].min() > 5e-8:
+                # check if the p-value column contains at least one value which is genome-wide significant:
+                if (
+                    hg38_map_chr_start_end['p_value'].min()
+                    > gwas_significance_threshold
+                ):
                     print(
                         f'No significant SNP GWAS data for {gene}in the cis-window: skipping....'
                     )
@@ -238,6 +251,7 @@ def main(
                     eqtl_results_file,
                     celltype,
                     coloc_results_file,
+                    common_maf_threshold,
                 )
                 manage_concurrency_for_job(coloc_job)
 
