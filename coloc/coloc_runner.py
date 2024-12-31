@@ -9,11 +9,11 @@ Assumes that the SNP GWAS data has been pre-processed with the following columns
 
 1) Identify eGenes using FDR < fdr_threshold (default: 0.05)
 2) Extract the SNP GWAS data for the cis-window (gene +/- window; default: 100kB)
-3) Run coloc for each eGene (if the SNP GWAS data has at least one variant with pval <5e-8)
+3) Run coloc for each eGene (if the SNP GWAS data has at least one significant variant; default pval <5e-8)
 4) Write the results to a TSV file
 
 analysis-runner --dataset "bioheart" \
-    --description "Run coloc for eGenes identified by SAIGE-QTL analysis" \
+    --description "Run coloc for disease traits and eGenes identified by SAIGE-QTL analysis" \
     --access-level "full" \
     --memory='8G' \
     --image "australia-southeast1-docker.pkg.dev/analysis-runner/images/driver:d4922e3062565ff160ac2ed62dcdf2fba576b75a-hail-8f6797b033d2e102575c40166cf0c977e91f834e" \
