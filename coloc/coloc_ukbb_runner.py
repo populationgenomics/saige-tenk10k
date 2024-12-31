@@ -1,10 +1,13 @@
 #!/usr/bin/env python3
 
 """
+Copy of https://github.com/populationgenomics/sv-workflows/blob/main/str/coloc/coloc_ukbb_runner.py
+to rework for common variant SAIGE-QTL results
+
 Copy of https://github.com/populationgenomics/sv-workflows/blob/main/str/coloc/coloc_runner.py
 to rework for common variant SAIGE-QTL results
 
-This script performs SNP-only colocalisation analysis betweeen eGenes identified by single-cell eQTL analysis (using SAIGE-QTL) and GWAS signals.
+This script performs SNP-only colocalisation analysis betweeen eGenes identified by single-cell eQTL analysis (using SAIGE-QTL) and UKBB GWAS signals.
 Assumes that the SNP GWAS data has been pre-processed with the following columns: 'chromosome', 'position' (hg38 bp), 'snp'(chromosome_position_refallele_effectallele), 'beta', 'varbeta'
 
 1) Identify eGenes using FDR < fdr_threshold (default: 0.05)
@@ -13,17 +16,19 @@ Assumes that the SNP GWAS data has been pre-processed with the following columns
 4) Write the results to a TSV file
 
 analysis-runner --dataset "tenk10k" \
-    --description "Run coloc for eGenes identified by SAIGE-QTL analysis" \
+    --description "Run UKBB coloc for eGenes identified by SAIGE-QTL analysis" \
     --access-level "full" \
-    --memory='8G' \
+    --memory='16G' \
     --image "australia-southeast1-docker.pkg.dev/analysis-runner/images/driver:d4922e3062565ff160ac2ed62dcdf2fba576b75a-hail-8f6797b033d2e102575c40166cf0c977e91f834e" \
     --output-dir "saige-qtl/tenk10k-genome-2-3-eur/output_files/241210/" \
-    coloc/coloc_runner.py \
-    --snp-gwas-file=gs://cpg-bioheart-test/str/gwas_catalog/gcst/gcst-gwas-catalogs/ibd_EAS_EUR_SiKJEF_meta_IBD.tsv \
-    --pheno-output-name="ibd_liu2023" \
-    --celltypes "B_naive"
+    coloc/coloc_ukbb_runner.py \
+    --pheno-output-name=gymrek-ukbb-apolipoprotein-a \
+    --celltypes "CD16_Mono" \
+    --max-parallel-jobs 10000
 
 """
+
+import gzip
 
 import click
 import pandas as pd
@@ -52,7 +57,7 @@ def coloc_runner(
     gwas_r = gwas_r %>% filter((beta!=0) | (varbeta!=0))
     gwas_r = gwas_r %>% distinct(snp, .keep_all = TRUE)
     gwas_r = gwas_r%>% as.list()
-    gwas_r$type = 'cc'
+    gwas_r$type = 'quant'
 
     ''',
     )
@@ -85,6 +90,7 @@ def coloc_runner(
 
     eqtl_r = eqtl_r %>% as.list()
     eqtl_r$type = 'quant'
+
 
     my.res <- coloc.abf(dataset1=gwas_r,
                     dataset2=eqtl_r)
@@ -119,17 +125,17 @@ def coloc_runner(
 @click.option(
     '--egenes-files-path',
     help='Path to the gene-level summary files',
-    default='gs://cpg-bioheart-main-analysis/saige-qtl/bioheart_n787_and_tob_n960/241008_ashg/output_files/summary_stats',
+    default='gs://cpg-tenk10k-main-analysis/saige-qtl/tenk10k-genome-2-3-eur/output_files/241210/summary_stats',
 )
 @click.option(
     '--snp-cis-dir',
     help='Path to the directory containing the SNP cis results',
-    default='gs://cpg-bioheart-main-analysis/saige-qtl/bioheart_n787_and_tob_n960/241008_ashg/output_files',
+    default='gs://cpg-tenk10k-main-analysis/saige-qtl/tenk10k-genome-2-3-eur/output_files/241210',
 )
 @click.option(
-    '--snp-gwas-file',
-    help='Path to the SNP GWAS file',
-    default='gs://cpg-bioheart-test/str/gwas_catalog/gcst/gcst-gwas-catalogs/GCST011071_parsed.tsv',
+    '--snp-gwas-file-prefix',
+    help='Prefix to the SNP GWAS file path',
+    default='gs://cpg-bioheart-test/str/gymrek-ukbb-snp-str-gwas-catalogs/chr-specific/',
 )
 @click.option(
     '--gene-info-file',
@@ -151,7 +157,7 @@ def main(
     pheno_output_name: str,
     egenes_files_path: str,
     snp_cis_dir: str,
-    snp_gwas_file: str,
+    snp_gwas_file_prefix: str,
     gene_info_file: str,
     cis_window_size: int,
     fdr_threshold: float,
@@ -197,66 +203,78 @@ def main(
             result_df_cfm['ACAT_p'] < fdr_threshold
         ]  # filter for sc-eQTLs with p-value < fdr_threshold
 
-        for gene in result_df_cfm['gene']:
-            chrom = result_df_cfm[result_df_cfm['gene'] == gene]['chr'].iloc[0]
-            coloc_results_file = output_path(
-                f'coloc-snp-only/sig_genes_only/{pheno_output_name}/{celltype}/{gene}_{cis_window_size}.tsv',
-                'analysis',
-            )
-            if to_path(coloc_results_file).exists():
-                print(f'Output file for {gene} already exists: skipping....')
-                continue
+        for chrom in result_df_cfm['chr'].unique():
+            result_df_cfm_str_celltype_chrom = result_df_cfm[
+                result_df_cfm['chr'] == chrom
+            ]
+            phenotype = pheno_output_name.split('-')[-1]
+            chr_gwas_file = f'{snp_gwas_file_prefix}/white_british_{phenotype}_snp_str_gwas_results_hg38_{chrom}.tab.gz'
 
-            eqtl_results_file = (
-                f'{snp_cis_dir}/{celltype}/{chrom}/{celltype}_{gene}_cis'
-            )
-            if to_path(eqtl_results_file).exists():
-                print(f'Cis results for {gene} exist: proceed with coloc')
+            with gzip.open(to_path(chr_gwas_file), 'rb') as f:
+                hg38_map = pd.read_csv(f, sep='\t')
 
-                # extract the coordinates for the cis-window (gene +/- 100kB)
-                gene_table = var_table[var_table['gene_ids'] == gene]
-                start = int(gene_table['start'].iloc[0]) - cis_window_size
-                end = int(gene_table['end'].iloc[0]) + cis_window_size
-                chrom = gene_table['chr'].iloc[0]
-                hg38_map_chr = hg38_map[hg38_map['chromosome'] == (chrom)]
-                hg38_map_chr_start = hg38_map_chr[hg38_map_chr['position'] >= start]
-                hg38_map_chr_start_end = hg38_map_chr_start[
-                    hg38_map_chr_start['position'] <= end
-                ]
-                if hg38_map_chr_start_end.empty:
-                    print(
-                        f'No SNP GWAS data for {gene} in the cis-window: skipping....'
-                    )
+            for gene in result_df_cfm_str_celltype_chrom['gene']:
+                if to_path(
+                    output_path(
+                        f"coloc-snp-only/sig_genes_only/{pheno_output_name}/{celltype}/{gene}_100kb.tsv",
+                        'analysis',
+                    ),
+                ).exists():
                     continue
-                # check if the p-value column contains at least one value which is genome-wide significant:
-                if (
-                    hg38_map_chr_start_end['p_value'].min()
-                    > gwas_significance_threshold
-                ):
-                    print(
-                        f'No significant SNP GWAS data for {gene}in the cis-window: skipping....'
+                if to_path(
+                    f'{snp_cis_dir}/{celltype}/{chrom}/{gene}_100000bp_meta_results.tsv'
+                ).exists():
+                    print('Cis results for ' + gene + ' exist: proceed with coloc')
+
+                    # extract the coordinates for the cis-window (gene +/- 100kB)
+                    gene_table = var_table[var_table['gene_ids'] == gene]
+                    start = int(gene_table['start'].iloc[0]) - cis_window_size
+                    end = int(gene_table['end'].iloc[0]) + cis_window_size
+                    chrom = gene_table['chr'].iloc[0]
+                    hg38_map_chr = hg38_map[hg38_map['chromosome'] == (chrom)]
+                    hg38_map_chr_start = hg38_map_chr[hg38_map_chr['position'] >= start]
+                    hg38_map_chr_start_end = hg38_map_chr_start[
+                        hg38_map_chr_start['position'] <= end
+                    ]
+                    if hg38_map_chr_start_end.empty:
+                        print(
+                            'No GWAS data for '
+                            + gene
+                            + ' in the cis-window: skipping....'
+                        )
+                        continue
+                    # check if the p-value column contains at least one value which is genome-wide significant:
+                    if (
+                        hg38_map_chr_start_end['p_value'].min()
+                        > gwas_significance_threshold
+                    ):
+                        print(
+                            'No significant SNP STR GWAS data for '
+                            + gene
+                            + ' in the cis-window: skipping....'
+                        )
+                        continue
+                    print('Extracted GWAS data for ' + gene)
+
+                    # run coloc
+                    coloc_job = b.new_python_job(
+                        f'Coloc for {gene}: {celltype}: {phenotype}',
                     )
-                    continue
-                print(f'Extracted SNP GWAS data for {gene}')
+                    f'{snp_cis_dir}/{celltype}/{chrom}/{gene}_100000bp_meta_results.tsv'
+                    coloc_job.image(image_path('r-meta'))
+                    coloc_job.cpu(job_cpu)
+                    coloc_job.call(
+                        coloc_runner,
+                        hg38_map_chr_start_end,
+                        f'{snp_cis_dir}/{celltype}/{chrom}/{gene}_100000bp_meta_results.tsv',
+                        celltype,
+                        pheno_output_name,
+                        common_maf_threshold,
+                    )
+                    manage_concurrency_for_job(coloc_job)
 
-                # run coloc
-                coloc_job = b.new_python_job(
-                    f'Coloc for {gene}: {celltype}',
-                )
-                coloc_job.image(image_path('r-meta'))
-                coloc_job.cpu(job_cpu)
-                coloc_job.call(
-                    coloc_runner,
-                    hg38_map_chr_start_end,
-                    eqtl_results_file,
-                    celltype,
-                    coloc_results_file,
-                    common_maf_threshold,
-                )
-                manage_concurrency_for_job(coloc_job)
-
-            else:
-                print(f'No cis results for {gene} exist: skipping....')
+                else:
+                    print('No cis results for ' + gene + ' exist: skipping....')
 
     b.run(wait=False)
 
