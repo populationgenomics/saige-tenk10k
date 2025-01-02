@@ -179,10 +179,6 @@ def main(
 
     # read in gene annotation file
     var_table = pd.read_csv(gene_info_file)
-    hg38_map = pd.read_csv(
-        snp_gwas_file,
-        sep='\t',
-    )
 
     b = get_batch(name=f'Run coloc:{pheno_output_name}')
 
@@ -263,7 +259,6 @@ def main(
                     coloc_job = b.new_python_job(
                         f'Coloc for {gene}: {celltype}: {phenotype}',
                     )
-                    f'{snp_cis_dir}/{celltype}/{chrom}/{gene}_100000bp_meta_results.tsv'
                     coloc_job.image(image_path('r-meta'))
                     coloc_job.cpu(job_cpu)
                     coloc_job.call(
