@@ -135,7 +135,7 @@ def coloc_runner(
 @click.option(
     '--snp-gwas-file-prefix',
     help='Prefix to the SNP GWAS file path',
-    default='gs://cpg-bioheart-test/str/gymrek-ukbb-snp-str-gwas-catalogs/chr-specific/',
+    default='gs://cpg-bioheart-test/str/gymrek-ukbb-snp-str-gwas-catalogs/chr-specific',
 )
 @click.option(
     '--gene-info-file',
