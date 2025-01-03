@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Define the cell types as a comma-separated string
-celltypes='ILC,Plasmablast,ASDC,cDC1,pDC,NK_CD56bright,MAIT,B_memory,CD4_CTL,CD4_Proliferating,CD8_Proliferating,HSPC,NK_Proliferating,cDC2,CD16_Mono,Treg,CD14_Mono,CD8_TCM,CD4_TEM,CD8_Naive,NK,CD8_TEM,CD4_Naive,B_naive,gdT,dnT,CD4_TCM'
+celltypes='ASDC,B_intermediate,B_memory,B_naive,CD14_Mono,CD16_Mono,CD4_CTL,CD4_Naive,CD4_Proliferating,CD4_TCM,CD4_TEM,CD8_Naive,CD8_Proliferating,CD8_TCM,CD8_TEM,cDC1,cDC2,dnT,gdT,HSPC,ILC,MAIT,NK,NK_CD56bright,NK_Proliferating,pDC,Plasmablast,Treg'
 
 # Convert the cell types into an array
 IFS=',' read -ra celltype_array <<< "$celltypes"
