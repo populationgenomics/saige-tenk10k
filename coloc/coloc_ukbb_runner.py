@@ -4,9 +4,6 @@
 Copy of https://github.com/populationgenomics/sv-workflows/blob/main/str/coloc/coloc_ukbb_runner.py
 to rework for common variant SAIGE-QTL results
 
-Copy of https://github.com/populationgenomics/sv-workflows/blob/main/str/coloc/coloc_runner.py
-to rework for common variant SAIGE-QTL results
-
 This script performs SNP-only colocalisation analysis betweeen eGenes identified by single-cell eQTL analysis (using SAIGE-QTL) and UKBB GWAS signals.
 Assumes that the SNP GWAS data has been pre-processed with the following columns: 'chromosome', 'position' (hg38 bp), 'snp'(chromosome_position_refallele_effectallele), 'beta', 'varbeta'
 
