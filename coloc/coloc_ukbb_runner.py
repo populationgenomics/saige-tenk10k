@@ -28,7 +28,7 @@ analysis-runner --dataset "tenk10k" \
 
 """
 
-import gzip
+# import gzip
 
 import click
 import pandas as pd
@@ -206,8 +206,9 @@ def main(
             phenotype = pheno_output_name.split('-')[-1]
             chr_gwas_file = f'{snp_gwas_file_prefix}/white_british_{phenotype}_snp_str_gwas_results_hg38_{chrom}.tab.gz'
 
-            with gzip.open(chr_gwas_file, 'rb') as f:
-                hg38_map = pd.read_csv(f, sep='\t')
+            # with gzip.open(chr_gwas_file, 'rb') as f:
+            #     hg38_map = pd.read_csv(f, sep='\t')
+            hg38_map = pd.read_csv(chr_gwas_file, sep='\t')
 
             for gene in result_df_cfm_str_celltype_chrom['gene']:
 
