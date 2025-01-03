@@ -67,7 +67,6 @@ for celltype in "${celltype_array[@]}"; do
         --pheno-output-name="$pheno" \
         --egenes-files-path=gs://cpg-tenk10k-main-analysis/saige-qtl/tenk10k-genome-2-3-eur/output_files/241210/summary_stats \
         --snp-cis-dir=gs://cpg-tenk10k-main-analysis/saige-qtl/tenk10k-genome-2-3-eur/output_files/241210 \
-        --snp-gwas-file="$filepath" \
         --celltypes "$celltype" \
         --max-parallel-jobs 10000
     done
