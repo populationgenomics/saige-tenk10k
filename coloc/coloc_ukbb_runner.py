@@ -56,6 +56,7 @@ def coloc_runner(
     gwas_r = gwas_r %>% distinct(snp, .keep_all = TRUE)
     gwas_r = gwas_r%>% as.list()
     gwas_r$type = 'quant'
+    gwas_r$sdY = 1
 
     ''',
     )
