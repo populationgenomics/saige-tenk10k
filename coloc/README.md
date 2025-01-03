@@ -51,7 +51,7 @@ analysis-runner --dataset "tenk10k" \
 ### neuroinflammatory conditions
 
 * Alzheimer’s disease
-* Parkinson’s disease71
+* Parkinson’s disease
 
 ### Other
 
