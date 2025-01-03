@@ -58,7 +58,7 @@ phenotypes=(
 for celltype in "${celltype_array[@]}"; do
     for pheno in "${phenotypes[@]}"; do
         analysis-runner --dataset "tenk10k" \
-        --description "Run coloc for eGenes identified by SAIGE-QTL" \
+        --description "Run coloc for eGenes identified by SAIGE-QTL (UKBB traits)" \
         --access-level "full" \
         --memory='32G' \
         --image "australia-southeast1-docker.pkg.dev/analysis-runner/images/driver:d4922e3062565ff160ac2ed62dcdf2fba576b75a-hail-8f6797b033d2e102575c40166cf0c977e91f834e" \
