@@ -206,7 +206,7 @@ def main(
             phenotype = pheno_output_name.split('-')[-1]
             chr_gwas_file = f'{snp_gwas_file_prefix}/white_british_{phenotype}_snp_str_gwas_results_hg38_{chrom}.tab.gz'
 
-            with gzip.open(to_path(chr_gwas_file), 'rb') as f:
+            with gzip.open(chr_gwas_file, 'rb') as f:
                 hg38_map = pd.read_csv(f, sep='\t')
 
             for gene in result_df_cfm_str_celltype_chrom['gene']:
