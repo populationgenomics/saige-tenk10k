@@ -5,6 +5,7 @@
 """
 This script aims to count the total number of variants
 from a vds object provided (e.g. bioheart, tob-wgs or both)
+after applying the appropriate sample and variant filters
 
 similar to tob-wgs/scripts/rv_expression_association/count_variants.py
 
@@ -12,12 +13,13 @@ To run:
 
 analysis-runner \
     --description "count common, low freq and rare variant VCFs" \
-    --dataset "bioheart" \
+    --dataset "tenk10k" \
     --access-level "full" \
     --output-dir "saige-qtl/" \
-    python3 variant_counter.py --vds-path=gs://cpg-bioheart-main/ashg2024/tenk10k1-0_qc_pass.vds \
-        --donors-to-keep=gs://cpg-tob-wgs-main-analysis/large_cohort/tob-wgs1-0/sample_qc.ht/ \
-        --donors-to-exclude=gs://cpg-bioheart-main/large_cohort/tenk10k1-1/relateds_to_drop.ht
+    python3 variant_counter.py --vds-path=gs://cpg-tenk10k-main/vds/tenk10k-genome-2-0.vds \
+        --donors-to-keep=gs://cpg-tenk10k-main/large_cohort/tenk10k-genome-2-3-eur/sample_qc.ht \
+        --donors-to-exclude=gs://cpg-tenk10k-main/large_cohort/tenk10k-genome-2-3-eur/all_wgs_and_scrnaseq_qc_fail_samples.ht \
+        --variants-to-keep=gs://cpg-tenk10k-main/large_cohort/tenk10k-genome-2-3-eur/variants_qc.ht
 """
 
 import click
@@ -32,6 +34,7 @@ from cpg_utils.hail_batch import init_batch, output_path
 @click.option('--vds-path', required=True)
 @click.option('--donors-to-keep', default='all')
 @click.option('--donors-to-exclude', default='none')
+@click.option('--variants-to-keep', default='all')
 @click.option('--cv-maf-threshold', default=0.05)
 @click.option('--rv-maf-threshold', default=0.01)
 @click.option('--exclude-multiallelic', default=False)
@@ -40,6 +43,7 @@ def count_variants(
     vds_path: str,
     donors_to_keep: str,
     donors_to_exclude: str,
+    variants_to_keep: str,
     cv_maf_threshold: float,
     rv_maf_threshold: float,
     exclude_multiallelic: bool,
@@ -69,6 +73,10 @@ def count_variants(
         exclude_samples_table = hl.read_table(donors_to_exclude)
         exclude_samples = hl.literal(exclude_samples_table.s.collect())
         mt = mt.filter_cols(~exclude_samples.contains(mt['s']))
+
+    if variants_to_keep != 'all':
+        variants_to_keep_table = hl.read_table(variants_to_keep)
+        mt = mt.semi_join_rows(variants_to_keep_table)
 
     # filter out loci & variant QC
     mt = mt.filter_rows(hl.len(mt.alleles) == 2)  # remove hom-ref
