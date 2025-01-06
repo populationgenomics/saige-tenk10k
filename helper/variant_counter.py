@@ -19,7 +19,7 @@ analysis-runner \
     python3 variant_counter.py --vds-path=gs://cpg-tenk10k-main/vds/tenk10k-genome-2-0.vds \
         --donors-to-keep=gs://cpg-tenk10k-main/large_cohort/tenk10k-genome-2-3-eur/sample_qc.ht \
         --donors-to-exclude=gs://cpg-tenk10k-main/large_cohort/tenk10k-genome-2-3-eur/all_wgs_and_scrnaseq_qc_fail_samples.ht \
-        --qc-pass-variants-path=gs://cpg-tenk10k-main/large_cohort/tenk10k-genome-2-3-eur/variants_qc.ht
+        --variants-to-keep=gs://cpg-tenk10k-main/large_cohort/tenk10k-genome-2-3-eur/variants_qc.ht
 """
 
 import click
