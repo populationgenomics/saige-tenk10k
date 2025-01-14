@@ -36,7 +36,7 @@ def bedtools_intersect(
     # provision a new job
     bedtools_job = b.new_job(name='Bedtools intersect')
     bedtools_job.image(get_config()['images']['bedtools'])
-    bedtools_job.storage('20G')
+    bedtools_job.storage('50G')
     bedtools_job.memory('highmem')
     bedtools_job.cpu(16)
 
