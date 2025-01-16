@@ -421,7 +421,8 @@ def main(
 
             # if specified, only test genes_to_test
             if genes_to_test != 'all':
-                genes = genes_to_test.split(',')
+                genes_to_test_list = genes_to_test.split(',')
+                genes = [x for x in genes if x in genes_to_test_list]
 
             genes = [x for x in genes if x not in drop_genes]
 
