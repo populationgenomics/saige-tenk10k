@@ -454,16 +454,18 @@ def main(
 
                 # step 2 (cis eQTL single variant test)
                 sv_out_path = output_path(
-                    f'{celltype}/{chromosome}/{celltype}_{gene}_cis', 'analysis'
+                    f'{celltype}/{chromosome}/{celltype}_{gene}_cis_{cis_window_size}bp',
+                    'analysis',
                 )
                 if to_path(sv_out_path).exists():
                     step2_output = get_batch().read_input(sv_out_path)
                 else:
                     step2_output = build_run_single_variant_test_command(
                         job=single_var_test_job,
-                        svt_key=f'{celltype}_{chromosome}_{celltype}_{gene}_cis',
+                        svt_key=f'{celltype}_{chromosome}_{celltype}_{gene}_cis_{cis_window_size}bp',
                         sv_output_path=output_path(
-                            f'{celltype}/{chromosome}/{celltype}_{gene}_cis', 'analysis'
+                            f'{celltype}/{chromosome}/{celltype}_{gene}_cis_{cis_window_size}bp',
+                            'analysis',
                         ),
                         vcf_group=vcf_group,
                         chrom=(chromosome[3:]),
@@ -476,14 +478,14 @@ def main(
 
                 # step 3 (gene-level p-values)
                 saige_gene_pval_output_file = output_path(
-                    f'{celltype}/{chromosome}/{celltype}_{gene}_cis_gene_pval'
+                    f'{celltype}/{chromosome}/{celltype}_{gene}_cis_gene_pval_{cis_window_size}bp'
                 )
                 if not to_path(saige_gene_pval_output_file).exists():
                     job3 = build_obtain_gene_level_pvals_command(
                         gene_name=gene,
                         saige_sv_output_file=step2_output,
                         saige_gene_pval_output_file=output_path(
-                            f'{celltype}/{chromosome}/{celltype}_{gene}_cis_gene_pval'
+                            f'{celltype}/{chromosome}/{celltype}_{gene}_cis_gene_pval_{cis_window_size}bp'
                         ),
                     )
                     job3.depends_on(single_var_test_job)
@@ -497,9 +499,7 @@ def main(
     # summarise results (per cell type)
     for celltype in celltypes:
         logging.info(f'start summarising results for {celltype}')
-        summary_output_path = (
-            f'summary_stats/{celltype}_all_cis_cv_gene_level_results.tsv'
-        )
+        summary_output_path = f'summary_stats/{celltype}_all_cis_cv_gene_level_results_{cis_window_size}bp.tsv'
 
         summarise_job = get_batch().new_python_job(
             f'Summarise CV results for {celltype}'
