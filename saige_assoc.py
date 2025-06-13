@@ -28,8 +28,6 @@ analysis-runner \
       --cis-window-files-path=gs://cpg-tenk10k-main/saige-qtl/tenk10k-genome-2-3-eur/input_files/241210/cis_window_files \
       --genotype-files-prefix=gs://cpg-tenk10k-main/saige-qtl/tenk10k-genome-2-3-eur/input_files/241210/genotypes/vds-tenk10k-genome-2-0 \
       --vre-files-prefix=gs://cpg-tenk10k-main/saige-qtl/tenk10k-genome-2-3-eur/input_files/241210/genotypes/vds-tenk10k-genome-2-0
-
-
 """
 
 import click
@@ -164,7 +162,7 @@ def build_obtain_gene_level_pvals_command(
     - gene we need to aggregate results for (across SNPs)
     - path for output file
     """
-    saige_job = get_batch().new_job(name="saige-qtl part 3")
+    saige_job = get_batch().new_job(name="saige-qtl part 3", attributes={'saige_stage': 'part_3'})
     saige_command_step3 = f"""
         Rscript /usr/local/bin/step3_gene_pvalue_qtl.R \
         --assocFile={saige_sv_output_file} \
@@ -226,7 +224,7 @@ def run_fit_null_job(
             }
         )
 
-    gene_job = get_batch().new_job(name="saige-qtl part 1")
+    gene_job = get_batch().new_job(name="saige-qtl part 1", attributes={'saige_stage': 'part_1'})
     gene_job.image(image_path('saige-qtl'))
     apply_job_settings(gene_job, 'fit_null')
 
@@ -294,7 +292,7 @@ def create_second_job(vcf_path: str) -> hb.batch.job.Job:
     blob.reload()  # refresh the blob to get the metadata
     size = blob.size // (1024**3)  # bytes to GB
 
-    second_job = get_batch().new_job(name="saige-qtl part 2")
+    second_job = get_batch().new_job(name="saige-qtl part 2", attributes={'saige_stage': 'part_2'})
     apply_job_settings(second_job, 'sv_test')
 
     # VCF size, plus a 5GB buffer
@@ -437,7 +435,7 @@ def main(
                     f'{cis_window_files_path_chrom}/{gene}_{cis_window_size}bp.tsv'
                 )
 
-                gene_dependency = get_batch().new_job(f' Always run job for {gene}')
+                gene_dependency = get_batch().new_job(f' Always run job for {gene}', attributes={'saige_stage': 'na'})
                 gene_dependency.always_run()
                 manage_concurrency_for_job(gene_dependency)
 
@@ -463,10 +461,7 @@ def main(
                     step2_output = build_run_single_variant_test_command(
                         job=single_var_test_job,
                         svt_key=f'{celltype}_{chromosome}_{celltype}_{gene}_cis_{cis_window_size}bp',
-                        sv_output_path=output_path(
-                            f'{celltype}/{chromosome}/{celltype}_{gene}_cis_{cis_window_size}bp',
-                            'analysis',
-                        ),
+                        sv_output_path=sv_out_path,
                         vcf_group=vcf_group,
                         chrom=(chromosome[3:]),
                         cis_window_file=cis_window_path,
@@ -484,9 +479,7 @@ def main(
                     job3 = build_obtain_gene_level_pvals_command(
                         gene_name=gene,
                         saige_sv_output_file=step2_output,
-                        saige_gene_pval_output_file=output_path(
-                            f'{celltype}/{chromosome}/{celltype}_{gene}_cis_gene_pval_{cis_window_size}bp'
-                        ),
+                        saige_gene_pval_output_file=saige_gene_pval_output_file,
                     )
                     job3.depends_on(single_var_test_job)
                     # add this job to the list of jobs for this cell type
@@ -502,7 +495,7 @@ def main(
         summary_output_path = f'summary_stats/{celltype}_all_cis_cv_gene_level_results_{cis_window_size}bp.tsv'
 
         summarise_job = get_batch().new_python_job(
-            f'Summarise CV results for {celltype}'
+            f'Summarise CV results for {celltype}', attributes={'saige_stage': 'summarise_cv_results'}
         )
         if celltype in celltype_jobs:
             summarise_job.depends_on(*celltype_jobs[celltype])
