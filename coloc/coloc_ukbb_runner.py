@@ -207,7 +207,7 @@ def main(
             for gene in result_df_cfm_str_celltype_chrom['gene']:
 
                 coloc_results_file = output_path(
-                    f'coloc-snp-only/sig_genes_only/{pheno_output_name}/{celltype}/{gene}_{cis_window_size}.tsv',
+                    f'coloc-snp-only/sig_genes_only_v2/{pheno_output_name}/{celltype}/{gene}_{cis_window_size}.tsv',
                     'analysis',
                 )
                 if to_path(coloc_results_file).exists():
