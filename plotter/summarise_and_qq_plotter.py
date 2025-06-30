@@ -55,7 +55,9 @@ def plot_pvalues(
         if common_or_rare == 'common':
             existing_assoc_results = [
                 str(file)
-                for file in to_path(results_path).glob(f'{celltype}/*/{celltype}_*_cis_{cis_window_size}')
+                for file in to_path(results_path).glob(
+                    f'{celltype}/*/{celltype}_*_cis_{cis_window_size}'
+                )
             ]
         elif common_or_rare == 'rare':
             existing_assoc_results = [
