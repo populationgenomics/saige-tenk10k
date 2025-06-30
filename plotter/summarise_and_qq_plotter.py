@@ -33,11 +33,13 @@ from cpg_utils.hail_batch import init_batch, output_path
 @click.option('--results-path', required=True)
 @click.option('--title', default='shuffled')
 @click.option('--common-or-rare', default='common')
+@click.option('--cis-window-size', default='100000')
 def plot_pvalues(
     celltypes: str,
     results_path: str,
     title: str,
     common_or_rare: str,
+    cis_window_size: int,
 ):
     """
     combines the results for a given cell type,
@@ -53,7 +55,7 @@ def plot_pvalues(
         if common_or_rare == 'common':
             existing_assoc_results = [
                 str(file)
-                for file in to_path(results_path).glob(f'{celltype}/*/{celltype}_*_cis')
+                for file in to_path(results_path).glob(f'{celltype}/*/{celltype}_*_cis_{cis_window_size}')
             ]
         elif common_or_rare == 'rare':
             existing_assoc_results = [
@@ -89,10 +91,10 @@ def plot_pvalues(
         results_top_snp_df = pd.concat(results_top_snp_df_list)
 
         # save
-        results_all_file = f'{results_path}/summary_stats/{celltype}_{common_or_rare}_all_cis_raw_pvalues.tsv'
+        results_all_file = f'{results_path}/summary_stats/{celltype}_{common_or_rare}_all_cis_raw_pvalues_{cis_window_size}.tsv'
         results_all_df.to_csv(results_all_file, sep='\t')
 
-        results_top_snp_file = f'{results_path}/summary_stats/{celltype}_{common_or_rare}_top_snp_cis_raw_pvalues.tsv'
+        results_top_snp_file = f'{results_path}/summary_stats/{celltype}_{common_or_rare}_top_snp_cis_raw_pvalues_{cis_window_size}.tsv'
         results_top_snp_df.to_csv(results_top_snp_file, sep='\t')
 
         # plot histograms
@@ -100,7 +102,7 @@ def plot_pvalues(
         plt.hist(results_all_df['p.value'])
         plt.savefig('histo.png')
         gcs_path_p = output_path(
-            f'plots/pvalues_histo/{celltype}_{common_or_rare}_{title}_all.png',
+            f'plots/pvalues_histo/{celltype}_{common_or_rare}_{cis_window_size}_{title}_all.png',
             'analysis',
         )
         hl.hadoop_copy('histo.png', gcs_path_p)
@@ -118,7 +120,7 @@ def plot_pvalues(
         ax.scatter(x_all, y_all)
         fig.savefig('qqplot.png')
         gcs_path_p = output_path(
-            f'plots/pvalues_qqplot/{celltype}_{common_or_rare}_{title}_all.png',
+            f'plots/pvalues_qqplot/{celltype}_{common_or_rare}_{cis_window_size}_{title}_all.png',
             'analysis',
         )
         hl.hadoop_copy('qqplot.png', gcs_path_p)

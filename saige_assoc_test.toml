@@ -1,11 +1,11 @@
 [saige]
 # principal arguments
-celltypes = ['ASDC']
-chromosomes = ['chr3']
+celltypes = ['CD16_Mono']
+chromosomes = ['chr21']
 drop_genes = ['ENSG00000291210']
 # secondary arguments
 max_parallel_jobs = 50
-cis_window_size = 100000
+cis_window_size = 1000000
 # these args are applied directly to step1_fitNULLGLMM_qtl.R
 # as "--{key}={value} "
 [saige.build_fit_null]
@@ -21,7 +21,7 @@ isRemoveZerosinPheno = 'FALSE'
 useSparseGRMtoFitNULL = 'FALSE'
 useGRMtoFitNULL = 'FALSE'
 # option to treat fixed covariates as offset
-isCovariateOffset = 'TRUE'
+isCovariateOffset = 'FALSE'
 # option to transform (scale) covariates
 isCovariateTransform = 'TRUE'
 # option to skip model fitting (discouraged)
