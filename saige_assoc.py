@@ -260,6 +260,7 @@ def summarise_cv_results(
     celltype: str,
     gene_results_path: str,
     summary_output_path: str,
+    cis_window_size: int,
 ):
     """
     Summarise gene-specific results
@@ -271,7 +272,9 @@ def summarise_cv_results(
 
     existing_cv_assoc_results = [
         str(file)
-        for file in to_path(gene_results_path).glob(f'*/{celltype}_*_cis_gene_pval')
+        for file in to_path(gene_results_path).glob(
+            f'*/{celltype}_*_cis_gene_pval_{cis_window_size}bp'
+        )
     ]
     results_all_df = pd.concat(
         [
@@ -513,6 +516,7 @@ def main(
             celltype=celltype,
             gene_results_path=output_path(celltype),
             summary_output_path=summary_output_path,
+            cis_window_size=cis_window_size,
         )
 
     # write the file containing all important input parameters
