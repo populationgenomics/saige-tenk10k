@@ -403,7 +403,9 @@ def main(
                 f'{genotype_files_prefix}/{chromosome}_common_variants.vcf.bgz'
             )
         writeout_dict[f'{chromosome}_vcf_file_used'] = vcf_file_path
-        single_var_test_job = create_second_job(vcf_file_path)
+        single_var_test_job = create_second_job(
+            vcf_path=vcf_file_path, image_tag=image_tag
+        )
         jobs_in_vm = 0
 
         # read in vcf file once per chromosome
