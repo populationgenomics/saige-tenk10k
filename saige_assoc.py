@@ -464,6 +464,7 @@ def main(
                     pheno_file=pheno_cov_path,
                     plink_path=vre_plink_path,
                     pheno_col=gene,
+                    image_tag=image_tag,
                 )
                 if null_job is not None:
                     null_job.depends_on(gene_dependency)
@@ -486,7 +487,6 @@ def main(
                         cis_window_file=cis_window_path,
                         gmmat_model_path=null_output['rda'],
                         variance_ratio_path=null_output['varianceRatio.txt'],
-                        image_tag=image_tag,
                     )
                     single_var_test_job.depends_on(gene_dependency)
                     jobs_in_vm += 1
