@@ -150,6 +150,7 @@ def build_obtain_gene_level_pvals_command(
     gene_name: str,
     saige_sv_output_file: str,
     saige_gene_pval_output_file: str,
+    image_tag: str,
 ):
     """
     Build SAIGE command to obtain gene-level pvals
@@ -171,7 +172,7 @@ def build_obtain_gene_level_pvals_command(
         --geneName={gene_name} \
         --genePval_outputFile={saige_job.output}
     """
-    saige_job.image(image_path('saige-qtl'))
+    saige_job.image(image_path('saige-qtl', image_tag))
     saige_job.command(saige_command_step3)
     get_batch().write_output(saige_job.output, saige_gene_pval_output_file)
     return saige_job
@@ -202,6 +203,7 @@ def run_fit_null_job(
     null_output_path: str,
     pheno_file: str,
     plink_path: str,
+    image_tag: str,
     pheno_col: str = 'y',
 ):
     """
@@ -229,7 +231,7 @@ def run_fit_null_job(
     gene_job = get_batch().new_job(
         name="saige-qtl part 1", attributes={'saige_stage': 'part_1'}
     )
-    gene_job.image(image_path('saige-qtl'))
+    gene_job.image(image_path('saige-qtl', image_tag))
     apply_job_settings(gene_job, 'fit_null')
 
     # create output group for first command in gene job
@@ -288,7 +290,7 @@ def summarise_cv_results(
         results_all_df.to_csv(rf)
 
 
-def create_second_job(vcf_path: str) -> hb.batch.job.Job:
+def create_second_job(vcf_path: str, image_tag: str) -> hb.batch.job.Job:
     """
     Create a second job to run the single variant test
     """
@@ -306,7 +308,7 @@ def create_second_job(vcf_path: str) -> hb.batch.job.Job:
 
     # VCF size, plus a 5GB buffer
     second_job.storage(f'{size + 5 }Gi')
-    second_job.image(image_path('saige-qtl'))
+    second_job.image(image_path('saige-qtl', image_tag))
     return second_job
 
 
@@ -328,6 +330,9 @@ def create_second_job(vcf_path: str) -> hb.batch.job.Job:
 @click.option(
     '--writeout-file-prefix', default=dataset_path('saige-qtl', category='analysis')
 )
+@click.option(
+    '--image-tag', type=str, default='c3ddadda416a0be349872ed3b486ec020c371764'
+)
 @click.option('--test-str', is_flag=True, help='Test with STR VCFs')
 @click.option('--jobs-per-vm', type=int, default=25)
 @click.command()
@@ -341,6 +346,7 @@ def main(
     genes_to_test: str,
     # write out inputs and flags used for this run
     writeout_file_prefix: str,
+    image_tag: str,
     test_str: bool = False,
     jobs_per_vm: int = 25,
 ):
@@ -397,7 +403,9 @@ def main(
                 f'{genotype_files_prefix}/{chromosome}_common_variants.vcf.bgz'
             )
         writeout_dict[f'{chromosome}_vcf_file_used'] = vcf_file_path
-        single_var_test_job = create_second_job(vcf_file_path)
+        single_var_test_job = create_second_job(
+            vcf_path=vcf_file_path, image_tag=image_tag
+        )
         jobs_in_vm = 0
 
         # read in vcf file once per chromosome
@@ -456,6 +464,7 @@ def main(
                     pheno_file=pheno_cov_path,
                     plink_path=vre_plink_path,
                     pheno_col=gene,
+                    image_tag=image_tag,
                 )
                 if null_job is not None:
                     null_job.depends_on(gene_dependency)
@@ -491,13 +500,14 @@ def main(
                         gene_name=gene,
                         saige_sv_output_file=step2_output,
                         saige_gene_pval_output_file=saige_gene_pval_output_file,
+                        image_tag=image_tag,
                     )
                     job3.depends_on(single_var_test_job)
                     # add this job to the list of jobs for this cell type
                     celltype_jobs.setdefault(celltype, []).append(job3)
 
                 if jobs_in_vm >= jobs_per_vm:
-                    single_var_test_job = create_second_job(vcf_file_path)
+                    single_var_test_job = create_second_job(vcf_file_path, image_tag)
                     jobs_in_vm = 0
 
     # summarise results (per cell type)
