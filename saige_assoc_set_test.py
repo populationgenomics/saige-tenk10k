@@ -16,7 +16,6 @@ typically used for rare variants
 - run set-based tests using SAIGE-QTL (execute Rscript from command line)
 - aggregate & summarise results
 
-
 To run:
 
 analysis-runner \
@@ -33,7 +32,6 @@ analysis-runner \
        --genotype-files-prefix=gs://cpg-bioheart-main/saige-qtl/bioheart_n990_and_tob_n1055/input_files/240920/genotypes/vds-tenk10k1-0 \
        --vre-files-prefix=gs://cpg-bioheart-main/saige-qtl/bioheart_n990_and_tob_n1055/input_files/240920/genotypes/vds-tenk10k1-0 \
        --group-file-specs _dTSS_weights
-
 """
 
 import click
@@ -276,19 +274,25 @@ def create_a_2b_job() -> hb.batch.job.Job:
 @click.option(
     '--pheno-cov-files-path',
     default=dataset_path('saige-qtl/input_files/pheno_cov_files'),
+    help='Output from get_anndata.py',
 )
 @click.option(
     '--group-files-path',
     default=dataset_path('saige-qtl/input_files/group_files'),
+    help='Output from make_group_file.py',
 )
 @click.option(
-    '--genotype-files-prefix', default=dataset_path('saige-qtl/input_files/genotypes')
+    '--genotype-files-prefix',
+    default=dataset_path('saige-qtl/input_files/genotypes'),
+    help='Outputs from get_genotype_vcf.py',
 )
 @click.option(
     '--vre-files-prefix', default=dataset_path('saige-qtl/input_files/genotypes')
 )
 @click.option(
-    '--writeout-file-prefix', default=dataset_path('saige-qtl', category='analysis')
+    '--writeout-file-prefix',
+    default=dataset_path('saige-qtl', category='analysis'),
+    help='Write out inputs and flags used for this run',
 )
 @click.option('--genes-to-test', default='all')
 @click.option('--ngenes-to-test', default='all')
@@ -296,14 +300,10 @@ def create_a_2b_job() -> hb.batch.job.Job:
 @click.option('--jobs-per-vm', default=10, type=int)
 @click.command()
 def main(
-    # output from get_anndata.py
     pheno_cov_files_path: str,
-    # output from make_group_file.py
     group_files_path: str,
-    # outputs from get_genotype_vcf.py
     genotype_files_prefix: str,
     vre_files_prefix: str,
-    # write out inputs and flags used for this run
     writeout_file_prefix: str,
     genes_to_test: str,
     ngenes_to_test: str,
@@ -314,15 +314,21 @@ def main(
     Run SAIGE-QTL RV pipeline for all cell types
     """
 
+    group_file_version = to_path(group_files_path).name
+    if group_file_version == 'group_files':
+        group_file_version = 'default'
+
     batch = get_batch('SAIGE-QTL RV pipeline')
     jobs: list[hb.batch.job.Job] = []
+
+    max_parallel_jobs = get_config()['saige']['max_parallel_jobs']
 
     def manage_concurrency_for_job(job: hb.batch.job.Job):
         """
         To avoid having too many jobs running at once, we have to limit concurrency.
         """
-        if len(jobs) >= get_config()['saige']['max_parallel_jobs']:
-            job.depends_on(jobs[-get_config()['saige']['max_parallel_jobs']])
+        if len(jobs) >= max_parallel_jobs:
+            job.depends_on(jobs[-max_parallel_jobs])
         jobs.append(job)
 
     # define writeout file by type of pipeline and date and time
@@ -421,7 +427,7 @@ def main(
 
                 # step 2 (cis eQTL set-based test)
                 # unique key for this set-based test
-                rare_key = f'{celltype}/{chromosome}/{celltype}_{gene}_cis_rare'
+                rare_key = f'{group_file_version}/{celltype}/{chromosome}/{celltype}_{gene}_cis_rare'
                 # unique output path for this set-based test
                 rare_output_path = output_path(rare_key, 'analysis')
 
@@ -456,18 +462,20 @@ def main(
     # summarise results (per cell type)
     for celltype in celltypes:
         logging.info(f'start summarising results for {celltype}')
-        summary_output_path = (
-            f'summary_stats/{celltype}_all_cis_rv_set_test_results.tsv'
-        )
+        summary_output_path = f'{group_file_version}/summary_stats/{celltype}_all_cis_rv_set_test_results.tsv'
 
         summarise_job = get_batch().new_python_job(
             f'Summarise RV results for {celltype}'
         )
+
         summarise_job.depends_on(*celltype_jobs[celltype])
         summarise_job.call(
             summarise_rv_results,
             celltype=celltype,
-            gene_results_path=output_path(celltype, category='analysis'),
+            # include the group file version and celltype when generating the path to outputs created in this run
+            gene_results_path=output_path(
+                f'{group_file_version}/{celltype}', category='analysis'
+            ),
             summary_output_path=summary_output_path,
         )
 
