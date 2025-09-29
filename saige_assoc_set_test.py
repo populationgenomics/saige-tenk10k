@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# pylint: disable=import-error,line-too-long
 
 """
 Hail Batch workflow to perform set-based tests using SAIGE-QTL
