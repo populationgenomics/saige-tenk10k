@@ -22,14 +22,14 @@ analysis-runner \
    --description "SAIGE-QTL RV association pipeline" \
    --memory='32G' \
    --storage='50G' \
-   --dataset "bioheart" \
+   --dataset "tenk10k" \
    --access-level "full" \
-   --output-dir "saige-qtl/bioheart_n990_and_tob_n1055/output_files/240920" \
+   --output-dir "saige-qtl/tenk10k-genome-2-3-eur/output_files/241210" \
     python3 saige_assoc_set_test.py \
-    --pheno-cov-files-path=gs://cpg-bioheart-main/saige-qtl/bioheart_n990_and_tob_n1055/input_files/240920/pheno_cov_files \
-       --group-files-path=gs://cpg-bioheart-main/saige-qtl/bioheart_n990_and_tob_n1055/input_files/240920/group_files \
-       --genotype-files-prefix=gs://cpg-bioheart-main/saige-qtl/bioheart_n990_and_tob_n1055/input_files/240920/genotypes/vds-tenk10k1-0 \
-       --vre-files-prefix=gs://cpg-bioheart-main/saige-qtl/bioheart_n990_and_tob_n1055/input_files/240920/genotypes/vds-tenk10k1-0 \
+    --pheno-cov-files-path=gs://cpg-tenk10k-main/saige-qtl/tenk10k-genome-2-3-eur/input_files/241210/pheno_cov_files \
+       --group-files-path=gs://cpg-tenk10k-main/saige-qtl/tenk10k-genome-2-3-eur/input_files/241210/group_files \
+       --genotype-files-prefix=gs://cpg-tenk10k-main/saige-qtl/tenk10k-genome-2-3-eur/input_files/241210/genotypes/vds-tenk10k-genome-2-0 \
+       --vre-files-prefix=gs://cpg-tenk10k-main/saige-qtl/tenk10k-genome-2-3-eur/input_files/241210/genotypes/vds-tenk10k-genome-2-0 \
        --group-file-specs _dTSS_weights
 """
 
