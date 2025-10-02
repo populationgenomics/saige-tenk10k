@@ -68,6 +68,7 @@ def make_group_file(
     import time
 
     from hail import filter_intervals, parse_locus_interval
+    import numpy as np
     import pandas as pd
     from cpg_utils.hail_batch import init_batch
 
@@ -200,8 +201,11 @@ def make_group_file(
     vals_df['category'] = vals_df.index
     categories_df = pd.DataFrame(categories_data)
     group_vals_df = pd.merge(categories_df, vals_df, on='category')
+    # drop any variants with no annotations (after making all nas)
+    group_vals_df = group_vals_df.replace(r'^\s*$', np.nan, regex=True)
+    group_vals_df_annos = group_vals_df.dropna(axis=1)
     with group_file.open('w') as gdf:
-        group_vals_df.to_csv(gdf, index=False, header=False, sep=' ')
+        group_vals_df_annos.to_csv(gdf, index=False, header=False, sep=' ')
 
 
 @click.command()
