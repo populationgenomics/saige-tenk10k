@@ -16,13 +16,13 @@ In main:
 
 analysis-runner \
     --description "make variant group input files" \
-    --dataset "bioheart" \
-    --access-level "standard" \
+    --dataset "tenk10k" \
+    --access-level "full" \
     --output-dir "saige-qtl/bioheart_n787_and_tob_n960/241008_ashg/input_files/" \
-    python3 make_group_file.py --chromosomes chr21 \
-        --cis-window-files-path=gs://cpg-bioheart-main/saige-qtl/bioheart_n787_and_tob_n960/241008_ashg/input_files/cis_window_files/ \
-        --group-files-path=gs://cpg-bioheart-main/saige-qtl/bioheart_n787_and_tob_n960/241008_ashg/input_files/group_files_mt/ \
-        --chrom-mt-files-path=gs://cpg-bioheart-main/saige-qtl/bioheart_n787_and_tob_n960/241008_ashg/input_files/genotypes/vds-tenk10k1-0_qc_pass --max-delay=30
+    python3 make_group_file.py --chromosomes chr22 \
+        --cis-window-files-path=gs://cpg-tenk10k-main/saige-qtl/tenk10k-genome-2-3-eur/input_files/241210/cis_window_files/ \
+        --group-files-path=gs://cpg-tenk10k-main/saige-qtl/tenk10k-genome-2-3-eur/input_files/241210/group_files_mt_n1925/ \
+        --chrom-mt-files-path=gs://cpg-tenk10k-main/saige-qtl/tenk10k-genome-2-3-eur/input_files/241210/genotypes/vds-tenk10k1-0_qc_pass --max-delay=30
 
 In test:
 
