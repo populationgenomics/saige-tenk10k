@@ -22,14 +22,14 @@ analysis-runner \
    --description "SAIGE-QTL RV association pipeline" \
    --memory='32G' \
    --storage='50G' \
-   --dataset "bioheart" \
+   --dataset "tenk10k" \
    --access-level "full" \
-   --output-dir "saige-qtl/bioheart_n990_and_tob_n1055/output_files/240920" \
+   --output-dir "saige-qtl/tenk10k-genome-2-3-eur/output_files/241210" \
     python3 saige_assoc_set_test.py \
-    --pheno-cov-files-path=gs://cpg-bioheart-main/saige-qtl/bioheart_n990_and_tob_n1055/input_files/240920/pheno_cov_files \
-       --group-files-path=gs://cpg-bioheart-main/saige-qtl/bioheart_n990_and_tob_n1055/input_files/240920/group_files \
-       --genotype-files-prefix=gs://cpg-bioheart-main/saige-qtl/bioheart_n990_and_tob_n1055/input_files/240920/genotypes/vds-tenk10k1-0 \
-       --vre-files-prefix=gs://cpg-bioheart-main/saige-qtl/bioheart_n990_and_tob_n1055/input_files/240920/genotypes/vds-tenk10k1-0 \
+    --pheno-cov-files-path=gs://cpg-tenk10k-main/saige-qtl/tenk10k-genome-2-3-eur/input_files/241210/pheno_cov_files \
+       --group-files-path=gs://cpg-tenk10k-main/saige-qtl/tenk10k-genome-2-3-eur/input_files/241210/group_files \
+       --genotype-files-prefix=gs://cpg-tenk10k-main/saige-qtl/tenk10k-genome-2-3-eur/input_files/241210/genotypes/vds-tenk10k-genome-2-0 \
+       --vre-files-prefix=gs://cpg-tenk10k-main/saige-qtl/tenk10k-genome-2-3-eur/input_files/241210/genotypes/vds-tenk10k-genome-2-0 \
        --group-file-specs _dTSS_weights
 """
 
@@ -100,6 +100,7 @@ def build_run_set_based_test_command(
     group_file: str,
     gmmat_model_path: str,
     variance_ratio_path: str,
+    group_annos: str,
 ):
     """
     Build SAIGE command for running set-based test
@@ -135,6 +136,7 @@ def build_run_set_based_test_command(
             }
         }
     )
+    annos_command = f'--annotation_in_groupTest={group_annos}'
 
     job.command(
         f"""
@@ -146,6 +148,7 @@ def build_run_set_based_test_command(
         --GMMATmodelFile={gmmat_model_path} \
         --varianceRatioFile={variance_ratio_path} \
         --groupFile={group_file} \
+        {annos_command} \
         {args_from_config}
     """
     )
@@ -297,6 +300,7 @@ def create_a_2b_job() -> hb.batch.job.Job:
 @click.option('--ngenes-to-test', default='all')
 @click.option('--group-file-specs', default='')
 @click.option('--jobs-per-vm', default=10, type=int)
+@click.option('--group-annos', default='functional')
 @click.command()
 def main(
     pheno_cov_files_path: str,
@@ -308,6 +312,7 @@ def main(
     ngenes_to_test: str,
     group_file_specs: str,
     jobs_per_vm: int,
+    group_annos: str,
 ):
     """
     Run SAIGE-QTL RV pipeline for all cell types
@@ -444,6 +449,7 @@ def main(
                     group_file=group_path,
                     gmmat_model_path=null_output['rda'],
                     variance_ratio_path=null_output['varianceRatio.txt'],
+                    group_annos=group_annos,
                 )
                 jobs_in_vm += 1
 

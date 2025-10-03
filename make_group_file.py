@@ -16,13 +16,14 @@ In main:
 
 analysis-runner \
     --description "make variant group input files" \
-    --dataset "bioheart" \
-    --access-level "standard" \
+    --dataset "tenk10k" \
+    --access-level "full" \
     --output-dir "saige-qtl/bioheart_n787_and_tob_n960/241008_ashg/input_files/" \
-    python3 make_group_file.py --chromosomes chr21 \
-        --cis-window-files-path=gs://cpg-bioheart-main/saige-qtl/bioheart_n787_and_tob_n960/241008_ashg/input_files/cis_window_files/ \
-        --group-files-path=gs://cpg-bioheart-main/saige-qtl/bioheart_n787_and_tob_n960/241008_ashg/input_files/group_files_mt/ \
-        --chrom-mt-files-path=gs://cpg-bioheart-main/saige-qtl/bioheart_n787_and_tob_n960/241008_ashg/input_files/genotypes/vds-tenk10k1-0_qc_pass --max-delay=30
+    python3 make_group_file.py --chromosomes chr22 \
+        --cis-window-files-path=gs://cpg-tenk10k-main/saige-qtl/tenk10k-genome-2-3-eur/input_files/241210/cis_window_files/ \
+        --group-files-path=gs://cpg-tenk10k-main/saige-qtl/tenk10k-genome-2-3-eur/input_files/241210/group_files_mt_n1925/annotated/ \
+        --chrom-mt-files-path=gs://cpg-tenk10k-main/saige-qtl/tenk10k-genome-2-3-eur/input_files/241210/genotypes/vds-tenk10k1-0_qc_pass --max-delay=30 \
+        --rv-annotation-files-path=gs://cpg-tenk10k-test/saige-qtl/rv_annot/
 
 In test:
 
@@ -54,6 +55,7 @@ def make_group_file(
     chrom: str,
     cis_window_files_path: str,
     group_file,
+    rare_variant_annotation_files_path: str,
     cis_window: int,
     genome_reference: str,
     gamma: str,
@@ -66,6 +68,7 @@ def make_group_file(
     import time
 
     from hail import filter_intervals, parse_locus_interval
+    import numpy as np
     import pandas as pd
     from cpg_utils.hail_batch import init_batch
 
@@ -103,6 +106,8 @@ def make_group_file(
         gene=gene,
     )
 
+    # add distance-based weights if required
+
     if gamma != 'none':
 
         gene_tss = int(window_start) + cis_window
@@ -138,16 +143,69 @@ def make_group_file(
 
     chrom_mt.export(str(group_file).replace('.tsv', '_tmp.tsv'))
     chrom_df = pd.read_csv(str(group_file).replace('.tsv', '_tmp.tsv'), sep='\t')
-    chrom_df['anno'] = 'null'
+
+    # add annotations if required
+
+    if rare_variant_annotation_files_path != 'none':
+        annot_file = (
+            f'{rare_variant_annotation_files_path}{chrom}_rare_variant_annotations.csv'
+        )
+        annot_df = pd.read_csv(annot_file)
+        # list the functional columns you care about (only keep those that actually exist)
+        requested_functional = [
+            "is_promoter",
+            "is_enhancer",
+            "is_ctcf",
+            "is_dnase",
+            "is_tx",
+            "is_atac",
+            "is_open",
+            "is_tf",
+            "is_promoter_ai_gte0.2",
+            "is_splice_ai_gte0.2",
+        ]
+        functional_cols = [c for c in requested_functional if c in annot_df.columns]
+
+        # find all current "is_" columns (may or may not include is_functional yet)
+        all_is_cols = [c for c in annot_df.columns if c.startswith("is_")]
+
+        # convert all existing is_ columns EXCEPT is_functional to bool (fill NAs -> False)
+        cols_to_bool = [c for c in all_is_cols if c != "is_functional"]
+        annot_df[cols_to_bool] = annot_df[cols_to_bool].fillna(False).astype(bool)
+
+        # compute is_functional from the cleaned functional_cols (safe because they are bool now)
+        if functional_cols:
+            annot_df["is_functional"] = annot_df[functional_cols].any(axis=1)
+        else:
+            annot_df["is_functional"] = False
+
+        # rebuild the list of is_ columns (this will include is_functional)
+        anno_cols = [c for c in annot_df.columns if c.startswith("is_")]
+
+        # build the anno string from the boolean is_ columns (will include "functional" if True)
+        annot_df["anno"] = annot_df[anno_cols].apply(
+            lambda row: ",".join([c[3:] for c in anno_cols if row[c]]), axis=1
+        )
+        annot_df_sel = annot_df[['POS', 'anno']]
+        # Merge on POS
+        combined_df = chrom_df.merge(annot_df_sel, on='POS', how='left')
+    # if no annotations are provided
+    else:
+        combined_df = chrom_df
+        combined_df['anno'] = 'null'
+
     if gamma != 'none':
         # annos before weights
-        chrom_df = chrom_df[['var', 'anno', 'weight:dTSS']]
-    vals_df = chrom_df.T
+        combined_df = combined_df[['var', 'anno', 'weight:dTSS']]
+    vals_df = combined_df.T
     vals_df['category'] = vals_df.index
     categories_df = pd.DataFrame(categories_data)
     group_vals_df = pd.merge(categories_df, vals_df, on='category')
+    # drop any variants with no annotations (after making all nas)
+    group_vals_df = group_vals_df.replace(r'^\s*$', np.nan, regex=True)
+    group_vals_df_annos = group_vals_df.dropna(axis=1)
     with group_file.open('w') as gdf:
-        group_vals_df.to_csv(gdf, index=False, header=False, sep=' ')
+        group_vals_df_annos.to_csv(gdf, index=False, header=False, sep=' ')
 
 
 @click.command()
@@ -155,6 +213,7 @@ def make_group_file(
 @click.option('--cis-window-files-path')
 @click.option('--group-files-path')
 @click.option('--chrom-mt-files-path')
+@click.option('--rare-variant-annotation-files-path')
 @click.option('--cis-window', default=100000)
 @click.option('--gamma', default='1e-5')
 @click.option('--ngenes-to-test', default='all')
@@ -188,6 +247,7 @@ def main(
     cis_window_files_path: str,
     group_files_path: str,
     chrom_mt_files_path: str,
+    rare_variant_annotation_files_path: str,
     cis_window: int,
     gamma: str,
     ngenes_to_test: str,
@@ -260,6 +320,7 @@ def main(
                     chrom=chrom,
                     cis_window_files_path=cis_window_files_path,
                     group_file=to_path(group_file),
+                    rare_variant_annotation_files_path=rare_variant_annotation_files_path,
                     cis_window=cis_window,
                     genome_reference=genome_reference,
                     gamma=gamma,
