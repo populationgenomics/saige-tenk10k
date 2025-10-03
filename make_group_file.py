@@ -22,8 +22,8 @@ analysis-runner \
     python3 make_group_file.py --chromosomes chr22 \
         --cis-window-files-path=gs://cpg-tenk10k-main/saige-qtl/tenk10k-genome-2-3-eur/input_files/241210/cis_window_files/ \
         --group-files-path=gs://cpg-tenk10k-main/saige-qtl/tenk10k-genome-2-3-eur/input_files/241210/group_files_mt_n1925/annotated/ \
-        --chrom-mt-files-path=gs://cpg-tenk10k-main/saige-qtl/tenk10k-genome-2-3-eur/input_files/241210/genotypes/vds-tenk10k1-0_qc_pass --max-delay=30 \
-        --rv-annotation-files-path=gs://cpg-tenk10k-test/saige-qtl/rv_annot/
+        --chrom-mt-files-path=gs://cpg-tenk10k-main/saige-qtl/tenk10k-genome-2-3-eur/input_files/241210/genotypes_n1925/vds-tenk10k-genome-2-0 --max-delay=30 \
+        --rare-variant-annotation-files-path=gs://cpg-tenk10k-test/saige-qtl/rv_annot/
 
 In test:
 
@@ -144,6 +144,8 @@ def make_group_file(
 
     chrom_mt.export(str(group_file).replace('.tsv', '_tmp.tsv'))
     chrom_df = pd.read_csv(str(group_file).replace('.tsv', '_tmp.tsv'), sep='\t')
+    chrom_df['POS'] = chrom_df['var'].str.split(':').str[1]
+    chrom_df['POS'] = chrom_df['POS'].astype(int)
 
     # add annotations if required
 
@@ -351,7 +353,9 @@ def main(
         # do a glob, then pull out all file names as Strings
         files = [
             str(file)
-            for file in to_path(cis_window_files_path).glob(f'{chrom}/*bp.tsv')
+            for file in to_path(cis_window_files_path).glob(
+                f'{chrom}/*{cis_window}bp.tsv'
+            )
         ]
         # if specified, only test ngenes genes
         if ngenes_to_test != 'all':
