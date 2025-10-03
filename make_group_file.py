@@ -222,7 +222,6 @@ def make_group_file(
         weights = block.iloc[2, 2:].tolist()
 
         # Build: variant index → list of annotations
-        # annotation_map = {}
         annotation_map: Dict[str, List[int]] = {}
         for i, anno in enumerate(annotations):
             if pd.isna(anno):
