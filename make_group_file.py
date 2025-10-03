@@ -71,6 +71,7 @@ def make_group_file(
     import numpy as np
     import pandas as pd
     from cpg_utils.hail_batch import init_batch
+    from typing import Dict, List
 
     time.sleep(random.randint(0, max_delay))
 
@@ -221,7 +222,8 @@ def make_group_file(
         weights = block.iloc[2, 2:].tolist()
 
         # Build: variant index → list of annotations
-        annotation_map = {}
+        # annotation_map = {}
+        annotation_map: Dict[str, List[int]] = {}
         for i, anno in enumerate(annotations):
             if pd.isna(anno):
                 continue
