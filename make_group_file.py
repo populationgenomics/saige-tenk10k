@@ -18,7 +18,7 @@ analysis-runner \
     --description "make variant group input files" \
     --dataset "tenk10k" \
     --access-level "full" \
-    --output-dir "saige-qtl/bioheart_n787_and_tob_n960/241008_ashg/input_files/" \
+    --output-dir "saige-qtl/tenk10k-genome-2-3-eur/input_files/input_files/" \
     python3 make_group_file.py --chromosomes chr22 \
         --cis-window-files-path=gs://cpg-tenk10k-main/saige-qtl/tenk10k-genome-2-3-eur/input_files/241210/cis_window_files/ \
         --group-files-path=gs://cpg-tenk10k-main/saige-qtl/tenk10k-genome-2-3-eur/input_files/241210/group_files_mt_n1925/annotated/ \
@@ -71,6 +71,7 @@ def make_group_file(
     import numpy as np
     import pandas as pd
     from cpg_utils.hail_batch import init_batch
+    from typing import Dict, List
 
     time.sleep(random.randint(0, max_delay))
 
@@ -204,8 +205,76 @@ def make_group_file(
     # drop any variants with no annotations (after making all nas)
     group_vals_df = group_vals_df.replace(r'^\s*$', np.nan, regex=True)
     group_vals_df_annos = group_vals_df.dropna(axis=1)
+    # explode variants, one block of three rows for every annotation
+    # Group every 3 rows
+    grouped = [
+        group_vals_df_annos.iloc[i : i + 3]
+        for i in range(0, len(group_vals_df_annos), 3)
+    ]
+
+    new_blocks = []
+
+    for block in grouped:
+        region_id = block.iloc[0, 0]
+
+        variant_ids = block.iloc[0, 2:].tolist()
+        annotations = block.iloc[1, 2:].tolist()
+        weights = block.iloc[2, 2:].tolist()
+
+        # Build: variant index → list of annotations
+        annotation_map: Dict[str, List[int]] = {}
+        for i, anno in enumerate(annotations):
+            if pd.isna(anno):
+                continue
+            for a in str(anno).split(','):
+                a = a.strip()
+                if a not in annotation_map:
+                    annotation_map[a] = []
+                annotation_map[a].append(
+                    i
+                )  # Store index of variant matching this annotation
+
+        open_annotations = [a for a in annotation_map.keys() if a.startswith("open_")]
+
+        # For each unique annotation, create a new block with only matching variants
+        # avoid duplicated region ids by matching gene name and anno
+        for anno_label, indices in annotation_map.items():
+            new_region_id = f"{region_id}_{anno_label}"
+            new_vars = [variant_ids[i] for i in indices]
+            new_annos = [anno_label] * len(indices)
+            new_weights = [weights[i] for i in indices]
+
+            var_row = [new_region_id, 'var'] + new_vars
+            anno_row = [new_region_id, 'anno'] + new_annos
+            weight_row = [new_region_id, 'weight'] + new_weights
+
+            block_df = pd.DataFrame([var_row, anno_row, weight_row])
+            new_blocks.append(block_df)
+
+    # --- Create functional + open_* intersection blocks ---
+    for open_anno in open_annotations:
+        functional_indices = set(annotation_map.get("functional", []))
+        open_indices = set(annotation_map.get(open_anno, []))
+        intersection_indices = sorted(functional_indices & open_indices)
+
+        if intersection_indices:
+            new_region_id = f"{region_id}_functional_AND_{open_anno}"
+            new_vars = [variant_ids[i] for i in intersection_indices]
+            new_annos = [f"functional_AND_{open_anno}"] * len(intersection_indices)
+            new_weights = [weights[i] for i in intersection_indices]
+
+            var_row = [new_region_id, 'var'] + new_vars
+            anno_row = [new_region_id, 'anno'] + new_annos
+            weight_row = [new_region_id, 'weight'] + new_weights
+
+            block_df = pd.DataFrame([var_row, anno_row, weight_row])
+            new_blocks.append(block_df)
+
+    # Combine all new blocks and save
+    final_df = pd.concat(new_blocks, ignore_index=True)
+
     with group_file.open('w') as gdf:
-        group_vals_df_annos.to_csv(gdf, index=False, header=False, sep=' ')
+        final_df.to_csv(gdf, index=False, header=False, sep=' ')
 
 
 @click.command()
