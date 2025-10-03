@@ -234,6 +234,8 @@ def make_group_file(
                     i
                 )  # Store index of variant matching this annotation
 
+        open_annotations = [a for a in annotation_map.keys() if a.startswith("open_")]
+
         # For each unique annotation, create a new block with only matching variants
         # avoid duplicated region ids by matching gene name and anno
         for anno_label, indices in annotation_map.items():
@@ -241,6 +243,25 @@ def make_group_file(
             new_vars = [variant_ids[i] for i in indices]
             new_annos = [anno_label] * len(indices)
             new_weights = [weights[i] for i in indices]
+
+            var_row = [new_region_id, 'var'] + new_vars
+            anno_row = [new_region_id, 'anno'] + new_annos
+            weight_row = [new_region_id, 'weight'] + new_weights
+
+            block_df = pd.DataFrame([var_row, anno_row, weight_row])
+            new_blocks.append(block_df)
+
+    # --- Create functional + open_* intersection blocks ---
+    for open_anno in open_annotations:
+        functional_indices = set(annotation_map.get("functional", []))
+        open_indices = set(annotation_map.get(open_anno, []))
+        intersection_indices = sorted(functional_indices & open_indices)
+
+        if intersection_indices:
+            new_region_id = f"{region_id}_functional_AND_{open_anno}"
+            new_vars = [variant_ids[i] for i in intersection_indices]
+            new_annos = [f"functional_AND_{open_anno}"] * len(intersection_indices)
+            new_weights = [weights[i] for i in intersection_indices]
 
             var_row = [new_region_id, 'var'] + new_vars
             anno_row = [new_region_id, 'anno'] + new_annos
