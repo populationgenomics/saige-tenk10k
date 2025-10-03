@@ -144,6 +144,8 @@ def make_group_file(
 
     chrom_mt.export(str(group_file).replace('.tsv', '_tmp.tsv'))
     chrom_df = pd.read_csv(str(group_file).replace('.tsv', '_tmp.tsv'), sep='\t')
+    chrom_df['POS'] = chrom_df['var'].str.split(':').str[1]
+    chrom_df['POS'] = chrom_df['POS'].astype(int)
 
     # add annotations if required
 
