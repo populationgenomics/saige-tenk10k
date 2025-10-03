@@ -301,6 +301,11 @@ def create_a_2b_job() -> hb.batch.job.Job:
 @click.option('--group-file-specs', default='')
 @click.option('--jobs-per-vm', default=10, type=int)
 @click.option('--group-annos', default='functional')
+@click.option(
+    '--skip-null',
+    is_flag=True,
+    help='If this flag is used, will skip all genes where the Step 1 has not previously completed',
+)
 @click.command()
 def main(
     pheno_cov_files_path: str,
@@ -313,10 +318,14 @@ def main(
     group_file_specs: str,
     jobs_per_vm: int,
     group_annos: str,
+    skip_null: bool,
 ):
     """
     Run SAIGE-QTL RV pipeline for all cell types
     """
+
+    # in some runs we may want to skip over genes where null fitting has previously failed
+    skipped_genes = []
 
     group_file_version = to_path(group_files_path).name
     if group_file_version == 'group_files':
@@ -414,13 +423,27 @@ def main(
                 )
                 group_path = f'{group_files_path_chrom}/{gene}_{cis_window_size}bp{group_file_specs}.tsv'
 
+                # generate name of the output file from the null fitting
+                null_fit_output_root = output_path(
+                    f'{celltype}/{chromosome}/{celltype}_{gene}'
+                )
+                null_fit_rda = to_path(f'{null_fit_output_root}.rda')
+
+                # decide whether the null fitting needs to run
+                if skip_null and not to_path(null_fit_rda).exists():
+                    logging.info(
+                        f'skipping {gene} - Null model not trained, and skipping requested'
+                    )
+                    skipped_genes.append(gene)
+                    continue
+
                 gene_dependency = get_batch().new_job(f' Always run job for {gene}')
                 gene_dependency.always_run()
                 manage_concurrency_for_job(gene_dependency)
 
                 # check if these outputs already exist, if so don't make a new job
                 null_job, null_output = run_fit_null_job(
-                    output_path(f'{celltype}/{chromosome}/{celltype}_{gene}'),
+                    null_fit_output_root,
                     pheno_file=pheno_cov_path,
                     plink_path=vre_plink_path,
                     pheno_col=gene,
@@ -463,6 +486,11 @@ def main(
                 if jobs_in_vm >= jobs_per_vm:
                     step2_job = create_a_2b_job()
                     jobs_in_vm = 0
+
+    if skipped_genes and skip_null:
+        logging.info(
+            f'Some genes were skipped in this analysis as the null fitting had not previously completed: {", ".join(skipped_genes)}'
+        )
 
     # summarise results (per cell type)
     for celltype in celltypes:
