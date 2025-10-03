@@ -351,7 +351,9 @@ def main(
         # do a glob, then pull out all file names as Strings
         files = [
             str(file)
-            for file in to_path(cis_window_files_path).glob(f'{chrom}/*bp.tsv')
+            for file in to_path(cis_window_files_path).glob(
+                f'{chrom}/*{cis_window}bp.tsv'
+            )
         ]
         # if specified, only test ngenes genes
         if ngenes_to_test != 'all':
