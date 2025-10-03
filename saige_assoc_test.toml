@@ -1,7 +1,7 @@
 [saige]
 # principal arguments
-celltypes = ['all_celltypes']
-chromosomes = ['chr1','chr21']
+celltypes = ['CD4_TCM']
+chromosomes = ['chr22']
 drop_genes = []
 # secondary arguments
 max_parallel_jobs = 50
@@ -11,7 +11,7 @@ cis_window_size = 100000
 [saige.build_fit_null]
 covarColList = 'sex,age,geno_PC1,geno_PC2,geno_PC3,geno_PC4,geno_PC5,geno_PC6,geno_PC7,PC1,PC2,PC3,PC4,PC5,BioHEART,total_counts,pct_counts_mt'
 sampleCovarColList = 'sex,age,geno_PC1,geno_PC2,geno_PC3,geno_PC4,geno_PC5,geno_PC6,geno_PC7'
-sampleIDColinphenoFile = 'cpg_id'
+sampleIDColinphenoFile = 'individual'
 # Poisson, count_nb = Negative Binomial, quantitative = Normal
 traitType = 'count'
 
