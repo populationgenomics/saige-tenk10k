@@ -22,8 +22,8 @@ analysis-runner \
     python3 make_group_file.py --chromosomes chr22 \
         --cis-window-files-path=gs://cpg-tenk10k-main/saige-qtl/tenk10k-genome-2-3-eur/input_files/241210/cis_window_files/ \
         --group-files-path=gs://cpg-tenk10k-main/saige-qtl/tenk10k-genome-2-3-eur/input_files/241210/group_files_mt_n1925/annotated/ \
-        --chrom-mt-files-path=gs://cpg-tenk10k-main/saige-qtl/tenk10k-genome-2-3-eur/input_files/241210/genotypes/vds-tenk10k1-0_qc_pass --max-delay=30 \
-        --rv-annotation-files-path=gs://cpg-tenk10k-test/saige-qtl/rv_annot/
+        --chrom-mt-files-path=gs://cpg-tenk10k-main/saige-qtl/tenk10k-genome-2-3-eur/input_files/241210/genotypes_n1925/vds-tenk10k-genome-2-0 --max-delay=30 \
+        --rare-variant-annotation-files-path=gs://cpg-tenk10k-test/saige-qtl/rv_annot/
 
 In test:
 
