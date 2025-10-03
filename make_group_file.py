@@ -18,7 +18,7 @@ analysis-runner \
     --description "make variant group input files" \
     --dataset "tenk10k" \
     --access-level "full" \
-    --output-dir "saige-qtl/bioheart_n787_and_tob_n960/241008_ashg/input_files/" \
+    --output-dir "saige-qtl/tenk10k-genome-2-3-eur/input_files/input_files/" \
     python3 make_group_file.py --chromosomes chr22 \
         --cis-window-files-path=gs://cpg-tenk10k-main/saige-qtl/tenk10k-genome-2-3-eur/input_files/241210/cis_window_files/ \
         --group-files-path=gs://cpg-tenk10k-main/saige-qtl/tenk10k-genome-2-3-eur/input_files/241210/group_files_mt_n1925/annotated/ \
