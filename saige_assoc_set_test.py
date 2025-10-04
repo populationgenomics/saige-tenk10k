@@ -454,7 +454,7 @@ def main(
 
                 # step 2 (cis eQTL set-based test)
                 # unique key for this set-based test
-                rare_key = f'{group_file_version}/{celltype}/{chromosome}/{celltype}_{gene}_{group_annos}_cis_rare'
+                rare_key = f'{group_file_version}_{group_annos}/{celltype}/{chromosome}/{celltype}_{gene}_cis_rare'
                 # unique output path for this set-based test
                 rare_output_path = output_path(rare_key, 'analysis')
 
