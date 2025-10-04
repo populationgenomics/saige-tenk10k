@@ -2,7 +2,7 @@
 # principal arguments
 celltypes = ['CD4_TCM']
 chromosomes = ['chr22']
-drop_genes = []
+drop_genes = ['ENSG00000211679']
 # secondary arguments
 max_parallel_jobs = 50
 cis_window_size = 100000
