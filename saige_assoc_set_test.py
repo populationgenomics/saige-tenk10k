@@ -495,7 +495,7 @@ def main(
     # summarise results (per cell type)
     for celltype in celltypes:
         logging.info(f'start summarising results for {celltype}')
-        summary_output_path = f'{group_file_version}/summary_stats/{celltype}_all_cis_rv_set_test_results.tsv'
+        summary_output_path = f'{group_file_version}_{group_annos}/summary_stats/{celltype}_all_cis_rv_set_test_results.tsv'
 
         summarise_job = get_batch().new_python_job(
             f'Summarise RV results for {celltype}'
@@ -507,7 +507,7 @@ def main(
             celltype=celltype,
             # include the group file version and celltype when generating the path to outputs created in this run
             gene_results_path=output_path(
-                f'{group_file_version}/{celltype}', category='analysis'
+                f'{group_file_version}_{group_annos}/{celltype}', category='analysis'
             ),
             summary_output_path=summary_output_path,
         )
