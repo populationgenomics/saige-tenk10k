@@ -1,8 +1,8 @@
 [saige]
 # principal arguments
-celltypes = ['CD4_TCM']
-chromosomes = ['chr22']
-drop_genes = ['ENSG00000211679']
+celltypes = ['ASDC']
+chromosomes = ['chr11','chr12']
+drop_genes = ['ENSG00000291100','ENSG00000291011','ENSG00000234464','ENSG00000280164','ENSG00000162989','ENSG00000204802','ENSG00000226007','ENSG00000231212','ENSG00000260691','ENSG00000274893','ENSG00000112562','ENSG00000244694']
 # secondary arguments
 max_parallel_jobs = 50
 cis_window_size = 100000
@@ -47,7 +47,7 @@ maxMAF_in_groupTest = 0.01
 minMAF_in_groupTest_Exclude = 0
 # annotation_in_groupTest = 'null'
 MACCutoff_to_CollapseUltraRare = 1
-is_single_in_groupTest = 'TRUE'
+is_single_in_groupTest = 'FALSE'
 is_equal_weight_in_groupTest = 'TRUE'
 # leave one chromosome out
 LOCO = 'FALSE'
