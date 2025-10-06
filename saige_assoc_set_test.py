@@ -455,7 +455,9 @@ def main(
 
                 # step 2 (cis eQTL set-based test)
                 # unique key for this set-based test
-                rare_key = f'{group_annos}/{celltype}/{chromosome}/{celltype}_{gene}_cis_rare'
+                rare_key = (
+                    f'{group_annos}/{celltype}/{chromosome}/{celltype}_{gene}_cis_rare'
+                )
                 # unique output path for this set-based test
                 rare_output_path = output_path(rare_key, 'analysis')
 
@@ -496,7 +498,9 @@ def main(
     # summarise results (per cell type)
     for celltype in celltypes:
         logging.info(f'start summarising results for {celltype}')
-        summary_output_path = f'{group_annos}/summary_stats/{celltype}_all_cis_rv_set_test_results.tsv'
+        summary_output_path = (
+            f'{group_annos}/summary_stats/{celltype}_all_cis_rv_set_test_results.tsv'
+        )
 
         summarise_job = get_batch().new_python_job(
             f'Summarise RV results for {celltype}'
