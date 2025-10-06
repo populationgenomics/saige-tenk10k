@@ -288,6 +288,7 @@ def make_group_file(
     start_idx = rows_matching.index[0]
 
     block_df = final_df.loc[start_idx : start_idx + 2].copy()
+    block_df = block_df.dropna(axis=1)
 
     with group_file.open('w') as gdf:
         block_df.to_csv(gdf, index=False, header=False, sep=' ')
