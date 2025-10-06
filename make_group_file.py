@@ -60,6 +60,7 @@ def make_group_file(
     genome_reference: str,
     gamma: str,
     max_delay: int,
+    required_anno: str,
 ):
     """
     Make group file
@@ -248,7 +249,7 @@ def make_group_file(
 
             var_row = [new_region_id, 'var'] + new_vars
             anno_row = [new_region_id, 'anno'] + new_annos
-            weight_row = [new_region_id, 'weight'] + new_weights
+            weight_row = [new_region_id, 'weight:dTSS'] + new_weights
 
             block_df = pd.DataFrame([var_row, anno_row, weight_row])
             new_blocks.append(block_df)
@@ -267,7 +268,7 @@ def make_group_file(
 
             var_row = [new_region_id, 'var'] + new_vars
             anno_row = [new_region_id, 'anno'] + new_annos
-            weight_row = [new_region_id, 'weight'] + new_weights
+            weight_row = [new_region_id, 'weight:dTSS'] + new_weights
 
             block_df = pd.DataFrame([var_row, anno_row, weight_row])
             new_blocks.append(block_df)
@@ -275,8 +276,21 @@ def make_group_file(
     # Combine all new blocks and save
     final_df = pd.concat(new_blocks, ignore_index=True)
 
+    # with group_file.open('w') as gdf:
+    # final_df.to_csv(gdf, index=False, header=False, sep=' ')
+
+    block_id = f'{gene}_{required_anno}'
+
+    # Find row indices where the first column matches the block_id
+    rows_matching = final_df[final_df.iloc[:, 0] == block_id]
+
+    # Get the row index of the first matching row
+    start_idx = rows_matching.index[0]
+
+    block_df = final_df.loc[start_idx : start_idx + 2].copy()
+
     with group_file.open('w') as gdf:
-        final_df.to_csv(gdf, index=False, header=False, sep=' ')
+        block_df.to_csv(gdf, index=False, header=False, sep=' ')
 
 
 @click.command()
@@ -313,6 +327,10 @@ def make_group_file(
     '--gene-group-memory',
     default='8G',
 )
+@click.option(
+    '--required-anno',
+    default='functional',
+)
 def main(
     chromosomes: str,
     cis_window_files_path: str,
@@ -327,6 +345,7 @@ def main(
     max_delay: int,
     gene_group_storage: str,
     gene_group_memory: str,
+    required_anno: str,
 ):
     """
     Make group file for rare variant pipeline
@@ -373,13 +392,9 @@ def main(
         for gene in genes:
             print(f'gene: {gene}')
             if gamma != 'none':
-                group_file = (
-                    f'{group_files_path}{chrom}/{gene}_{cis_window}bp_dTSS_weights.tsv'
-                )
+                group_file = f'{group_files_path}{required_anno}/{chrom}/{gene}_{cis_window}bp_dTSS_weights.tsv'
             else:
-                group_file = (
-                    f'{group_files_path}{chrom}/{gene}_{cis_window}bp_no_weights.tsv'
-                )
+                group_file = f'{group_files_path}{required_anno}/{chrom}/{gene}_{cis_window}bp_no_weights.tsv'
             if not to_path(group_file).exists():
                 gene_group_job = get_batch().new_python_job(
                     name=f'gene make group file: {gene}'
@@ -398,6 +413,7 @@ def main(
                     genome_reference=genome_reference,
                     gamma=gamma,
                     max_delay=max_delay,
+                    required_anno=required_anno,
                 )
                 manage_concurrency(gene_group_job)
                 logging.info(f'make group file job for {gene} scheduled')
