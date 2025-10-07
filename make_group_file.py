@@ -293,7 +293,6 @@ def make_group_file(
             block_df.to_csv(gdf, index=False, header=False, sep=' ')
     else:
         print(f"Block '{block_id}' not found.")
-        exit()
 
 
 @click.command()
