@@ -300,7 +300,7 @@ def create_a_2b_job() -> hb.batch.job.Job:
 @click.option('--ngenes-to-test', default='all')
 @click.option('--group-file-specs', default='')
 @click.option('--jobs-per-vm', default=10, type=int)
-@click.option('--group-annos', default='functional')
+# @click.option('--group-annos', default='functional')
 @click.option(
     '--skip-null',
     is_flag=True,
@@ -317,7 +317,7 @@ def main(
     ngenes_to_test: str,
     group_file_specs: str,
     jobs_per_vm: int,
-    group_annos: str,
+    # group_annos: str,
     skip_null: bool,
 ):
     """
@@ -327,9 +327,9 @@ def main(
     # in some runs we may want to skip over genes where null fitting has previously failed
     skipped_genes = []
 
-    group_file_version = to_path(group_files_path).name
-    if group_file_version == 'group_files':
-        group_file_version = 'default'
+    group_annos = to_path(group_files_path).name
+    if group_annos == 'group_files':
+        group_annos = 'default'
 
     batch = get_batch('SAIGE-QTL RV pipeline')
     jobs: list[hb.batch.job.Job] = []
@@ -396,7 +396,8 @@ def main(
             # do a glob, then pull out all file names as Strings
             files = [
                 file.name
-                for file in to_path(pheno_cov_files_path_ct_chrom).glob(
+                # for file in to_path(pheno_cov_files_path_ct_chrom).glob(
+                for file in to_path(group_files_path_chrom).glob(
                     f'*_{celltype}_pheno_cov.tsv'
                 )
             ]
@@ -454,7 +455,9 @@ def main(
 
                 # step 2 (cis eQTL set-based test)
                 # unique key for this set-based test
-                rare_key = f'{group_file_version}_{group_annos}/{celltype}/{chromosome}/{celltype}_{gene}_cis_rare'
+                rare_key = (
+                    f'{group_annos}/{celltype}/{chromosome}/{celltype}_{gene}_cis_rare'
+                )
                 # unique output path for this set-based test
                 rare_output_path = output_path(rare_key, 'analysis')
 
@@ -495,7 +498,9 @@ def main(
     # summarise results (per cell type)
     for celltype in celltypes:
         logging.info(f'start summarising results for {celltype}')
-        summary_output_path = f'{group_file_version}_{group_annos}/summary_stats/{celltype}_all_cis_rv_set_test_results.tsv'
+        summary_output_path = (
+            f'{group_annos}/summary_stats/{celltype}_all_cis_rv_set_test_results.tsv'
+        )
 
         summarise_job = get_batch().new_python_job(
             f'Summarise RV results for {celltype}'
@@ -507,7 +512,7 @@ def main(
             celltype=celltype,
             # include the group file version and celltype when generating the path to outputs created in this run
             gene_results_path=output_path(
-                f'{group_file_version}_{group_annos}/{celltype}', category='analysis'
+                f'{group_annos}/{celltype}', category='analysis'
             ),
             summary_output_path=summary_output_path,
         )
