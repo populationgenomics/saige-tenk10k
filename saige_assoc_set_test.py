@@ -306,6 +306,7 @@ def create_a_2b_job() -> hb.batch.job.Job:
     is_flag=True,
     help='If this flag is used, will skip all genes where the Step 1 has not previously completed',
 )
+@click.option('--cis-window', default=100000, type=int)
 @click.command()
 def main(
     pheno_cov_files_path: str,
@@ -319,6 +320,7 @@ def main(
     jobs_per_vm: int,
     # group_annos: str,
     skip_null: bool,
+    cis_window: int,
 ):
     """
     Run SAIGE-QTL RV pipeline for all cell types
@@ -398,7 +400,7 @@ def main(
                 file.name
                 # for file in to_path(pheno_cov_files_path_ct_chrom).glob(
                 for file in to_path(group_files_path_chrom).glob(
-                    f'*_{celltype}_pheno_cov.tsv'
+                    f'*_{cis_window}bp_dTSS_weights.tsv'
                 )
             ]
             # if specified, only test ngenes genes
@@ -406,7 +408,7 @@ def main(
                 files = files[0 : int(ngenes_to_test)]
             logging.info(f'I found these files: {", ".join(files)}')
 
-            genes = [f.replace(f'_{celltype}_pheno_cov.tsv', '') for f in files]
+            genes = [f.replace(f'_{cis_window}bp_dTSS_weights.tsv', '') for f in files]
 
             # if specified, only test genes_to_test
             if genes_to_test != 'all':
