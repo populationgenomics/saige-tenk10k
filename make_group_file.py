@@ -285,13 +285,15 @@ def make_group_file(
     rows_matching = final_df[final_df.iloc[:, 0] == block_id]
 
     # Get the row index of the first matching row
-    start_idx = rows_matching.index[0]
-
-    block_df = final_df.loc[start_idx : start_idx + 2].copy()
-    block_df = block_df.dropna(axis=1)
-
-    with group_file.open('w') as gdf:
-        block_df.to_csv(gdf, index=False, header=False, sep=' ')
+    if not rows_matching.empty:
+        start_idx = rows_matching.index[0]
+        block_df = final_df.loc[start_idx : start_idx + 2].copy()
+        block_df = block_df.dropna(axis=1)
+        with group_file.open('w') as gdf:
+            block_df.to_csv(gdf, index=False, header=False, sep=' ')
+    else:
+        print(f"Block '{block_id}' not found.")
+        exit()
 
 
 @click.command()
