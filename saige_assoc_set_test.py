@@ -251,12 +251,21 @@ def summarise_rv_results(
         str(file)
         for file in to_path(gene_results_path).glob(f'*/{celltype}_*_cis_rare.set')
     ]
-    results_all_df = pd.concat(
-        [
-            pd.read_csv(to_path(pv_df), index_col=0)
-            for pv_df in existing_rv_assoc_results
-        ]
-    )
+    non_empty_dfs = []
+    empty_files = []
+
+    for file_path in existing_rv_assoc_results:
+        try:
+            df = pd.read_csv(file_path, index_col=0, sep='\t')
+            non_empty_dfs.append(df)
+        except Exception as e:
+            print(f"❌ Failed: {file_path}\n   Reason: {e}")
+            empty_files.append((file_path, str(e)))
+
+    print(f"\n✅ Loaded {len(non_empty_dfs)} DataFrames")
+    print(f"🚫 Failed to load {len(empty_files)} files")
+
+    results_all_df = pd.concat(non_empty_dfs, ignore_index=False)
     result_all_filename = to_path(output_path(summary_output_path, category='analysis'))
     logging.info(f'Write summary results to {result_all_filename}')
     with result_all_filename.open('w') as rf:
