@@ -273,6 +273,25 @@ def make_group_file(
             block_df = pd.DataFrame([var_row, anno_row, weight_row])
             new_blocks.append(block_df)
 
+    # --- Create functional + open_* UNION blocks ---
+    for open_anno in open_annotations:
+        functional_indices = set(annotation_map.get("functional", []))
+        open_indices = set(annotation_map.get(open_anno, []))
+        union_indices = sorted(functional_indices | open_indices)
+
+        if union_indices:
+            new_region_id = f"{region_id}_functional_OR_{open_anno}"
+            new_vars = [variant_ids[i] for i in union_indices]
+            new_annos = [f"functional_OR_{open_anno}"] * len(union_indices)
+            new_weights = [weights[i] for i in union_indices]
+
+            var_row = [new_region_id, 'var'] + new_vars
+            anno_row = [new_region_id, 'anno'] + new_annos
+            weight_row = [new_region_id, 'weight:dTSS'] + new_weights
+
+            block_df = pd.DataFrame([var_row, anno_row, weight_row])
+            new_blocks.append(block_df)
+
     # Combine all new blocks and save
     final_df = pd.concat(new_blocks, ignore_index=True)
 
