@@ -217,10 +217,10 @@ def make_group_file(
         ]
 
         new_blocks = []
-        open_annotations = []
-        annotation_map: dict[str, list[int]] = {}
 
         for block in grouped:
+            open_annotations = []
+            annotation_map: dict[str, list[int]] = {}
             region_id = block.iloc[0, 0]
 
             variant_ids = block.iloc[0, 2:].tolist()
