@@ -219,7 +219,6 @@ def make_group_file(
         new_blocks = []
 
         for block in grouped:
-            open_annotations = []
             annotation_map: dict[str, list[int]] = {}
             region_id = block.iloc[0, 0]
 
@@ -451,7 +450,7 @@ def main(
 
         for gene in genes:
             if len(genes_in_job) >= genes_per_job:
-                group_file_job = create_chrom_job(
+                create_chrom_job(
                     chrom,
                     genes=genes_in_job,
                     group_files=group_files_in_job,
@@ -475,7 +474,7 @@ def main(
                 group_files_in_job.append(group_file)
 
         if genes_in_job:
-            group_file_job = create_chrom_job(
+            create_chrom_job(
                 chrom,
                 genes=genes_in_job,
                 group_files=group_files_in_job,
