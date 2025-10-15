@@ -51,10 +51,10 @@ from cpg_utils.hail_batch import get_batch, init_batch
 
 def make_group_file(
     mt_path: str,
-    gene: str,
+    genes: list[str],
     chrom: str,
     cis_window_files_path: str,
-    group_file,
+    group_files: list[str],
     rare_variant_annotation_files_path: str,
     cis_window: int,
     genome_reference: str,
@@ -71,250 +71,250 @@ def make_group_file(
     from hail import filter_intervals, parse_locus_interval
     import numpy as np
     import pandas as pd
+    from cpg_utils import to_path
     from cpg_utils.hail_batch import init_batch
-    from typing import Dict, List
 
     time.sleep(random.randint(0, max_delay))
 
     init_batch()
 
-    gene_file = f'{cis_window_files_path}{chrom}/{gene}_{cis_window}bp.tsv'
-    print(f'gene file: {gene_file}')
-    gene_df = pd.read_csv(gene_file, sep='\t')
-    num_chrom = gene_df.columns.values[0]
-    window_start = round(float(gene_df.columns.values[1]))
-    window_end = gene_df.columns.values[2]
-    gene_interval = f'chr{num_chrom}:{window_start}-{window_end}'
     # extract variants within interval
     chrom_mt_filename = f'{mt_path}/{chrom}_rare_variants.mt'
-    chrom_mt = hl.read_matrix_table(chrom_mt_filename)
-    chrom_mt = filter_intervals(
-        chrom_mt,
-        [parse_locus_interval(gene_interval, reference_genome=genome_reference)],
-    )
+    whole_chrom_mt = hl.read_matrix_table(chrom_mt_filename)
 
-    # strip the chr from chromosome, annotate as a new field
-    # create a new text field with both alleles
-    chrom_mt = chrom_mt.annotate_rows(
-        var=hl.delimit(
-            [
-                chrom_mt.locus.contig.replace('chr', ''),
-                hl.str(chrom_mt.locus.position),
-                chrom_mt.alleles[0],
-                chrom_mt.alleles[1],
-            ],
-            ':',
-        ),
-        gene=gene,
-    )
+    for gene, group_file in zip(genes, group_files):
 
-    # add distance-based weights if required
+        gene_file = f'{cis_window_files_path}{chrom}/{gene}_{cis_window}bp.tsv'
+        print(f'gene file: {gene_file}')
+        gene_df = pd.read_csv(gene_file, sep='\t')
+        num_chrom = gene_df.columns.values[0]
+        window_start = round(float(gene_df.columns.values[1]))
+        window_end = gene_df.columns.values[2]
+        gene_interval = f'chr{num_chrom}:{window_start}-{window_end}'
+        chrom_mt = filter_intervals(
+            whole_chrom_mt,
+            [parse_locus_interval(gene_interval, reference_genome=genome_reference)],
+        )
 
-    if gamma != 'none':
-
-        gene_tss = int(window_start) + cis_window
-
-        # annotate distances
+        # strip the chr from chromosome, annotate as a new field
+        # create a new text field with both alleles
         chrom_mt = chrom_mt.annotate_rows(
-            distance=hl.abs(chrom_mt.locus.position - gene_tss)
+            var=hl.delimit(
+                [
+                    chrom_mt.locus.contig.replace('chr', ''),
+                    hl.str(chrom_mt.locus.position),
+                    chrom_mt.alleles[0],
+                    chrom_mt.alleles[1],
+                ],
+                ':',
+            ),
+            gene=gene,
         )
 
-        # get weight for genetic variants based on
-        # the distance of that variant from the gene
-        # Following the approach used by the APEX authors
-        # doi: https://doi.org/10.1101/2020.12.18.423490
-        chrom_mt = chrom_mt.annotate_rows(
-            **{'weight:dTSS': hl.exp(-float(gamma) * chrom_mt.distance)}
-        )
+        # add distance-based weights if required
+        if gamma != 'none':
 
-        # re-key by variant string instead of locus/alleles
-        # select the columns we want (dropping the rest)
-        # keep only the rows
-        chrom_mt = (
-            chrom_mt.key_rows_by(chrom_mt.var).select_rows('gene', 'weight:dTSS').rows()
-        )
-        categories_data = {
-            'gene': [gene, gene, gene],
-            'category': ['var', 'anno', 'weight:dTSS'],
-        }
+            gene_tss = int(window_start) + cis_window
 
-    else:
-        # we don't annotate weights/distances
-        chrom_mt = chrom_mt.key_rows_by(chrom_mt.var).select_rows('gene').rows()
-        categories_data = {'gene': [gene, gene, gene], 'category': ['var', 'anno']}
+            # annotate distances
+            chrom_mt = chrom_mt.annotate_rows(
+                distance=hl.abs(chrom_mt.locus.position - gene_tss)
+            )
 
-    chrom_mt.export(str(group_file).replace('.tsv', '_tmp.tsv'))
-    chrom_df = pd.read_csv(str(group_file).replace('.tsv', '_tmp.tsv'), sep='\t')
-    chrom_df['POS'] = chrom_df['var'].str.split(':').str[1]
-    chrom_df['POS'] = chrom_df['POS'].astype(int)
+            # get weight for genetic variants based on
+            # the distance of that variant from the gene
+            # Following the approach used by the APEX authors
+            # doi: https://doi.org/10.1101/2020.12.18.423490
+            chrom_mt = chrom_mt.annotate_rows(
+                **{'weight:dTSS': hl.exp(-float(gamma) * chrom_mt.distance)}
+            )
 
-    # add annotations if required
+            # re-key by variant string instead of locus/alleles
+            # select the columns we want (dropping the rest)
+            # keep only the rows
+            chrom_mt = (
+                chrom_mt.key_rows_by(chrom_mt.var)
+                .select_rows('gene', 'weight:dTSS')
+                .rows()
+            )
+            categories_data = {
+                'gene': [gene, gene, gene],
+                'category': ['var', 'anno', 'weight:dTSS'],
+            }
 
-    if rare_variant_annotation_files_path != 'none':
-        annot_file = (
-            f'{rare_variant_annotation_files_path}{chrom}_rare_variant_annotations.csv'
-        )
-        annot_df = pd.read_csv(annot_file)
-        # list the functional columns you care about (only keep those that actually exist)
-        requested_functional = [
-            "is_promoter",
-            "is_enhancer",
-            "is_ctcf",
-            "is_dnase",
-            "is_tx",
-            "is_atac",
-            "is_open",
-            "is_tf",
-            "is_promoter_ai_gte0.2",
-            "is_splice_ai_gte0.2",
+        else:
+            # we don't annotate weights/distances
+            chrom_mt = chrom_mt.key_rows_by(chrom_mt.var).select_rows('gene').rows()
+            categories_data = {'gene': [gene, gene, gene], 'category': ['var', 'anno']}
+
+        chrom_mt.export(group_file.replace('.tsv', '_tmp.tsv'))
+        chrom_df = pd.read_csv(group_file.replace('.tsv', '_tmp.tsv'), sep='\t')
+        chrom_df['POS'] = chrom_df['var'].str.split(':').str[1]
+        chrom_df['POS'] = chrom_df['POS'].astype(int)
+
+        # add annotations if required
+        if rare_variant_annotation_files_path != 'none':
+            annot_file = f'{rare_variant_annotation_files_path}{chrom}_rare_variant_annotations.csv'
+            annot_df = pd.read_csv(annot_file)
+            # list the functional columns you care about (only keep those that actually exist)
+            requested_functional = [
+                "is_promoter",
+                "is_enhancer",
+                "is_ctcf",
+                "is_dnase",
+                "is_tx",
+                "is_atac",
+                "is_open",
+                "is_tf",
+                "is_promoter_ai_gte0.2",
+                "is_splice_ai_gte0.2",
+            ]
+            functional_cols = [c for c in requested_functional if c in annot_df.columns]
+
+            # find all current "is_" columns (may or may not include is_functional yet)
+            all_is_cols = [c for c in annot_df.columns if c.startswith("is_")]
+
+            # convert all existing is_ columns EXCEPT is_functional to bool (fill NAs -> False)
+            cols_to_bool = [c for c in all_is_cols if c != "is_functional"]
+            annot_df[cols_to_bool] = annot_df[cols_to_bool].fillna(False).astype(bool)
+
+            # compute is_functional from the cleaned functional_cols (safe because they are bool now)
+            if functional_cols:
+                annot_df["is_functional"] = annot_df[functional_cols].any(axis=1)
+            else:
+                annot_df["is_functional"] = False
+
+            # rebuild the list of is_ columns (this will include is_functional)
+            anno_cols = [c for c in annot_df.columns if c.startswith("is_")]
+
+            # build the anno string from the boolean is_ columns (will include "functional" if True)
+            annot_df["anno"] = annot_df[anno_cols].apply(
+                lambda row: ",".join([c[3:] for c in anno_cols if row[c]]), axis=1
+            )
+            annot_df_sel = annot_df[['POS', 'anno']]
+            # Merge on POS
+            combined_df = chrom_df.merge(annot_df_sel, on='POS', how='left')
+        # if no annotations are provided
+        else:
+            combined_df = chrom_df
+            combined_df['anno'] = 'null'
+
+        if gamma != 'none':
+            # annos before weights
+            combined_df = combined_df[['var', 'anno', 'weight:dTSS']]
+        vals_df = combined_df.T
+        vals_df['category'] = vals_df.index
+        categories_df = pd.DataFrame(categories_data)
+        group_vals_df = pd.merge(categories_df, vals_df, on='category')
+        # drop any variants with no annotations (after making all nas)
+        group_vals_df = group_vals_df.replace(r'^\s*$', np.nan, regex=True)
+        group_vals_df_annos = group_vals_df.dropna(axis=1)
+        # explode variants, one block of three rows for every annotation
+        # Group every 3 rows
+        grouped = [
+            group_vals_df_annos.iloc[i : i + 3]
+            for i in range(0, len(group_vals_df_annos), 3)
         ]
-        functional_cols = [c for c in requested_functional if c in annot_df.columns]
 
-        # find all current "is_" columns (may or may not include is_functional yet)
-        all_is_cols = [c for c in annot_df.columns if c.startswith("is_")]
+        new_blocks = []
 
-        # convert all existing is_ columns EXCEPT is_functional to bool (fill NAs -> False)
-        cols_to_bool = [c for c in all_is_cols if c != "is_functional"]
-        annot_df[cols_to_bool] = annot_df[cols_to_bool].fillna(False).astype(bool)
+        for block in grouped:
+            annotation_map: dict[str, list[int]] = {}
+            region_id = block.iloc[0, 0]
 
-        # compute is_functional from the cleaned functional_cols (safe because they are bool now)
-        if functional_cols:
-            annot_df["is_functional"] = annot_df[functional_cols].any(axis=1)
+            variant_ids = block.iloc[0, 2:].tolist()
+            annotations = block.iloc[1, 2:].tolist()
+            weights = block.iloc[2, 2:].tolist()
+
+            # Build: variant index → list of annotations
+            for i, anno in enumerate(annotations):
+                if pd.isna(anno):
+                    continue
+                for a in str(anno).split(','):
+                    a = a.strip()
+                    if a not in annotation_map:
+                        annotation_map[a] = []
+                    annotation_map[a].append(
+                        i
+                    )  # Store index of variant matching this annotation
+
+            open_annotations = [
+                a for a in annotation_map.keys() if a.startswith("open_")
+            ]
+
+            # For each unique annotation, create a new block with only matching variants
+            # avoid duplicated region ids by matching gene name and anno
+            for anno_label, indices in annotation_map.items():
+                new_region_id = f"{region_id}_{anno_label}"
+                new_vars = [variant_ids[i] for i in indices]
+                new_annos = [anno_label] * len(indices)
+                new_weights = [weights[i] for i in indices]
+
+                var_row = [new_region_id, 'var'] + new_vars
+                anno_row = [new_region_id, 'anno'] + new_annos
+                weight_row = [new_region_id, 'weight:dTSS'] + new_weights
+
+                block_df = pd.DataFrame([var_row, anno_row, weight_row])
+                new_blocks.append(block_df)
+
+        # --- Create functional + open_* intersection blocks ---
+        for open_anno in open_annotations:
+            functional_indices = set(annotation_map.get("functional", []))
+            open_indices = set(annotation_map.get(open_anno, []))
+            intersection_indices = sorted(functional_indices & open_indices)
+
+            if intersection_indices:
+                new_region_id = f"{region_id}_functional_AND_{open_anno}"
+                new_vars = [variant_ids[i] for i in intersection_indices]
+                new_annos = [f"functional_AND_{open_anno}"] * len(intersection_indices)
+                new_weights = [weights[i] for i in intersection_indices]
+
+                var_row = [new_region_id, 'var'] + new_vars
+                anno_row = [new_region_id, 'anno'] + new_annos
+                weight_row = [new_region_id, 'weight:dTSS'] + new_weights
+
+                block_df = pd.DataFrame([var_row, anno_row, weight_row])
+                new_blocks.append(block_df)
+
+        # --- Create functional + open_* UNION blocks ---
+        for open_anno in open_annotations:
+            functional_indices = set(annotation_map.get("functional", []))
+            open_indices = set(annotation_map.get(open_anno, []))
+            union_indices = sorted(functional_indices | open_indices)
+
+            if union_indices:
+                new_region_id = f"{region_id}_functional_OR_{open_anno}"
+                new_vars = [variant_ids[i] for i in union_indices]
+                new_annos = [f"functional_OR_{open_anno}"] * len(union_indices)
+                new_weights = [weights[i] for i in union_indices]
+
+                var_row = [new_region_id, 'var'] + new_vars
+                anno_row = [new_region_id, 'anno'] + new_annos
+                weight_row = [new_region_id, 'weight:dTSS'] + new_weights
+
+                block_df = pd.DataFrame([var_row, anno_row, weight_row])
+                new_blocks.append(block_df)
+
+        # Combine all new blocks and save
+        final_df = pd.concat(new_blocks, ignore_index=True)
+
+        block_id = f'{gene}_{required_anno}'
+
+        # Find row indices where the first column matches the block_id
+        rows_matching = final_df[final_df.iloc[:, 0] == block_id]
+
+        # Get the row index of the first matching row
+        if not rows_matching.empty:
+            start_idx = rows_matching.index[0]
+            block_df = final_df.loc[start_idx : start_idx + 2].copy()
+            block_df = block_df.dropna(axis=1)
+            if block_df.shape[1] > 3:
+                with to_path(group_file).open('w') as gdf:
+                    block_df.to_csv(gdf, index=False, header=False, sep=' ')
+            else:
+                print('There is only one variant in this region, skip')
         else:
-            annot_df["is_functional"] = False
-
-        # rebuild the list of is_ columns (this will include is_functional)
-        anno_cols = [c for c in annot_df.columns if c.startswith("is_")]
-
-        # build the anno string from the boolean is_ columns (will include "functional" if True)
-        annot_df["anno"] = annot_df[anno_cols].apply(
-            lambda row: ",".join([c[3:] for c in anno_cols if row[c]]), axis=1
-        )
-        annot_df_sel = annot_df[['POS', 'anno']]
-        # Merge on POS
-        combined_df = chrom_df.merge(annot_df_sel, on='POS', how='left')
-    # if no annotations are provided
-    else:
-        combined_df = chrom_df
-        combined_df['anno'] = 'null'
-
-    if gamma != 'none':
-        # annos before weights
-        combined_df = combined_df[['var', 'anno', 'weight:dTSS']]
-    vals_df = combined_df.T
-    vals_df['category'] = vals_df.index
-    categories_df = pd.DataFrame(categories_data)
-    group_vals_df = pd.merge(categories_df, vals_df, on='category')
-    # drop any variants with no annotations (after making all nas)
-    group_vals_df = group_vals_df.replace(r'^\s*$', np.nan, regex=True)
-    group_vals_df_annos = group_vals_df.dropna(axis=1)
-    # explode variants, one block of three rows for every annotation
-    # Group every 3 rows
-    grouped = [
-        group_vals_df_annos.iloc[i : i + 3]
-        for i in range(0, len(group_vals_df_annos), 3)
-    ]
-
-    new_blocks = []
-
-    for block in grouped:
-        region_id = block.iloc[0, 0]
-
-        variant_ids = block.iloc[0, 2:].tolist()
-        annotations = block.iloc[1, 2:].tolist()
-        weights = block.iloc[2, 2:].tolist()
-
-        # Build: variant index → list of annotations
-        annotation_map: Dict[str, List[int]] = {}
-        for i, anno in enumerate(annotations):
-            if pd.isna(anno):
-                continue
-            for a in str(anno).split(','):
-                a = a.strip()
-                if a not in annotation_map:
-                    annotation_map[a] = []
-                annotation_map[a].append(
-                    i
-                )  # Store index of variant matching this annotation
-
-        open_annotations = [a for a in annotation_map.keys() if a.startswith("open_")]
-
-        # For each unique annotation, create a new block with only matching variants
-        # avoid duplicated region ids by matching gene name and anno
-        for anno_label, indices in annotation_map.items():
-            new_region_id = f"{region_id}_{anno_label}"
-            new_vars = [variant_ids[i] for i in indices]
-            new_annos = [anno_label] * len(indices)
-            new_weights = [weights[i] for i in indices]
-
-            var_row = [new_region_id, 'var'] + new_vars
-            anno_row = [new_region_id, 'anno'] + new_annos
-            weight_row = [new_region_id, 'weight:dTSS'] + new_weights
-
-            block_df = pd.DataFrame([var_row, anno_row, weight_row])
-            new_blocks.append(block_df)
-
-    # --- Create functional + open_* intersection blocks ---
-    for open_anno in open_annotations:
-        functional_indices = set(annotation_map.get("functional", []))
-        open_indices = set(annotation_map.get(open_anno, []))
-        intersection_indices = sorted(functional_indices & open_indices)
-
-        if intersection_indices:
-            new_region_id = f"{region_id}_functional_AND_{open_anno}"
-            new_vars = [variant_ids[i] for i in intersection_indices]
-            new_annos = [f"functional_AND_{open_anno}"] * len(intersection_indices)
-            new_weights = [weights[i] for i in intersection_indices]
-
-            var_row = [new_region_id, 'var'] + new_vars
-            anno_row = [new_region_id, 'anno'] + new_annos
-            weight_row = [new_region_id, 'weight:dTSS'] + new_weights
-
-            block_df = pd.DataFrame([var_row, anno_row, weight_row])
-            new_blocks.append(block_df)
-
-    # --- Create functional + open_* UNION blocks ---
-    for open_anno in open_annotations:
-        functional_indices = set(annotation_map.get("functional", []))
-        open_indices = set(annotation_map.get(open_anno, []))
-        union_indices = sorted(functional_indices | open_indices)
-
-        if union_indices:
-            new_region_id = f"{region_id}_functional_OR_{open_anno}"
-            new_vars = [variant_ids[i] for i in union_indices]
-            new_annos = [f"functional_OR_{open_anno}"] * len(union_indices)
-            new_weights = [weights[i] for i in union_indices]
-
-            var_row = [new_region_id, 'var'] + new_vars
-            anno_row = [new_region_id, 'anno'] + new_annos
-            weight_row = [new_region_id, 'weight:dTSS'] + new_weights
-
-            block_df = pd.DataFrame([var_row, anno_row, weight_row])
-            new_blocks.append(block_df)
-
-    # Combine all new blocks and save
-    final_df = pd.concat(new_blocks, ignore_index=True)
-
-    # with group_file.open('w') as gdf:
-    # final_df.to_csv(gdf, index=False, header=False, sep=' ')
-
-    block_id = f'{gene}_{required_anno}'
-
-    # Find row indices where the first column matches the block_id
-    rows_matching = final_df[final_df.iloc[:, 0] == block_id]
-
-    # Get the row index of the first matching row
-    if not rows_matching.empty:
-        start_idx = rows_matching.index[0]
-        block_df = final_df.loc[start_idx : start_idx + 2].copy()
-        block_df = block_df.dropna(axis=1)
-        if block_df.shape[1] > 3:
-            with group_file.open('w') as gdf:
-                block_df.to_csv(gdf, index=False, header=False, sep=' ')
-        else:
-            print('There is only one variant in this region, skip')
-    else:
-        print(f"Block '{block_id}' not found, skip")
+            print(f"Block '{block_id}' not found, skip")
 
 
 @click.command()
@@ -345,7 +345,7 @@ def make_group_file(
 )
 @click.option(
     '--gene-group-storage',
-    default='8G',
+    default='10G',
 )
 @click.option(
     '--gene-group-memory',
@@ -354,6 +354,10 @@ def make_group_file(
 @click.option(
     '--required-anno',
     default='functional',
+)
+@click.option(
+    '--genes-per-job',
+    default=50,
 )
 def main(
     chromosomes: str,
@@ -370,6 +374,7 @@ def main(
     gene_group_storage: str,
     gene_group_memory: str,
     required_anno: str,
+    genes_per_job: int,
 ):
     """
     Make group file for rare variant pipeline
@@ -388,6 +393,31 @@ def main(
         if len(all_jobs) > concurrent_job_cap:
             new_job.depends_on(all_jobs[-concurrent_job_cap])
         all_jobs.append(new_job)
+
+    def create_chrom_job(
+        chrom: str, genes: list[str], group_files: list[str], number: int
+    ) -> hb_job.PythonJob:
+        job = get_batch().new_python_job(
+            name=f'Chrom {chrom} group file generation: {number}'
+        )
+        job.storage(gene_group_storage)
+        job.memory(gene_group_memory)
+        job.call(
+            make_group_file,
+            mt_path=chrom_mt_files_path,
+            genes=genes,
+            chrom=chrom,
+            cis_window_files_path=cis_window_files_path,
+            group_files=group_files,
+            rare_variant_annotation_files_path=rare_variant_annotation_files_path,
+            cis_window=cis_window,
+            genome_reference=genome_reference,
+            gamma=gamma,
+            max_delay=max_delay,
+            required_anno=required_anno,
+        )
+        manage_concurrency(job)
+        return job
 
     # loop over chromosomes
     for chrom in chromosomes.split(','):
@@ -413,34 +443,46 @@ def main(
         ]
         logging.info(f'I found these genes: {", ".join(genes)}')
 
+        # capture the genes and output files we want to generate
+        genes_in_job: list[str] = []
+        group_files_in_job: list[str] = []
+        jobs_per_chrom = 1
+
         for gene in genes:
+            if len(genes_in_job) >= genes_per_job:
+                create_chrom_job(
+                    chrom,
+                    genes=genes_in_job,
+                    group_files=group_files_in_job,
+                    number=jobs_per_chrom,
+                )
+                genes_in_job = []
+                group_files_in_job = []
+                logging.info(
+                    f'Made batch #{jobs_per_chrom} group file generation jobs for {chrom}'
+                )
+                jobs_per_chrom += 1
+
             print(f'gene: {gene}')
             if gamma != 'none':
                 group_file = f'{group_files_path}{required_anno}/{chrom}/{gene}_{cis_window}bp_dTSS_weights.tsv'
             else:
                 group_file = f'{group_files_path}{required_anno}/{chrom}/{gene}_{cis_window}bp_no_weights.tsv'
+
             if not to_path(group_file).exists():
-                gene_group_job = get_batch().new_python_job(
-                    name=f'gene make group file: {gene}'
-                )
-                gene_group_job.storage(gene_group_storage)
-                gene_group_job.memory(gene_group_memory)
-                gene_group_job.call(
-                    make_group_file,
-                    mt_path=chrom_mt_files_path,
-                    gene=gene,
-                    chrom=chrom,
-                    cis_window_files_path=cis_window_files_path,
-                    group_file=to_path(group_file),
-                    rare_variant_annotation_files_path=rare_variant_annotation_files_path,
-                    cis_window=cis_window,
-                    genome_reference=genome_reference,
-                    gamma=gamma,
-                    max_delay=max_delay,
-                    required_anno=required_anno,
-                )
-                manage_concurrency(gene_group_job)
-                logging.info(f'make group file job for {gene} scheduled')
+                genes_in_job.append(gene)
+                group_files_in_job.append(group_file)
+
+        if genes_in_job:
+            create_chrom_job(
+                chrom,
+                genes=genes_in_job,
+                group_files=group_files_in_job,
+                number=jobs_per_chrom,
+            )
+            logging.info(
+                f'Made batch #{jobs_per_chrom} group file generation jobs for {chrom}'
+            )
 
     get_batch().run(wait=False)
 
