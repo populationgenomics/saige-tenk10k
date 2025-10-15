@@ -403,7 +403,7 @@ def main(
         )
         job.storage(gene_group_storage)
         job.memory(gene_group_memory)
-        group_file_job.call(
+        job.call(
             make_group_file,
             mt_path=chrom_mt_files_path,
             genes=genes,
@@ -417,7 +417,7 @@ def main(
             max_delay=max_delay,
             required_anno=required_anno,
         )
-        manage_concurrency(group_file_job)
+        manage_concurrency(job)
         return job
 
     # loop over chromosomes
