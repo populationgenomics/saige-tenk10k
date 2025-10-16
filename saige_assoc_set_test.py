@@ -262,7 +262,9 @@ def summarise_rv_results(
             if non_empty_files % 100 == 0:
                 print(f'Progress: {non_empty_files} processed, {empty_files} skipped.')
 
-            contents = file.open().readlines()
+            with file.open() as f:
+                contents = f.readlines()
+
             if first_file:
                 first_file = False
                 use_index = 0
