@@ -281,11 +281,15 @@ def summarise_rv_results(
     print(f"✅ Loaded {non_empty_files} files")
     print(f"🚫 Failed to load {empty_files} files")
 
-    result_all_filename = to_path(hail_batch.output_path(summary_output_path, category='analysis'))
+    result_all_filename = to_path(
+        hail_batch.output_path(summary_output_path, category='analysis')
+    )
     logging.info(f'Write summary results to {result_all_filename}')
 
     # open the GCP output as a Path, the local file as a simple file handle
-    with result_all_filename.open('w') as write_handle, open(local_file, 'r') as read_handle:
+    with result_all_filename.open('w') as write_handle, open(
+        local_file, 'r'
+    ) as read_handle:
         data = read_handle.readlines()
         write_handle.writelines(data)
 
