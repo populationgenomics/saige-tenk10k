@@ -241,35 +241,59 @@ def summarise_rv_results(
 ):
     """
     Summarise gene-specific results
+
+    Read all single-test results into a local file, write that local file to GCP in a single operation
     """
-    import logging
-    import pandas as pd
-    from cpg_utils import to_path
-    from cpg_utils.hail_batch import output_path
 
-    existing_rv_assoc_results = [
-        str(file)
-        for file in to_path(gene_results_path).glob(f'*/{celltype}_*_cis_rare.set')
-    ]
-    non_empty_dfs = []
-    empty_files = []
+    from os import path, getenv
 
-    for file_path in existing_rv_assoc_results:
-        try:
-            df = pd.read_csv(file_path, index_col=0, sep='\t')
-            non_empty_dfs.append(df)
-        except Exception as e:
-            print(f"❌ Failed: {file_path}\n   Reason: {e}")
-            empty_files.append((file_path, str(e)))
+    from cpg_utils import hail_batch, to_path
 
-    print(f"\n✅ Loaded {len(non_empty_dfs)} DataFrames")
-    print(f"🚫 Failed to load {len(empty_files)} files")
+    # create a new single output file in the Batch TMP Directory (location of VM attached storage)
+    local_file = path.join(getenv('BATCH_TMPDIR'), 'all_set_contents.csv')
 
-    results_all_df = pd.concat(non_empty_dfs, ignore_index=False)
-    result_all_filename = to_path(output_path(summary_output_path, category='analysis'))
-    logging.info(f'Write summary results to {result_all_filename}')
-    with result_all_filename.open('w') as rf:
-        results_all_df.to_csv(rf)
+    non_empty_files = 0
+    empty_files = 0
+
+    first_file = True
+    with open(local_file, 'w') as handle:
+        for file in to_path(gene_results_path).glob(f'*/{celltype}_*_cis_rare.set'):
+            # subsample the input files, just so we know we're making progress
+            if non_empty_files % 100 == 0:
+                print(f'Progress: {non_empty_files} processed, {empty_files} skipped.')
+
+            with file.open() as f:
+                contents = f.readlines()
+
+            if first_file:
+                first_file = False
+                use_index = 0
+            else:
+                use_index = 1
+
+            # for header-only files, count as empty
+            if len(contents) == 1:
+                empty_files += 1
+                continue
+
+            non_empty_files += 1
+            for line in contents[use_index:]:
+                handle.write(line.replace('\t', ','))
+
+    print(f"✅ Loaded {non_empty_files} files")
+    print(f"🚫 Failed to load {empty_files} files")
+
+    result_all_filename = to_path(
+        hail_batch.output_path(summary_output_path, category='analysis')
+    )
+    print(f'Write summary results to {result_all_filename}')
+
+    # open the GCP output as a Path, the local file as a simple file handle
+    with result_all_filename.open('w') as write_handle, open(
+        local_file, 'r'
+    ) as read_handle:
+        data = read_handle.readlines()
+        write_handle.writelines(data)
 
 
 def create_a_2b_job() -> hb.batch.job.Job:
