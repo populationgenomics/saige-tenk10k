@@ -250,7 +250,7 @@ def summarise_rv_results(
     from cpg_utils import hail_batch, to_path
 
     # create a new single output file in the Batch TMP Directory (location of VM attached storage)
-    local_file = path.join(getenv('BATCH_TMPDIR'), 'all_set_contents.tsv')
+    local_file = path.join(getenv('BATCH_TMPDIR'), 'all_set_contents.csv')
 
     non_empty_files = 0
     empty_files = 0
