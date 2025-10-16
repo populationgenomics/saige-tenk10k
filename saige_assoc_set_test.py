@@ -258,7 +258,7 @@ def summarise_rv_results(
     first_file = True
     with open(local_file, 'w') as handle:
         for file in to_path(gene_results_path).glob(f'*/{celltype}_*_cis_rare.set'):
-            # sub-sample the input files, just so we know we're making progress
+            # subsample the input files, just so we know we're making progress
             if non_empty_files % 100 == 0:
                 print(f'Progress: {non_empty_files} processed, {empty_files} skipped.')
 
@@ -284,7 +284,7 @@ def summarise_rv_results(
     result_all_filename = to_path(
         hail_batch.output_path(summary_output_path, category='analysis')
     )
-    logging.info(f'Write summary results to {result_all_filename}')
+    print(f'Write summary results to {result_all_filename}')
 
     # open the GCP output as a Path, the local file as a simple file handle
     with result_all_filename.open('w') as write_handle, open(
